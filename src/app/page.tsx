@@ -4,7 +4,10 @@ import * as React from 'react';
 import { chats as initialChats, users, type Chat, type Message } from '@/lib/mock-data';
 import ChatList from '@/components/chat-list';
 import ChatView from '@/components/chat-view';
-import { MessageSquare } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function Home() {
   const [chats, setChats] = React.useState<Chat[]>(initialChats);
@@ -53,8 +56,20 @@ export default function Home() {
   return (
     <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
         <aside className="h-full w-full flex-shrink-0 flex flex-col">
-           <header className="p-4 border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+           <header className="flex items-center justify-between p-4 border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
                 <h1 className="text-2xl font-bold text-primary">Chats</h1>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings">Settings</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </header>
             <ChatList
                 chats={chats}

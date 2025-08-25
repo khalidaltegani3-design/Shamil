@@ -41,7 +41,10 @@ export default function ChatView({ chat, currentUser, onSendMessage, onBack }: C
 
   React.useEffect(() => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (viewport) {
+            viewport.scrollTop = viewport.scrollHeight;
+        }
     }
   }, [chat.messages]);
 
@@ -77,7 +80,7 @@ export default function ChatView({ chat, currentUser, onSendMessage, onBack }: C
       </header>
 
       <div className="flex-1 overflow-y-auto">
-         <ScrollArea className="h-full" viewportRef={scrollAreaRef}>
+         <ScrollArea className="h-full" ref={scrollAreaRef}>
              <div className="p-4 md:p-6 space-y-6">
                 {chat.messages.map((message) => (
                     <MessageComponent

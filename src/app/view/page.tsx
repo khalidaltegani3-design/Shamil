@@ -4,7 +4,8 @@ import React, { useRef, useEffect } from 'react';
 import { videos as initialVideos, type Video } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Send, Music } from 'lucide-react';
+import { Heart, MessageCircle, Send, Music, Camera } from 'lucide-react';
+import Link from 'next/link';
 
 const VideoCard = ({ video }: { video: Video }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,6 +86,13 @@ export default function ViewPage() {
 
     return (
         <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
+           <div className="absolute top-4 right-4 z-10">
+                <Link href="/create">
+                    <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
+                        <Camera className="h-6 w-6" />
+                    </Button>
+                </Link>
+           </div>
            {videos.map(video => (
                <VideoCard key={video.id} video={video} />
            ))}

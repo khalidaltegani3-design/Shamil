@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -14,6 +15,21 @@ import { Plus, X, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import Link from 'next/link';
+
+const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (formattedTime: string) => React.ReactNode }) => {
+  const [timeAgo, setTimeAgo] = React.useState('');
+
+  React.useEffect(() => {
+    setTimeAgo(formatDistanceToNow(new Date(timestamp)));
+  }, [timestamp]);
+
+  if (!timeAgo) {
+    return null; 
+  }
+
+  return <>{children(timeAgo)}</>;
+};
+
 
 export default function StatusPage() {
   const [statuses, setStatuses] = React.useState<Status[]>(initialStatuses);
@@ -64,7 +80,11 @@ export default function StatusPage() {
               <div>
                 <h2 className="font-semibold text-lg">My Status</h2>
                 <p className="text-sm text-muted-foreground">
-                  {myStatus ? `Updated ${formatDistanceToNow(new Date(myStatus.timestamp))} ago` : "Add to your status"}
+                  {myStatus ? (
+                     <ClientTimeAgo timestamp={myStatus.timestamp}>
+                        {(time) => `Updated ${time} ago`}
+                    </ClientTimeAgo>
+                  ) : "Add to your status"}
                 </p>
               </div>
             </CardContent>
@@ -87,7 +107,9 @@ export default function StatusPage() {
                     <div>
                         <h4 className="font-semibold">{status.user.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(status.timestamp))} ago
+                           <ClientTimeAgo timestamp={status.timestamp}>
+                                {(time) => `${time} ago`}
+                           </ClientTimeAgo>
                         </p>
                     </div>
                   </div>
@@ -124,7 +146,11 @@ function StatusViewer({ status, onClose }: { status: Status | null, onClose: () 
             </Avatar>
             <div>
                 <p className="font-semibold text-white">{status.user.name}</p>
-                <p className="text-xs text-gray-300">{formatDistanceToNow(new Date(status.timestamp))} ago</p>
+                <p className="text-xs text-gray-300">
+                    <ClientTimeAgo timestamp={status.timestamp}>
+                        {(time) => `${time} ago`}
+                    </ClientTimeAgo>
+                </p>
             </div>
         </div>
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-9 w-9 text-white hover:bg-white/20 z-20" onClick={onClose}>

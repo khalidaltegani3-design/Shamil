@@ -225,6 +225,36 @@ export const videos: Video[] = [
         }
     ],
   },
+  {
+    id: 'video-4',
+    user: users[4],
+    videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    caption: 'My great escape! #adventure',
+    likes: 5400,
+    comments: 210,
+    shares: 150,
+    commentsData: [],
+  },
+  {
+    id: 'video-5',
+    user: users[0],
+    videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    caption: 'Having some fun with the crew!',
+    likes: 10000,
+    comments: 500,
+    shares: 450,
+    commentsData: [],
+  },
+  {
+    id: 'video-6',
+    user: users[1],
+    videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    caption: 'Best joyride ever! #roadtrip',
+    likes: 760,
+    comments: 40,
+    shares: 22,
+    commentsData: [],
+  },
 ];
 
 export const musicTracks: MusicTrack[] = [

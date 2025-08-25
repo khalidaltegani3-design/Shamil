@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, CircleDot, Settings, Phone, PlusSquare, ChevronUp, X } from "lucide-react";
+import { MessageSquare, CircleDot, Settings, Phone, PlusSquare, Video, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -11,7 +11,7 @@ const navItems = [
   { href: "/status", label: "Status", icon: CircleDot },
   { href: "/create", label: "Create", icon: PlusSquare },
   { href: "/calls", label: "Calls", icon: Phone },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/view", label: "View", icon: Video },
 ];
 
 export default function BottomNavbar() {
@@ -48,7 +48,6 @@ export default function BottomNavbar() {
       <div className="flex justify-around items-center h-full">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
-          if (href === "/view") return null;
 
           if(href === "/create"){
             return (

@@ -1,4 +1,4 @@
-import type { User, Chat, Message, Status, Call, Video } from './types';
+import type { User, Chat, Message, Status, Call, Video, Comment } from './types';
 
 export const users: User[] = [
   { id: 'user-1', name: 'You', avatarUrl: 'https://placehold.co/100x100.png', isOnline: true },
@@ -172,6 +172,20 @@ export const calls: Call[] = [
   },
 ];
 
+const videoComments: Comment[] = [
+    {
+        id: 'vc-1',
+        user: users[3],
+        text: "This is amazing work!",
+        timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    },
+    {
+        id: 'vc-2',
+        user: users[4],
+        text: "Love the visuals!",
+        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    }
+]
 
 export const videos: Video[] = [
   {
@@ -182,6 +196,7 @@ export const videos: Video[] = [
     likes: 1200,
     comments: 34,
     shares: 12,
+    commentsData: videoComments,
   },
   {
     id: 'video-2',
@@ -191,6 +206,7 @@ export const videos: Video[] = [
     likes: 890,
     comments: 15,
     shares: 8,
+    commentsData: [],
   },
   {
     id: 'video-3',
@@ -200,5 +216,13 @@ export const videos: Video[] = [
     likes: 2500,
     comments: 152,
     shares: 98,
+    commentsData: [
+        {
+            id: 'vc-3',
+            user: users[1],
+            text: "Wow! So cool!",
+            timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+        }
+    ],
   },
 ];

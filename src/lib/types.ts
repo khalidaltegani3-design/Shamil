@@ -44,6 +44,13 @@ export interface Call {
   duration: string;
 }
 
+export interface Comment {
+    id: string;
+    user: User;
+    text: string;
+    timestamp: string;
+}
+
 export interface Video {
   id: string;
   user: User;
@@ -52,4 +59,5 @@ export interface Video {
   likes: number;
   comments: number;
   shares: number;
+  commentsData?: Comment[];
 }

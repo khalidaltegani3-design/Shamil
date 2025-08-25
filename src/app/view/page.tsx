@@ -1,39 +1,81 @@
 "use client"
 
-import React, { useRef, useEffect } from 'react';
-import { videos as initialVideos, type Video } from '@/lib/mock-data';
+import React, { useRef, useEffect, useState } from 'react';
+import { videos as initialVideos, type Video, users } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Send, Music, Camera } from 'lucide-react';
+import { Heart, MessageCircle, Send, Music, Camera, X } from 'lucide-react';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
-const VideoCard = ({ video }: { video: Video }) => {
+interface Comment {
+    id: string;
+    user: { name: string; avatarUrl: string };
+    text: string;
+    timestamp: string;
+}
+
+const VideoCard = ({ 
+    video, 
+    onLike, 
+    onComment,
+}: { 
+    video: Video, 
+    onLike: (videoId: string) => void,
+    onComment: (videoId: string, commentText: string) => void,
+}) => {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const [isLiked, setIsLiked] = useState(false);
+    const [showComments, setShowComments] = useState(false);
+    const [newComment, setNewComment] = useState("");
+    const { toast } = useToast();
 
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        videoRef.current?.play();
+                        videoRef.current?.play().catch(error => console.error("Video play failed:", error));
                     } else {
                         videoRef.current?.pause();
                     }
                 });
             },
-            { threshold: 0.5 } // Play when 50% of the video is visible
+            { threshold: 0.5 }
         );
 
-        if (videoRef.current) {
-            observer.observe(videoRef.current);
+        const currentVideoRef = videoRef.current;
+        if (currentVideoRef) {
+            observer.observe(currentVideoRef);
         }
 
         return () => {
-            if (videoRef.current) {
-                observer.unobserve(videoRef.current);
+            if (currentVideoRef) {
+                observer.unobserve(currentVideoRef);
             }
         };
     }, []);
+
+    const handleLike = () => {
+        onLike(video.id);
+        setIsLiked(!isLiked);
+    };
+
+    const handleCommentSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newComment.trim()) {
+            onComment(video.id, newComment);
+            setNewComment("");
+            toast({ title: "Comment posted!" });
+        }
+    };
+    
+    // Ensure comments is an array
+    const comments = Array.isArray(video.commentsData) ? video.commentsData : [];
 
     return (
         <div className="relative h-full w-full snap-start flex-shrink-0">
@@ -41,8 +83,10 @@ const VideoCard = ({ video }: { video: Video }) => {
                 ref={videoRef}
                 src={video.videoUrl}
                 loop
-                muted // Muted by default to allow autoplay in browsers
+                muted
+                playsInline
                 className="h-full w-full object-cover"
+                onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
                 <div className="flex items-end">
@@ -61,28 +105,103 @@ const VideoCard = ({ video }: { video: Video }) => {
                         </div>
                     </div>
                     <div className="flex flex-col items-center space-y-4">
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white">
-                            <Heart className="h-8 w-8" />
-                            <span className="text-xs">{video.likes}</span>
+                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
+                            <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                            <span className="text-xs font-semibold">{video.likes}</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white">
+                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowComments(true)}>
                             <MessageCircle className="h-8 w-8" />
-                            <span className="text-xs">{video.comments}</span>
+                            <span className="text-xs font-semibold">{video.comments}</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white">
+                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
                             <Send className="h-8 w-8" />
-                            <span className="text-xs">{video.shares}</span>
+                            <span className="text-xs font-semibold">{video.shares}</span>
                         </Button>
                     </div>
                 </div>
             </div>
+
+            <Dialog open={showComments} onOpenChange={setShowComments}>
+                <DialogContent className="h-[80vh] flex flex-col p-0">
+                    <DialogHeader className="p-4 border-b">
+                        <DialogTitle className="text-center">Comments</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="flex-1 p-4">
+                        <div className="space-y-4">
+                            {comments.length > 0 ? comments.map(comment => (
+                                <div key={comment.id} className="flex items-start gap-3">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={comment.user.avatarUrl} data-ai-hint="avatar comment"/>
+                                        <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-sm">{comment.user.name}</p>
+                                        <p className="text-sm">{comment.text}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">{new Date(comment.timestamp).toLocaleTimeString()}</p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-center text-muted-foreground py-8">No comments yet. Be the first to comment!</p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                    <DialogFooter className="p-4 border-t">
+                        <form onSubmit={handleCommentSubmit} className="w-full flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={users[0].avatarUrl} data-ai-hint="avatar current user"/>
+                                <AvatarFallback>Y</AvatarFallback>
+                            </Avatar>
+                            <Input 
+                                placeholder="Add a comment..." 
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                className="flex-1"
+                            />
+                            <Button type="submit" size="icon" disabled={!newComment.trim()}>
+                                <Send className="h-4 w-4" />
+                            </Button>
+                        </form>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
 
 
 export default function ViewPage() {
-    const [videos, setVideos] = React.useState<Video[]>(initialVideos);
+    const [videos, setVideos] = useState<Video[]>(initialVideos);
+
+    const handleLike = (videoId: string) => {
+        setVideos(prevVideos => prevVideos.map(v => {
+            if (v.id === videoId) {
+                // In a real app, you'd check if the user already liked it.
+                // For this demo, we'll just increment.
+                return { ...v, likes: v.likes + 1 };
+            }
+            return v;
+        }));
+    };
+
+    const handleComment = (videoId: string, commentText: string) => {
+        setVideos(prevVideos => prevVideos.map(v => {
+            if (v.id === videoId) {
+                const newComment: Comment = {
+                    id: `comment-${Date.now()}`,
+                    user: users[0],
+                    text: commentText,
+                    timestamp: new Date().toISOString()
+                };
+                 const existingComments = Array.isArray(v.commentsData) ? v.commentsData : [];
+                return { 
+                    ...v, 
+                    comments: v.comments + 1,
+                    commentsData: [...existingComments, newComment]
+                };
+            }
+            return v;
+        }));
+    };
 
     return (
         <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
@@ -94,7 +213,12 @@ export default function ViewPage() {
                 </Link>
            </div>
            {videos.map(video => (
-               <VideoCard key={video.id} video={video} />
+               <VideoCard 
+                    key={video.id} 
+                    video={video} 
+                    onLike={handleLike}
+                    onComment={handleComment}
+                />
            ))}
         </div>
     );

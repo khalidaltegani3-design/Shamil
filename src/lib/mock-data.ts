@@ -1,4 +1,4 @@
-import type { User, Chat, Message, Status, Call } from './types';
+import type { User, Chat, Message, Status, Call, Video } from './types';
 
 export const users: User[] = [
   { id: 'user-1', name: 'You', avatarUrl: 'https://placehold.co/100x100.png', isOnline: true },
@@ -169,5 +169,36 @@ export const calls: Call[] = [
     type: 'incoming',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(),
     duration: '2m 10s',
+  },
+];
+
+
+export const videos: Video[] = [
+  {
+    id: 'video-1',
+    user: users[1],
+    videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    caption: 'Just chilling with this little guy! #animation #bunny',
+    likes: 1200,
+    comments: 34,
+    shares: 12,
+  },
+  {
+    id: 'video-2',
+    user: users[2],
+    videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    caption: 'This is such a masterpiece of open-source animation.',
+    likes: 890,
+    comments: 15,
+    shares: 8,
+  },
+  {
+    id: 'video-3',
+    user: users[3],
+    videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    caption: 'Testing out some new VFX! 🔥',
+    likes: 2500,
+    comments: 152,
+    shares: 98,
   },
 ];

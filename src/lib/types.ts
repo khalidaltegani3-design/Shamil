@@ -43,3 +43,13 @@ export interface Call {
   timestamp: string;
   duration: string;
 }
+
+export interface Video {
+  id: string;
+  user: User;
+  videoUrl: string;
+  caption: string;
+  likes: number;
+  comments: number;
+  shares: number;
+}

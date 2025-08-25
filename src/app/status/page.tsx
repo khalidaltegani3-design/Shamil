@@ -10,26 +10,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Plus, X, ArrowLeft } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
-import Link from 'next/link';
 
 const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (formattedTime: string) => React.ReactNode }) => {
   const [timeAgo, setTimeAgo] = React.useState('');
 
   React.useEffect(() => {
-    setTimeAgo(formatDistanceToNow(new Date(timestamp)));
+    const update = () => setTimeAgo(formatDistanceToNow(new Date(timestamp)));
+    update();
+    const interval = setInterval(update, 60000); // Update every minute
+    return () => clearInterval(interval);
   }, [timestamp]);
 
   if (!timeAgo) {
+    // Render a placeholder or nothing on the server
     return null; 
   }
 
   return <>{children(timeAgo)}</>;
 };
-
 
 export default function StatusPage() {
   const [statuses, setStatuses] = React.useState<Status[]>(initialStatuses);
@@ -52,13 +53,8 @@ export default function StatusPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
-      <header className="flex items-center gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm">
-        <Link href="/" passHref>
-          <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
+    <div className="flex flex-col h-full bg-background text-foreground">
+      <header className="flex items-center gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <h1 className="text-xl font-bold">Status</h1>
       </header>
       

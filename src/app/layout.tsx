@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
+import BottomNavbar from '@/components/bottom-navbar';
 
 export const metadata: Metadata = {
   title: 'Zoliapp Lite',
@@ -20,7 +21,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <div className="flex flex-col h-screen">
+          <main className="flex-1 overflow-y-auto">{children}</main>
+          <BottomNavbar />
+        </div>
         <Toaster />
       </body>
     </html>

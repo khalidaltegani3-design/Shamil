@@ -36,31 +36,9 @@ export default function Home() {
 
   const selectedChatData = chats.find(c => c.id === selectedChat?.id);
 
-  return (
-    <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
-      <div className="flex flex-1 h-full">
-        <aside
-          className={
-            `h-full w-full md:w-80 lg:w-96 flex-shrink-0 border-r bg-card/80 backdrop-blur-sm
-             md:flex flex-col
-             ${selectedChat ? 'hidden' : 'flex'}`
-          }
-        >
-          <ChatList
-            chats={chats}
-            selectedChatId={selectedChat?.id}
-            onSelectChat={(chat) => setSelectedChat(chat)}
-            currentUser={currentUser}
-          />
-        </aside>
-        <main
-          className={
-            `flex-1 flex-col h-full
-             md:flex
-            ${selectedChat ? 'flex' : 'hidden'}`
-          }
-        >
-          {selectedChatData ? (
+  if (selectedChatData) {
+     return (
+        <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
             <ChatView
               key={selectedChatData.id}
               chat={selectedChatData}
@@ -68,21 +46,23 @@ export default function Home() {
               onSendMessage={handleSendMessage}
               onBack={() => setSelectedChat(null)}
             />
-          ) : (
-            <div className="hidden md:flex flex-1 items-center justify-center p-4">
-              <div className="text-center flex flex-col items-center gap-4">
-                <div className="p-4 bg-primary/10 rounded-full">
-                  <MessageSquare className="h-12 w-12 text-primary" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-2xl font-bold">Welcome to Zoliapp Lite</h2>
-                  <p className="text-muted-foreground">Select a conversation to start messaging.</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
+        </div>
+     )
+  }
+
+  return (
+    <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
+        <aside className="h-full w-full flex-shrink-0 flex flex-col">
+           <header className="p-4 border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+                <h1 className="text-2xl font-bold text-primary">Chats</h1>
+            </header>
+            <ChatList
+                chats={chats}
+                selectedChatId={selectedChat?.id}
+                onSelectChat={(chat) => setSelectedChat(chat)}
+                currentUser={currentUser}
+            />
+        </aside>
     </div>
   );
 }

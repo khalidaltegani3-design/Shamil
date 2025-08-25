@@ -4,10 +4,6 @@ import type { Chat, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Search, MessageSquarePlus, CircleDot } from "lucide-react";
-import { Button } from "./ui/button";
-import Link from "next/link";
 import React from "react";
 
 interface ChatListProps {
@@ -21,11 +17,13 @@ const ClientTime = ({ timestamp }: { timestamp: string }) => {
   const [time, setTime] = React.useState("");
 
   React.useEffect(() => {
-    setTime(new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
+    const update = () => setTime(new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
+    update();
   }, [timestamp]);
 
+
   if (!time) {
-    return null;
+    return null; 
   }
 
   return (
@@ -54,13 +52,6 @@ export default function ChatList({ chats, selectedChatId, onSelectChat, currentU
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b">
-        <h1 className="text-2xl font-bold text-primary">Zoliapp Lite</h1>
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search chats..." className="pl-9 bg-background" />
-        </div>
-      </div>
       <ScrollArea className="flex-1">
         <nav className="p-2 space-y-1">
           {chats.map((chat) => {
@@ -95,18 +86,6 @@ export default function ChatList({ chats, selectedChatId, onSelectChat, currentU
           })}
         </nav>
       </ScrollArea>
-       <div className="p-4 border-t space-y-2">
-        <Link href="/status" passHref>
-          <Button className="w-full" variant="outline">
-            <CircleDot className="mr-2 h-4 w-4" />
-            View Status
-          </Button>
-        </Link>
-        <Button className="w-full" variant="outline">
-          <MessageSquarePlus className="mr-2 h-4 w-4" />
-          New Chat
-        </Button>
-      </div>
     </div>
   );
 }

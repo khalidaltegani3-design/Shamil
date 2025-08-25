@@ -51,8 +51,8 @@ export default function ChatView({ chat, currentUser, onSendMessage, onBack }: C
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="flex items-center gap-3 p-3 border-b h-16 flex-shrink-0">
-        <Button onClick={onBack} variant="ghost" size="icon" className="md:hidden">
+      <header className="flex items-center gap-3 p-3 border-b h-16 flex-shrink-0 sticky top-0 bg-card/95 z-10">
+        <Button onClick={onBack} variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
         </Button>
         <Avatar className="h-10 w-10">
@@ -91,7 +91,7 @@ export default function ChatView({ chat, currentUser, onSendMessage, onBack }: C
         </ScrollArea>
       </div>
       
-      <div className="p-4 border-t flex-shrink-0 bg-card/50">
+      <div className="p-4 border-t flex-shrink-0 bg-card/50 sticky bottom-0">
         <MessageInput
           chatId={chat.id}
           onSendMessage={onSendMessage}

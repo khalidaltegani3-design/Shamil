@@ -1,4 +1,4 @@
-import type { User, Chat, Message, Status } from './types';
+import type { User, Chat, Message, Status, Call } from './types';
 
 export const users: User[] = [
   { id: 'user-1', name: 'You', avatarUrl: 'https://placehold.co/100x100.png', isOnline: true },
@@ -139,4 +139,35 @@ export const statuses: Status[] = [
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
     caption: 'Exploring the city.',
   }
+];
+
+export const calls: Call[] = [
+  {
+    id: 'call-1',
+    user: users[2],
+    type: 'incoming',
+    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    duration: '5m 23s',
+  },
+  {
+    id: 'call-2',
+    user: users[4],
+    type: 'outgoing',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    duration: '12m 45s',
+  },
+  {
+    id: 'call-3',
+    user: users[3],
+    type: 'missed',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+    duration: '0m 0s',
+  },
+    {
+    id: 'call-4',
+    user: users[1],
+    type: 'incoming',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(),
+    duration: '2m 10s',
+  },
 ];

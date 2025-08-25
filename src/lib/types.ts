@@ -35,3 +35,11 @@ export interface Status {
   timestamp: string;
   caption: string;
 }
+
+export interface Call {
+  id: string;
+  user: User;
+  type: 'incoming' | 'outgoing' | 'missed';
+  timestamp: string;
+  duration: string;
+}

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, CircleDot, Settings } from "lucide-react";
+import { MessageSquare, CircleDot, Settings, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Chats", icon: MessageSquare },
   { href: "/status", label: "Status", icon: CircleDot },
+  { href: "/calls", label: "Calls", icon: Phone },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

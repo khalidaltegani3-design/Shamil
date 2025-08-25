@@ -229,19 +229,19 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
 
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>Add New Status</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="relative w-full aspect-[9/16] rounded-md overflow-hidden border">
+                <div className="flex-1 flex flex-col justify-between gap-4">
+                    <div className="flex-1 relative w-full rounded-md overflow-hidden border">
                         <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="caption">Caption (optional)</Label>
                         <Input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Add a caption..."/>
                     </div>
-                    <Button onClick={handleSubmit} className="w-full">
+                     <Button onClick={handleSubmit} className="w-full">
                         Post Status
                     </Button>
                 </div>

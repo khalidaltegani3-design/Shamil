@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, CircleDot, Settings, Phone, Clapperboard, PlusSquare } from "lucide-react";
+import { MessageSquare, CircleDot, Settings, Phone, PlusSquare, ChevronUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 const navItems = [
   { href: "/", label: "Chats", icon: MessageSquare },
@@ -15,13 +16,35 @@ const navItems = [
 
 export default function BottomNavbar() {
   const pathname = usePathname();
-  
-  if (pathname === '/create' || pathname === '/view') {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  const isVideoPage = pathname === '/view';
+
+  if (pathname === '/create') {
       return null;
   }
 
+  if (isVideoPage && !isExpanded) {
+    return (
+        <div 
+            className="fixed bottom-0 left-0 right-0 h-8 flex justify-center items-center z-20 cursor-pointer bg-gradient-to-t from-black/50 to-transparent"
+            onClick={() => setIsExpanded(true)}
+        >
+            <div className="w-16 h-1 bg-white/70 rounded-full"/>
+        </div>
+    );
+  }
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t h-16 md:hidden z-20">
+    <nav className={cn(
+        "fixed bottom-0 left-0 right-0 bg-card border-t h-16 md:hidden z-20",
+        isVideoPage && "bg-card/80 backdrop-blur-sm"
+    )}>
+      {isVideoPage && (
+         <button onClick={() => setIsExpanded(false)} className="absolute -top-8 right-2 bg-card/80 text-foreground rounded-full p-1 z-30">
+            <X className="h-4 w-4"/>
+         </button>
+      )}
       <div className="flex justify-around items-center h-full">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;

@@ -18,7 +18,13 @@ const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (
   const [timeAgo, setTimeAgo] = React.useState('');
 
   React.useEffect(() => {
-    const update = () => setTimeAgo(formatDistanceToNow(new Date(timestamp)));
+    const update = () => {
+        try {
+            setTimeAgo(formatDistanceToNow(new Date(timestamp)))
+        } catch (e) {
+            // ignore invalid date error
+        }
+    };
     update();
     const interval = setInterval(update, 60000); // Update every minute
     return () => clearInterval(interval);
@@ -35,8 +41,10 @@ const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (
 export default function StatusPage() {
   const [statuses, setStatuses] = React.useState<Status[]>(initialStatuses);
   const [selectedStatus, setSelectedStatus] = React.useState<Status | null>(null);
-  const [isAddStatusOpen, setIsAddStatusOpen] = React.useState(false);
-  
+  const [statusDraft, setStatusDraft] = React.useState<{image: File, previewUrl: string} | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const currentUser = users[0];
   const myStatus = statuses.find(s => s.user.id === currentUser.id);
   const friendsStatuses = statuses.filter(s => s.user.id !== currentUser.id);
@@ -50,6 +58,19 @@ export default function StatusPage() {
       timestamp: new Date().toISOString(),
     };
     setStatuses(prev => [newStatus, ...prev]);
+    setStatusDraft(null); // Clear draft after posting
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const previewUrl = URL.createObjectURL(file);
+      setStatusDraft({ image: file, previewUrl });
+    }
+  };
+
+  const handlePlusClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -67,8 +88,15 @@ export default function StatusPage() {
                   <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*"
+                />
                  <button 
-                  onClick={() => setIsAddStatusOpen(true)}
+                  onClick={handlePlusClick}
                   className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 hover:bg-primary/90 transition-colors">
                     <Plus className="h-4 w-4" />
                 </button>
@@ -121,8 +149,8 @@ export default function StatusPage() {
         onClose={() => setSelectedStatus(null)} 
       />
       <AddStatusDialog 
-        isOpen={isAddStatusOpen} 
-        onClose={() => setIsAddStatusOpen(false)}
+        statusDraft={statusDraft} 
+        onClose={() => setStatusDraft(null)}
         onAddStatus={handleAddStatus}
       />
     </div>
@@ -156,7 +184,7 @@ function StatusViewer({ status, onClose }: { status: Status | null, onClose: () 
              <Image 
                 src={status.imageUrl} 
                 alt={status.caption} 
-                layout="fill"
+                fill
                 objectFit="contain"
                 data-ai-hint="status background"
              />
@@ -174,52 +202,46 @@ function StatusViewer({ status, onClose }: { status: Status | null, onClose: () 
 }
 
 
-function AddStatusDialog({ isOpen, onClose, onAddStatus }: { isOpen: boolean, onClose: () => void, onAddStatus: (caption: string, imageUrl: string) => void }) {
+function AddStatusDialog({ statusDraft, onClose, onAddStatus }: { 
+    statusDraft: {image: File, previewUrl: string} | null, 
+    onClose: () => void, 
+    onAddStatus: (caption: string, imageUrl: string) => void 
+}) {
     const [caption, setCaption] = React.useState('');
-    const [image, setImage] = React.useState<File | null>(null);
-    const [preview, setPreview] = React.useState<string | null>(null);
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setImage(file);
-            setPreview(URL.createObjectURL(file));
+    React.useEffect(() => {
+        // Reset caption when a new image is selected
+        if (statusDraft) {
+            setCaption('');
         }
-    };
+    }, [statusDraft]);
     
     const handleSubmit = () => {
-        // In a real app, you'd upload the image and get a URL.
-        // For this mock, we'll just use the preview URL.
-        if (preview) {
-            onAddStatus(caption, preview);
+        if (statusDraft) {
+            // In a real app, you'd upload statusDraft.image and get a URL.
+            // For this mock, we'll just use the preview URL.
+            onAddStatus(caption, statusDraft.previewUrl);
             onClose();
-            setCaption('');
-            setImage(null);
-            setPreview(null);
         }
     };
 
+    if (!statusDraft) return null;
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={!!statusDraft} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Add New Status</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="picture">Picture</Label>
-                        <Input id="picture" type="file" accept="image/*" onChange={handleImageChange} />
+                    <div className="relative w-full aspect-[9/16] rounded-md overflow-hidden border">
+                        <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />
                     </div>
-                    {preview && (
-                        <div className="relative w-full aspect-[9/16] rounded-md overflow-hidden border">
-                            <Image src={preview} alt="Image preview" layout="fill" objectFit="cover" />
-                        </div>
-                    )}
                     <div className="space-y-2">
                         <Label htmlFor="caption">Caption (optional)</Label>
                         <Input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Add a caption..."/>
                     </div>
-                    <Button onClick={handleSubmit} disabled={!image} className="w-full">
+                    <Button onClick={handleSubmit} className="w-full">
                         Post Status
                     </Button>
                 </div>

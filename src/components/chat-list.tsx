@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Search, MessageSquarePlus, CircleDot } from "lucide-react";
 import { Button } from "./ui/button";
 import Link from "next/link";
+import React from "react";
 
 interface ChatListProps {
   chats: Chat[];
@@ -15,6 +16,25 @@ interface ChatListProps {
   onSelectChat: (chat: Chat) => void;
   currentUser: User;
 }
+
+const ClientTime = ({ timestamp }: { timestamp: string }) => {
+  const [time, setTime] = React.useState("");
+
+  React.useEffect(() => {
+    setTime(new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
+  }, [timestamp]);
+
+  if (!time) {
+    return null;
+  }
+
+  return (
+    <time className="text-xs text-muted-foreground self-start">
+      {time}
+    </time>
+  );
+};
+
 
 export default function ChatList({ chats, selectedChatId, onSelectChat, currentUser }: ChatListProps) {
   const getChatDisplayInfo = (chat: Chat) => {
@@ -68,9 +88,7 @@ export default function ChatList({ chats, selectedChatId, onSelectChat, currentU
                   </p>
                 </div>
                 {lastMessage && (
-                  <time className="text-xs text-muted-foreground self-start">
-                    {new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </time>
+                  <ClientTime timestamp={lastMessage.timestamp} />
                 )}
               </button>
             );

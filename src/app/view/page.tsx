@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useEffect, useState } from 'react';
-import { videos as initialVideos, type Video, users } from '@/lib/mock-data';
+import { videos as initialVideos, type Video, users, chats as initialChats, type Chat, type Message } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Send, Music, Camera, X } from 'lucide-react';
@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface Comment {
     id: string;
@@ -19,18 +21,113 @@ interface Comment {
     timestamp: string;
 }
 
+const ShareDialog = ({
+  open,
+  onOpenChange,
+  chats,
+  onShare,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  chats: Chat[];
+  onShare: (selectedChatIds: string[]) => void;
+}) => {
+  const [selectedChats, setSelectedChats] = useState<string[]>([]);
+  const { toast } = useToast();
+
+  const handleSelectChat = (chatId: string) => {
+    setSelectedChats(prev =>
+      prev.includes(chatId)
+        ? prev.filter(id => id !== chatId)
+        : [...prev, chatId]
+    );
+  };
+
+  const handleSend = () => {
+    if (selectedChats.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "No selection",
+            description: "Please select at least one chat to share with.",
+        });
+        return;
+    }
+    onShare(selectedChats);
+    onOpenChange(false);
+    setSelectedChats([]);
+  }
+
+  const getChatDisplayInfo = (chat: Chat) => {
+    if (chat.type === 'group') {
+      return {
+        avatarUrl: chat.avatarUrl,
+        name: chat.name,
+      };
+    } else {
+      const otherUser = chat.members.find(member => member.id !== users[0].id);
+      return {
+        avatarUrl: otherUser?.avatarUrl,
+        name: otherUser?.name || 'Unknown User',
+      };
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="h-[70vh] flex flex-col p-0">
+            <DialogHeader className="p-4 border-b">
+                <DialogTitle>Share with...</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="flex-1 px-4">
+                <div className="space-y-2">
+                    {chats.map(chat => {
+                        const { name, avatarUrl } = getChatDisplayInfo(chat);
+                        return (
+                            <div key={chat.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                               <Checkbox 
+                                id={`chat-${chat.id}`} 
+                                checked={selectedChats.includes(chat.id)}
+                                onCheckedChange={() => handleSelectChat(chat.id)}
+                               />
+                               <Label htmlFor={`chat-${chat.id}`} className="flex-1 flex items-center gap-3 cursor-pointer">
+                                 <Avatar className="h-10 w-10">
+                                    <AvatarImage src={avatarUrl} data-ai-hint="avatar chat" />
+                                    <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{name}</span>
+                               </Label>
+                            </div>
+                        )
+                    })}
+                </div>
+            </ScrollArea>
+            <DialogFooter className="p-4 border-t">
+                <Button onClick={handleSend} className="w-full" disabled={selectedChats.length === 0}>
+                   <Send className="mr-2 h-4 w-4" /> Send
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  )
+
+}
+
+
 const VideoCard = ({ 
     video, 
     onLike, 
     onComment,
+    onShare,
 }: { 
     video: Video, 
     onLike: (videoId: string) => void,
     onComment: (videoId: string, commentText: string) => void,
+    onShare: (videoId: string, chatIds: string[]) => void,
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isLiked, setIsLiked] = useState(false);
     const [showComments, setShowComments] = useState(false);
+    const [showShareDialog, setShowShareDialog] = useState(false);
     const [newComment, setNewComment] = useState("");
     const { toast } = useToast();
 
@@ -73,6 +170,10 @@ const VideoCard = ({
             toast({ title: "Comment posted!" });
         }
     };
+
+    const handleShare = (selectedChatIds: string[]) => {
+        onShare(video.id, selectedChatIds);
+    }
     
     // Ensure comments is an array
     const comments = Array.isArray(video.commentsData) ? video.commentsData : [];
@@ -113,7 +214,7 @@ const VideoCard = ({
                             <MessageCircle className="h-8 w-8" />
                             <span className="text-xs font-semibold">{video.comments}</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
+                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowShareDialog(true)}>
                             <Send className="h-8 w-8" />
                             <span className="text-xs font-semibold">{video.shares}</span>
                         </Button>
@@ -164,6 +265,12 @@ const VideoCard = ({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <ShareDialog 
+                open={showShareDialog}
+                onOpenChange={setShowShareDialog}
+                chats={initialChats}
+                onShare={handleShare}
+            />
         </div>
     );
 };
@@ -171,6 +278,7 @@ const VideoCard = ({
 
 export default function ViewPage() {
     const [videos, setVideos] = useState<Video[]>(initialVideos);
+    const { toast } = useToast();
 
     const handleLike = (videoId: string) => {
         setVideos(prevVideos => prevVideos.map(v => {
@@ -203,6 +311,24 @@ export default function ViewPage() {
         }));
     };
 
+    const handleShare = (videoId: string, chatIds: string[]) => {
+        setVideos(prevVideos => prevVideos.map(v => {
+            if (v.id === videoId) {
+                return { ...v, shares: v.shares + chatIds.length };
+            }
+            return v;
+        }));
+
+        toast({
+            title: "Video Shared!",
+            description: `Successfully shared the video to ${chatIds.length} chat(s).`
+        })
+
+        // Here you would typically also update the chat data in your backend/state management
+        // to add the video as a message. This is omitted for simplicity in this mock UI.
+        console.log("Sharing video", videoId, "to chats", chatIds);
+    };
+
     return (
         <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
            <div className="absolute top-4 right-4 z-10">
@@ -218,6 +344,7 @@ export default function ViewPage() {
                     video={video} 
                     onLike={handleLike}
                     onComment={handleComment}
+                    onShare={handleShare}
                 />
            ))}
         </div>

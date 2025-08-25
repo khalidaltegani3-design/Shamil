@@ -1,11 +1,16 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Clapperboard, Music, Sparkles, Type, X } from 'lucide-react';
+import { Camera, Clapperboard, Music, Sparkles, Type, X, Play, Pause, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Slider } from '@/components/ui/slider';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { musicTracks as initialMusicTracks, type MusicTrack } from '@/lib/mock-data';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const editOptions = [
   { icon: Type, label: 'Text' },
@@ -14,11 +19,99 @@ const editOptions = [
   { icon: Clapperboard, label: 'Clips' },
 ];
 
+const MusicLibraryDialog = ({ 
+    open, 
+    onOpenChange, 
+    onSelectTrack 
+}: { 
+    open: boolean; 
+    onOpenChange: (open: boolean) => void; 
+    onSelectTrack: (track: MusicTrack) => void;
+}) => {
+    const [musicTracks] = useState<MusicTrack[]>(initialMusicTracks);
+    const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const handlePlayPause = (track: MusicTrack) => {
+        if (audioRef.current && selectedTrackId === track.id) {
+            if (isPlaying) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+            } else {
+                audioRef.current.play();
+                setIsPlaying(true);
+            }
+        } else {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            const newAudio = new Audio(track.url);
+            newAudio.play();
+            audioRef.current = newAudio;
+            setSelectedTrackId(track.id);
+            setIsPlaying(true);
+        }
+    };
+    
+    const handleSelect = (track: MusicTrack) => {
+        onSelectTrack(track);
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        setIsPlaying(false);
+        onOpenChange(false);
+    }
+
+    useEffect(() => {
+        const currentAudio = audioRef.current;
+        return () => {
+            currentAudio?.pause();
+        };
+    }, []);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="h-[70vh] flex flex-col p-0">
+                <DialogHeader className="p-4 border-b">
+                    <DialogTitle>Add Sound</DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="flex-1">
+                    <div className="p-2 space-y-1">
+                        {musicTracks.map(track => (
+                            <div key={track.id} className="flex items-center p-2 rounded-lg hover:bg-accent/50 transition-colors gap-3">
+                                <Avatar className="h-12 w-12">
+                                    <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="music album cover" />
+                                    <AvatarFallback>{track.artist.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className='flex-1'>
+                                    <p className="font-semibold">{track.title}</p>
+                                    <p className="text-sm text-muted-foreground">{track.artist}</p>
+                                    <p className="text-xs text-muted-foreground">{track.duration}</p>
+                                </div>
+                                <Button size="icon" variant="ghost" onClick={() => handlePlayPause(track)}>
+                                    {selectedTrackId === track.id && isPlaying ? <Pause className="h-5 w-5"/> : <Play className="h-5 w-5"/>}
+                                </Button>
+                                <Button onClick={() => handleSelect(track)}>
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Add
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function CreateVideoPage() {
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isMusicLibraryOpen, setIsMusicLibraryOpen] = useState(false);
+  const [selectedSound, setSelectedSound] = useState<MusicTrack | null>(null);
   
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -46,6 +139,10 @@ export default function CreateVideoPage() {
     // Placeholder for actual recording logic
     toast({ title: isRecording ? "Recording Stopped" : "Recording Started" });
   };
+  
+  const handleSelectTrack = (track: MusicTrack) => {
+    setSelectedSound(track);
+  }
 
   return (
     <div className="h-full w-full bg-black text-white flex flex-col">
@@ -53,10 +150,10 @@ export default function CreateVideoPage() {
         <Button variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 rounded-full">
             <X className="h-6 w-6"/>
         </Button>
-        <div className="flex items-center gap-2 p-2 rounded-full bg-black/30">
+        <Button onClick={() => setIsMusicLibraryOpen(true)} className="flex items-center gap-2 p-2 rounded-full bg-black/30 h-auto">
             <Music className="h-5 w-5"/>
-            <span className="text-sm font-semibold">Add sound</span>
-        </div>
+            <span className="text-sm font-semibold truncate max-w-[150px]">{selectedSound?.title || 'Add sound'}</span>
+        </Button>
         <div>{/* Spacer */}</div>
       </header>
       
@@ -100,6 +197,11 @@ export default function CreateVideoPage() {
              <Button variant="ghost" className='text-white'>Templates</Button>
         </div>
       </footer>
+       <MusicLibraryDialog 
+        open={isMusicLibraryOpen}
+        onOpenChange={setIsMusicLibraryOpen}
+        onSelectTrack={handleSelectTrack}
+      />
     </div>
   );
 }

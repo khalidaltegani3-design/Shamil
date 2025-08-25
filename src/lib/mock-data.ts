@@ -1,4 +1,4 @@
-import type { User, Chat, Message, Status, Call, Video, Comment } from './types';
+import type { User, Chat, Message, Status, Call, Video, Comment, MusicTrack } from './types';
 
 export const users: User[] = [
   { id: 'user-1', name: 'You', avatarUrl: 'https://placehold.co/100x100.png', isOnline: true },
@@ -225,4 +225,42 @@ export const videos: Video[] = [
         }
     ],
   },
+];
+
+export const musicTracks: MusicTrack[] = [
+  {
+    id: 'music-1',
+    title: 'Upbeat Funk',
+    artist: 'GrooveMaster',
+    url: 'http://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/background%20music.mp3',
+    duration: '2:30'
+  },
+  {
+    id: 'music-2',
+    title: 'Chill Lo-fi',
+    artist: 'BeatScaper',
+    url: 'http://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/music.mp3',
+    duration: '3:15'
+  },
+  {
+    id: 'music-3',
+    title: 'Cinematic Epic',
+    artist: 'Orchestron',
+    url: 'http://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/soundtrack.mp3',
+    duration: '4:05'
+  },
+  {
+    id: 'music-4',
+    title: 'Acoustic Folk',
+    artist: 'Wanderer',
+    url: 'http://commondatastorage.googleapis.com/codeskulptor-assets/week7-brrring.m4a',
+    duration: '2:55'
+  },
+  {
+    id: 'music-5',
+    title: '8-bit Adventure',
+    artist: 'Pixel-Pusha',
+    url: 'http://commondatastorage.googleapis.com/u/codeskulptor-demos/riceracer_assets/music/menu.ogg',
+    duration: '1:45'
+  }
 ];

@@ -61,3 +61,11 @@ export interface Video {
   shares: number;
   commentsData?: Comment[];
 }
+
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+  duration: string;
+}

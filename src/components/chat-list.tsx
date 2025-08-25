@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Search, MessageSquarePlus } from "lucide-react";
+import { Search, MessageSquarePlus, CircleDot } from "lucide-react";
 import { Button } from "./ui/button";
+import Link from "next/link";
 
 interface ChatListProps {
   chats: Chat[];
@@ -76,7 +77,13 @@ export default function ChatList({ chats, selectedChatId, onSelectChat, currentU
           })}
         </nav>
       </ScrollArea>
-       <div className="p-4 border-t">
+       <div className="p-4 border-t space-y-2">
+        <Link href="/status" passHref>
+          <Button className="w-full" variant="outline">
+            <CircleDot className="mr-2 h-4 w-4" />
+            View Status
+          </Button>
+        </Link>
         <Button className="w-full" variant="outline">
           <MessageSquarePlus className="mr-2 h-4 w-4" />
           New Chat

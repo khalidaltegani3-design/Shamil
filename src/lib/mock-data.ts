@@ -1,4 +1,4 @@
-import type { User, Chat, Message } from './types';
+import type { User, Chat, Message, Status } from './types';
 
 export const users: User[] = [
   { id: 'user-1', name: 'You', avatarUrl: 'https://placehold.co/100x100.png', isOnline: true },
@@ -44,7 +44,7 @@ const messages: Message[] = [
       }
     },
   ];
-  
+
 const groupMessages: Message[] = [
     {
         id: 'g-msg-1',
@@ -114,5 +114,29 @@ export const chats: Chat[] = [
             reactions: [],
         }
     ]
+  }
+];
+
+export const statuses: Status[] = [
+  {
+    id: 'status-1',
+    user: users[1],
+    imageUrl: 'https://placehold.co/1080x1920.png',
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    caption: 'Beautiful sunset today!',
+  },
+  {
+    id: 'status-2',
+    user: users[2],
+    imageUrl: 'https://placehold.co/1080x1920.png',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+    caption: 'Coding on a Saturday night.',
+  },
+  {
+    id: 'status-3',
+    user: users[3],
+    imageUrl: 'https://placehold.co/1080x1920.png',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+    caption: 'Exploring the city.',
   }
 ];

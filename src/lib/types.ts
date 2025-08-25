@@ -27,3 +27,11 @@ export interface Chat {
   members: User[];
   messages: Message[];
 }
+
+export interface Status {
+  id: string;
+  user: User;
+  imageUrl: string;
+  timestamp: string;
+  caption: string;
+}

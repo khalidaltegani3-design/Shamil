@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    // Allow blob URLs for image previews
+    domains: ['blob'],
   },
 };
 

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Bell, ChevronRight, HelpCircle, Image as ImageIcon, KeyRound, Lock, Palette, UserCircle } from "lucide-react"
 import Link from "next/link"
+import React from "react"
 
 const settingsOptions = [
     { icon: UserCircle, title: "Account", description: "Privacy, security, change number", href:"#" },

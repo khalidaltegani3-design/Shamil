@@ -331,7 +331,7 @@ export default function ViewPage() {
 
     return (
         <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
-           <div className="absolute top-4 right-4 z-10">
+           <div className="absolute top-4 left-4 z-10">
                 <Link href="/create">
                     <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
                         <Camera className="h-6 w-6" />

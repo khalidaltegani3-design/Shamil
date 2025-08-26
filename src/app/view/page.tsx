@@ -189,9 +189,30 @@ const VideoCard = ({
                 className="h-full w-full object-cover"
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
-            <div className="absolute bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
+            
+            <div className="absolute bottom-16 right-0 p-4 flex flex-col items-center space-y-4 z-10">
+                <Link href="/create">
+                    <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
+                        <Camera className="h-6 w-6" />
+                    </Button>
+                </Link>
+                <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
+                    <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                    <span className="text-xs font-semibold">{video.likes}</span>
+                </Button>
+                <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowComments(true)}>
+                    <MessageCircle className="h-8 w-8" />
+                    <span className="text-xs font-semibold">{video.comments}</span>
+                </Button>
+                <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowShareDialog(true)}>
+                    <Send className="h-8 w-8" />
+                    <span className="text-xs font-semibold">{video.shares}</span>
+                </Button>
+            </div>
+
+            <div className="absolute bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
                 <div className="flex items-end">
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-2 pr-16">
                         <div className="flex items-center gap-2">
                             <Avatar className="h-10 w-10 border-2 border-white">
                                 <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
@@ -204,25 +225,6 @@ const VideoCard = ({
                             <Music className="h-4 w-4" />
                             <p>Original Audio - {video.user.name}</p>
                         </div>
-                    </div>
-                    <div className="flex flex-col items-center space-y-4">
-                        <Link href="/create">
-                            <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
-                                <Camera className="h-6 w-6" />
-                            </Button>
-                        </Link>
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
-                            <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                            <span className="text-xs font-semibold">{video.likes}</span>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowComments(true)}>
-                            <MessageCircle className="h-8 w-8" />
-                            <span className="text-xs font-semibold">{video.comments}</span>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowShareDialog(true)}>
-                            <Send className="h-8 w-8" />
-                            <span className="text-xs font-semibold">{video.shares}</span>
-                        </Button>
                     </div>
                 </div>
             </div>

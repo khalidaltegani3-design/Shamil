@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { videos as initialVideos, type Video, users, chats as initialChats, type Chat, type Message } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Send, Music, Camera, X } from 'lucide-react';
+import { Heart, MessageCircle, Send, Music, Camera, X, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -189,38 +189,44 @@ const VideoCard = ({
                 className="h-full w-full object-cover"
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
-            
-            <div className="absolute bottom-16 right-0 p-4 flex flex-col items-center space-y-4 z-10">
-                <Link href={`/profile/${video.user.id}`}>
-                    <Avatar className="h-12 w-12 border-2 border-white">
-                        <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
-                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                </Link>
+
+            <header className="absolute top-4 right-4 z-10">
                 <Link href="/create">
-                    <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
-                        <Camera className="h-6 w-6" />
+                    <Button variant="ghost" size="icon" className="text-white bg-black/30 hover:bg-black/50 rounded-full h-10 w-10">
+                        <Camera className="h-5 w-5" />
                     </Button>
                 </Link>
+            </header>
+            
+            <div className="absolute bottom-16 right-0 p-4 flex flex-col items-center space-y-5 z-10">
                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
                     <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                    <span className="text-xs font-semibold">{video.likes}</span>
+                    <span className="text-xs font-semibold">{video.likes.toLocaleString()}</span>
                 </Button>
                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowComments(true)}>
                     <MessageCircle className="h-8 w-8" />
-                    <span className="text-xs font-semibold">{video.comments}</span>
+                    <span className="text-xs font-semibold">{video.comments.toLocaleString()}</span>
                 </Button>
                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={() => setShowShareDialog(true)}>
                     <Send className="h-8 w-8" />
-                    <span className="text-xs font-semibold">{video.shares}</span>
+                    <span className="text-xs font-semibold">{video.shares.toLocaleString()}</span>
                 </Button>
+                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
+                    <MoreHorizontal className="h-8 w-8" />
+                </Button>
+                <div className="mt-2">
+                     <Avatar className="h-10 w-10 border-2 border-white">
+                        <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
+                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </div>
             </div>
 
-            <div className="absolute bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-white">
+            <div className="absolute bottom-16 left-0 p-4 bg-gradient-to-t from-black/60 via-black/30 to-transparent w-full text-white">
                 <div className="flex items-end">
-                    <div className="flex-1 space-y-2 pr-16">
+                    <div className="flex-1 space-y-1.5 pr-16">
                         <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2">
-                           <h3 className="font-bold text-lg">@{video.user.name}</h3>
+                           <h3 className="font-bold text-base">@{video.user.name}</h3>
                         </Link>
                         <p className="text-sm">{video.caption}</p>
                         <div className="flex items-center gap-2 text-sm">
@@ -352,3 +358,5 @@ export default function ViewPage() {
         </div>
     );
 }
+
+    

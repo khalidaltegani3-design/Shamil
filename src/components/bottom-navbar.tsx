@@ -36,7 +36,7 @@ export default function BottomNavbar() {
 
   return (
     <nav className={cn(
-        "fixed bottom-0 left-0 right-0 bg-card border-t h-16 md:hidden z-20",
+        "fixed bottom-0 left-0 right-0 bg-card border-t h-16 z-20",
         isVideoPage && "bg-card/80 backdrop-blur-sm"
     )}>
       {isVideoPage && (
@@ -44,7 +44,7 @@ export default function BottomNavbar() {
             <X className="h-4 w-4"/>
          </button>
       )}
-      <div className="flex justify-around items-center h-full">
+      <div className="flex justify-around items-center h-full max-w-md mx-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
 

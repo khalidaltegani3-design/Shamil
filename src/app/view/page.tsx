@@ -189,16 +189,19 @@ const VideoCard = ({
                 className="h-full w-full object-cover"
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
-
-            <header className="absolute top-4 right-4 z-10">
-                <Link href="/create">
-                    <Button variant="ghost" size="icon" className="text-white bg-black/30 hover:bg-black/50 rounded-full h-10 w-10">
-                        <Camera className="h-5 w-5" />
+            
+            <div className="absolute bottom-20 right-2 p-4 flex flex-col items-center space-y-5 z-10">
+                <Link href={`/profile/${video.user.id}`}>
+                    <Avatar className="h-12 w-12 border-2 border-white">
+                        <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
+                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
+                 <Link href="/create">
+                    <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
+                        <Camera className="h-8 w-8" />
                     </Button>
                 </Link>
-            </header>
-            
-            <div className="absolute bottom-16 right-0 p-4 flex flex-col items-center space-y-5 z-10">
                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
                     <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                     <span className="text-xs font-semibold">{video.likes.toLocaleString()}</span>
@@ -214,12 +217,6 @@ const VideoCard = ({
                  <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
                     <MoreHorizontal className="h-8 w-8" />
                 </Button>
-                <div className="mt-2">
-                     <Avatar className="h-10 w-10 border-2 border-white">
-                        <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
-                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                </div>
             </div>
 
             <div className="absolute bottom-16 left-0 p-4 bg-gradient-to-t from-black/60 via-black/30 to-transparent w-full text-white">
@@ -358,5 +355,7 @@ export default function ViewPage() {
         </div>
     );
 }
+
+    
 
     

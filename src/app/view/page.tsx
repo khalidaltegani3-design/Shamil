@@ -210,7 +210,7 @@ const VideoCard = ({
                 </Button>
             </div>
 
-            <div className="absolute bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
+            <div className="absolute bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-2 pr-16">
                         <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2">

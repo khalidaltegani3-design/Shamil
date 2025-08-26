@@ -191,6 +191,12 @@ const VideoCard = ({
             ></video>
             
             <div className="absolute bottom-16 right-0 p-4 flex flex-col items-center space-y-4 z-10">
+                <Link href={`/profile/${video.user.id}`}>
+                    <Avatar className="h-12 w-12 border-2 border-white">
+                        <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
+                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
                 <Link href="/create">
                     <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
                         <Camera className="h-6 w-6" />
@@ -214,11 +220,7 @@ const VideoCard = ({
                 <div className="flex items-end">
                     <div className="flex-1 space-y-2 pr-16">
                         <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2">
-                            <Avatar className="h-10 w-10 border-2 border-white">
-                                <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
-                                <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <h3 className="font-bold text-lg">@{video.user.name}</h3>
+                           <h3 className="font-bold text-lg">@{video.user.name}</h3>
                         </Link>
                         <p className="text-sm">{video.caption}</p>
                         <div className="flex items-center gap-2 text-sm">

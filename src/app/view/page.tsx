@@ -189,7 +189,7 @@ const VideoCard = ({
                 className="h-full w-full object-cover"
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
+            <div className="absolute bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">

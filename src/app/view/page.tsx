@@ -213,13 +213,13 @@ const VideoCard = ({
             <div className="absolute bottom-16 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-2 pr-16">
-                        <div className="flex items-center gap-2">
+                        <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2">
                             <Avatar className="h-10 w-10 border-2 border-white">
                                 <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
                                 <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <h3 className="font-bold text-lg">@{video.user.name}</h3>
-                        </div>
+                        </Link>
                         <p className="text-sm">{video.caption}</p>
                         <div className="flex items-center gap-2 text-sm">
                             <Music className="h-4 w-4" />

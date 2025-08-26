@@ -17,11 +17,12 @@ export default function BottomNavbar() {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = React.useState(false);
 
-  const isVideoPage = pathname === '/view';
-
-  if (pathname === '/create') {
+  // Don't show navbar on profile pages or create page
+  if (pathname.startsWith('/profile/') || pathname === '/create') {
       return null;
   }
+  
+  const isVideoPage = pathname === '/view';
 
   if (isVideoPage && !isExpanded) {
     return (
@@ -37,6 +38,7 @@ export default function BottomNavbar() {
   return (
     <nav className={cn(
         "fixed bottom-0 left-0 right-0 bg-card border-t h-16 z-20",
+        "max-w-md mx-auto",
         isVideoPage && "bg-card/80 backdrop-blur-sm"
     )}>
       {isVideoPage && (

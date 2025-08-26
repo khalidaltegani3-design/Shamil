@@ -81,7 +81,7 @@ export default function ChatView({ chat, currentUser, onSendMessage, onBack }: C
 
       <div className="flex-1 overflow-y-auto">
          <ScrollArea className="h-full" ref={scrollAreaRef}>
-             <div className="p-4 md:p-6 space-y-6">
+             <div className="p-4 md:p-6 space-y-4">
                 {chat.messages.map((message) => (
                     <MessageComponent
                         key={message.id}

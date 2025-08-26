@@ -28,10 +28,10 @@ export default function MessageComponent({ message, isSender, onReply }: Message
       <div className={cn("flex flex-col max-w-xs md:max-w-md", isSender ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "relative rounded-xl px-4 py-3 shadow-sm",
+            "relative rounded-2xl px-4 py-3 shadow-md",
             isSender
-              ? "bg-primary text-primary-foreground rounded-br-none"
-              : "bg-card text-card-foreground rounded-bl-none"
+              ? "bg-primary text-primary-foreground rounded-br-sm"
+              : "bg-card text-card-foreground rounded-bl-sm"
           )}
         >
           {!isSender && <p className="text-xs font-semibold text-primary mb-1">{message.sender.name}</p>}

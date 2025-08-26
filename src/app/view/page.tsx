@@ -206,6 +206,11 @@ const VideoCard = ({
                         </div>
                     </div>
                     <div className="flex flex-col items-center space-y-4">
+                        <Link href="/create">
+                            <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
+                                <Camera className="h-6 w-6" />
+                            </Button>
+                        </Link>
                         <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
                             <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                             <span className="text-xs font-semibold">{video.likes}</span>
@@ -331,13 +336,6 @@ export default function ViewPage() {
 
     return (
         <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
-           <div className="absolute top-4 left-4 z-10">
-                <Link href="/create">
-                    <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-12 w-12">
-                        <Camera className="h-6 w-6" />
-                    </Button>
-                </Link>
-           </div>
            {videos.map(video => (
                <VideoCard 
                     key={video.id} 

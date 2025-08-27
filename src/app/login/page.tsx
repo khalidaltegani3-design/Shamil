@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,13 @@ import { useRouter } from 'next/navigation';
 import { app } from '@/lib/firebase';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 
+// Define recaptcha verifier on the window object
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier;
+  }
+}
+
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -19,22 +26,24 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   
-  // Need to use 'any' type for auth as the types between client and admin SDKs can cause issues
   const [auth, setAuth] = useState<any>(null);
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setAuth(getAuth(app));
   }, []);
   
   useEffect(() => {
-    if (!auth) return;
+    if (!auth || !recaptchaContainerRef.current) return;
 
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        }
-    });
+    if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+            'size': 'invisible',
+            'callback': (response: any) => {
+              // reCAPTCHA solved, allow signInWithPhoneNumber.
+            }
+        });
+    }
   }, [auth]);
 
   const handleSendCode = async () => {
@@ -107,7 +116,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-      <div id="recaptcha-container"></div>
+      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Welcome to Zoliapp</CardTitle>

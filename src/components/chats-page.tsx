@@ -6,7 +6,8 @@ import { chats as initialChats, users, type Chat, type Message } from '@/lib/moc
 import ChatList from '@/components/chat-list';
 import ChatView from '@/components/chat-view';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { MoreVertical, Search } from 'lucide-react';
+import { Button } from './ui/button';
 
 
 export default function ChatsPage() {
@@ -56,12 +57,18 @@ export default function ChatsPage() {
   return (
     <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
         <aside className="h-full w-full flex-shrink-0 flex flex-col">
-             <div className="p-3 border-b bg-card/95 backdrop-blur-sm sticky top-0 z-10">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="Search chats..." className="pl-10" />
+             <header className="flex items-center justify-between gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/90 backdrop-blur-sm sticky top-0 z-20">
+                <h1 className="text-xl font-bold text-primary">Zoliapp</h1>
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input placeholder="Search..." className="pl-10 w-full" />
+                    </div>
+                     <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-5 w-5" />
+                    </Button>
                 </div>
-            </div>
+            </header>
             <ChatList
                 chats={chats}
                 selectedChatId={selectedChat?.id}

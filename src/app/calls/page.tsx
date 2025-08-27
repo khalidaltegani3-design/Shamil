@@ -46,13 +46,6 @@ export default function CallsPage() {
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
-      <header className="flex items-center justify-between gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <h1 className="text-xl font-bold">Calls</h1>
-        <Button variant="ghost" size="icon">
-            <Phone className="h-5 w-5"/>
-        </Button>
-      </header>
-      
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {calls.map(call => (

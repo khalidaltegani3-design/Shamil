@@ -100,13 +100,6 @@ export default function StatusPage() {
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
-      <header className="flex items-center justify-between gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <h1 className="text-xl font-bold">Status</h1>
-        <Button variant="ghost" size="icon" onClick={handlePlusClick}>
-            <Camera className="h-5 w-5"/>
-        </Button>
-      </header>
-      
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
           <div className="flex items-center gap-4 w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors">
@@ -401,4 +394,3 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
         </Dialog>
     );
 }
-

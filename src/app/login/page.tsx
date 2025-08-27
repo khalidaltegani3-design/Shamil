@@ -28,7 +28,6 @@ export default function LoginPage() {
   const router = useRouter();
   
   const [auth, setAuth] = useState<Auth | null>(null);
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const authInstance = getAuth(app);
@@ -36,17 +35,15 @@ export default function LoginPage() {
   }, []);
 
   const setupRecaptcha = (authInstance: Auth) => {
-    if (!recaptchaContainerRef.current) return null;
-    
-    // Cleanup previous instance if it exists
     if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+      window.recaptchaVerifier.clear();
     }
-
-    const verifier = new RecaptchaVerifier(authInstance, recaptchaContainerRef.current, {
+    
+    const verifier = new RecaptchaVerifier(authInstance, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
           // reCAPTCHA solved, allow signInWithPhoneNumber.
+          console.log("reCAPTCHA solved");
         }
     });
     return verifier;
@@ -69,9 +66,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
         const appVerifier = setupRecaptcha(auth);
-        if (!appVerifier) {
-            throw new Error("reCAPTCHA container not found.");
-        }
         
         const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
         
@@ -90,10 +84,14 @@ export default function LoginPage() {
             title: 'Failed to Send Code',
             description: (error as Error).message || 'Could not send verification code. Please try again.',
         });
+        
         // Reset reCAPTCHA on error
         window.recaptchaVerifier?.render().then((widgetId) => {
             // @ts-ignore
-            window.grecaptcha?.reset(widgetId);
+            if (window.grecaptcha) {
+              // @ts-ignore
+              window.grecaptcha.reset(widgetId);
+            }
         })
     } finally {
         setIsLoading(false);
@@ -136,7 +134,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+      <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Welcome to Zoliapp</CardTitle>
@@ -158,7 +156,7 @@ export default function LoginPage() {
                   disabled={isLoading}
                 />
               </div>
-              <Button onClick={handleSendCode} className="w-full" disabled={isLoading}>
+              <Button id="sign-in-button" onClick={handleSendCode} className="w-full" disabled={isLoading}>
                 {isLoading ? 'Sending...' : 'Send Verification Code'}
               </Button>
             </div>
@@ -173,6 +171,7 @@ export default function LoginPage() {
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                   disabled={isLoading}
+                  maxLength={6}
                 />
               </div>
               <Button onClick={handleVerifyCode} className="w-full" disabled={isLoading}>

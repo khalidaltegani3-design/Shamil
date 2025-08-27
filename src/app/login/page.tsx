@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,20 +30,23 @@ export default function LoginPage() {
   
   const auth = getAuth(app);
 
-  // This function sets up the reCAPTCHA verifier
-  const setupRecaptcha = () => {
-    // It is important to create a new verifier each time.
-    if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-    }
-    return new RecaptchaVerifier(auth, 'recaptcha-container', {
+  // This function sets up the reCAPTCHA verifier once
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      // Ensure the container is empty before rendering
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+          container.innerHTML = '';
+      }
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
           console.log("reCAPTCHA solved, ready to send code.");
         }
-    });
-  }
+      });
+      window.recaptchaVerifier = verifier;
+    }
+  }, [auth]);
 
   const handleSendCode = async () => {
     if (phoneNumber.length < 10) {
@@ -56,7 +59,12 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    const appVerifier = setupRecaptcha();
+    const appVerifier = window.recaptchaVerifier;
+    if (!appVerifier) {
+        toast({variant: 'destructive', title: 'reCAPTCHA not initialized'});
+        setIsLoading(false);
+        return;
+    }
     
     try {
       const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -85,7 +93,7 @@ export default function LoginPage() {
           title: 'Failed to Send Code',
           description: description,
       });
-      // It's important to render the verifier again if it fails.
+      // Reset the verifier if it fails.
       appVerifier.render().then((widgetId) => {
           if ((window as any).grecaptcha) {
             (window as any).grecaptcha.reset(widgetId);

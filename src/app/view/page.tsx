@@ -73,7 +73,7 @@ const ShareDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="h-[70vh] flex flex-col p-0">
+        <DialogContent className="h-[70vh] flex flex-col p-0 rounded-2xl">
             <DialogHeader className="p-4 border-b">
                 <DialogTitle>Share with...</DialogTitle>
             </DialogHeader>
@@ -207,7 +207,7 @@ const VideoCard = ({
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
             
-            <div className="absolute bottom-4 right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
+            <div className="absolute bottom-20 right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
                  <Link href={`/profile/${video.user.id}`}>
                     <Avatar className="h-12 w-12 border-2 border-white">
                         <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
@@ -236,7 +236,7 @@ const VideoCard = ({
                 </Button>
             </div>
 
-            <div className="absolute bottom-4 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
+            <div className="absolute bottom-20 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-1.5 pr-16">
                         <Link href={`/profile/${video.user.id}`}>
@@ -252,7 +252,7 @@ const VideoCard = ({
             </div>
 
             <Dialog open={showComments} onOpenChange={setShowComments}>
-                <DialogContent className="h-[80vh] flex flex-col p-0">
+                <DialogContent className="h-[80vh] flex flex-col p-0 rounded-2xl">
                     <DialogHeader className="p-4 border-b">
                         <DialogTitle className="text-center">Comments</DialogTitle>
                     </DialogHeader>
@@ -359,7 +359,7 @@ export default function ViewPage() {
     };
 
     return (
-        <div className="h-screen w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
+        <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
            {videos.map(video => (
                <VideoCard 
                     key={video.id} 

@@ -13,14 +13,18 @@ import BottomNavbar from './bottom-navbar';
 import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
 import CallsPage from '@/app/calls/page';
+import ViewPage from '@/app/view/page';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-const TABS_COUNT = 3;
+const TABS_COUNT = 4;
 const TABS = [
-    { component: <ChatsPage/> },
-    { component: <StatusPage/> },
-    { component: <CallsPage/> },
+    { component: <ChatsPage/>, path: '/' },
+    { component: <StatusPage/>, path: '/status' },
+    { component: <CallsPage/>, path: '/calls' },
+    { component: <ViewPage/>, path: '/view' },
 ]
+
+const TAB_PATHS = ['/', '/status', '/calls', '/view'];
 
 export default function TabsLayout() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
@@ -32,12 +36,19 @@ export default function TabsLayout() {
 
   const handleSelect = useCallback(() => {
     if (!emblaApi) return;
-    setActiveIndex(emblaApi.selectedScrollSnap());
-    const newTab = emblaApi.selectedScrollSnap().toString();
+    const newIndex = emblaApi.selectedScrollSnap();
+    setActiveIndex(newIndex);
+    const newPath = TAB_PATHS[newIndex];
     const newSearchParams = new URLSearchParams(searchParams.toString());
-    newSearchParams.set('tab', newTab);
-    router.replace(`${pathname}?${newSearchParams.toString()}`, { scroll: false });
-  }, [emblaApi, pathname, router, searchParams]);
+    // keep tab param for non-path tabs if needed, or clear it
+    if (newPath !== '/') {
+        newSearchParams.set('tab', newIndex.toString());
+    } else {
+        newSearchParams.delete('tab');
+    }
+    router.replace(`${newPath}?${newSearchParams.toString()}`, { scroll: false });
+  }, [emblaApi, router, searchParams]);
+
 
   const handleTabChange = useCallback((index: number) => {
     if (emblaApi) {
@@ -49,17 +60,27 @@ export default function TabsLayout() {
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on('select', handleSelect);
-    // Initial sync
+   
+    const currentPathIndex = TAB_PATHS.indexOf(pathname);
     const tab = searchParams.get('tab');
-    const initialTab = tab ? parseInt(tab, 10) : 0;
-    if (initialTab >= 0 && initialTab < TABS_COUNT) {
-        emblaApi.scrollTo(initialTab, true);
-        setActiveIndex(initialTab);
+    let initialTab = currentPathIndex !== -1 ? currentPathIndex : 0;
+    
+    if (tab && !isNaN(parseInt(tab, 10))) {
+        const tabIndex = parseInt(tab, 10);
+        if(tabIndex >= 0 && tabIndex < TABS_COUNT) {
+            initialTab = tabIndex;
+        }
     }
+    
+    if (initialTab !== emblaApi.selectedScrollSnap()) {
+      emblaApi.scrollTo(initialTab, true);
+    }
+    setActiveIndex(initialTab);
+
     return () => {
       emblaApi.off('select', handleSelect);
     };
-  }, [emblaApi, handleSelect, searchParams]);
+  }, [emblaApi, handleSelect, searchParams, pathname]);
 
   return (
     <>

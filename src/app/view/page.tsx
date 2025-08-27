@@ -4,12 +4,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import { videos as initialVideos, type Video, users, chats as initialChats, type Chat, type Message } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Send, Music, Camera, X, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Send, Music, Camera, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -179,28 +178,23 @@ const VideoCard = ({
     const comments = Array.isArray(video.commentsData) ? video.commentsData : [];
 
     return (
-        <div className="relative h-full w-full snap-start flex-shrink-0">
+        <div className="relative h-full w-full snap-start flex-shrink-0 bg-black">
             <video
                 ref={videoRef}
                 src={video.videoUrl}
                 loop
                 muted
                 playsInline
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
             
-            <div className="absolute bottom-20 right-2 p-4 flex flex-col items-center space-y-5 z-10">
-                <Link href={`/profile/${video.user.id}`}>
+            <div className="absolute bottom-16 right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
+                 <Link href={`/profile/${video.user.id}`}>
                     <Avatar className="h-12 w-12 border-2 border-white">
                         <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
                         <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                </Link>
-                 <Link href="/create">
-                    <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
-                        <Camera className="h-8 w-8" />
-                    </Button>
                 </Link>
                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleLike}>
                     <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -214,12 +208,17 @@ const VideoCard = ({
                     <Send className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.shares.toLocaleString()}</span>
                 </Button>
+                 <Link href="/create">
+                    <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
+                        <Camera className="h-8 w-8" />
+                    </Button>
+                </Link>
                  <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
                     <MoreHorizontal className="h-8 w-8" />
                 </Button>
             </div>
 
-            <div className="absolute bottom-16 left-0 p-4 bg-gradient-to-t from-black/60 via-black/30 to-transparent w-full text-white">
+            <div className="absolute bottom-0 left-0 p-4 bg-gradient-to-t from-black/60 to-transparent w-full text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-1.5 pr-16">
                         <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2">
@@ -355,7 +354,3 @@ export default function ViewPage() {
         </div>
     );
 }
-
-    
-
-    

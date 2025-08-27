@@ -22,7 +22,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <div className="flex h-screen w-full max-w-md mx-auto flex-col relative">
-          <main className="flex-1 overflow-y-auto pb-16">{children}</main>
+          <main className="flex-1 overflow-y-auto">{children}</main>
           <BottomNavbar />
         </div>
         <Toaster />

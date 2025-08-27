@@ -8,50 +8,56 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React from 'react';
 
-const NotificationSection = ({ title, showToggle = true }: { title: string, showToggle?: boolean }) => (
-    <div>
-        <div className="flex items-center justify-between p-3">
-            <h3 className="font-semibold text-muted-foreground">{title}</h3>
-            {showToggle && <Switch defaultChecked />}
-        </div>
-        <Separator />
-        <div className="p-3 space-y-4">
-             <div className="flex items-center justify-between">
-                <p>Notification tone</p>
-                <Select defaultValue="default">
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select a tone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="default">Default</SelectItem>
-                        <SelectItem value="chime">Chime</SelectItem>
-                        <SelectItem value="alert">Alert</SelectItem>
-                        <SelectItem value="none">None</SelectItem>
-                    </SelectContent>
-                </Select>
+const NotificationSection = ({ title, showToggle = true }: { title: string, showToggle?: boolean }) => {
+    const [isEnabled, setIsEnabled] = React.useState(true);
+
+    return (
+        <div>
+            <div className="flex items-center justify-between p-3">
+                <h3 className="font-semibold text-muted-foreground">{title}</h3>
+                {showToggle && <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />}
             </div>
-            <div className="flex items-center justify-between">
-                <p>Vibrate</p>
-                <Select defaultValue="default">
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select vibration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="default">Default</SelectItem>
-                        <SelectItem value="short">Short</SelectItem>
-                        <SelectItem value="long">Long</SelectItem>
-                        <SelectItem value="off">Off</SelectItem>
-                    </SelectContent>
-                </Select>
+            <Separator />
+            <div className="p-3 space-y-4">
+                 <div className="flex items-center justify-between">
+                    <p>Notification tone</p>
+                    <Select defaultValue="default" disabled={!isEnabled}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select a tone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Default</SelectItem>
+                            <SelectItem value="chime">Chime</SelectItem>
+                            <SelectItem value="alert">Alert</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center justify-between">
+                    <p>Vibrate</p>
+                    <Select defaultValue="default" disabled={!isEnabled}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select vibration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Default</SelectItem>
+                            <SelectItem value="short">Short</SelectItem>
+                            <SelectItem value="long">Long</SelectItem>
+                            <SelectItem value="off">Off</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         </div>
-    </div>
-);
+    )
+};
 
 
 export default function NotificationsSettingsPage() {
   const router = useRouter();
+  const [conversationTones, setConversationTones] = React.useState(true);
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -68,7 +74,11 @@ export default function NotificationsSettingsPage() {
                     <h3 className="font-medium">Conversation tones</h3>
                     <p className="text-sm text-muted-foreground">Play sounds for incoming and outgoing messages.</p>
                 </div>
-                <Switch id="conversation-tones" defaultChecked />
+                <Switch 
+                    id="conversation-tones" 
+                    checked={conversationTones}
+                    onCheckedChange={setConversationTones}
+                />
             </div>
         </Card>
 

@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import React from 'react';
 
 export default function SecuritySettingsPage() {
   const router = useRouter();
+  const [showNotifications, setShowNotifications] = React.useState(true);
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -29,10 +32,14 @@ export default function SecuritySettingsPage() {
          <Card className="p-2">
             <div className="flex items-center p-3">
                 <div className="flex-1">
-                    <h3 className="font-medium">Show security notifications on this device</h3>
+                    <Label htmlFor="security-notifications" className="font-medium cursor-pointer">Show security notifications on this device</Label>
                     <p className="text-sm text-muted-foreground">Get notified when your security code changes for a contact in an end-to-end encrypted chat.</p>
                 </div>
-                <Switch id="security-notifications" defaultChecked />
+                <Switch 
+                    id="security-notifications" 
+                    checked={showNotifications}
+                    onCheckedChange={setShowNotifications}
+                />
             </div>
         </Card>
       </div>

@@ -7,9 +7,20 @@ import { ArrowLeft, ChevronRight, KeyRound, Shield, FileText, UserX } from 'luci
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [securityNotifications, setSecurityNotifications] = React.useState(true);
+
+  const handleFeatureClick = (featureName: string) => {
+    toast({
+      title: 'Coming Soon!',
+      description: `${featureName} will be available soon.`,
+    });
+  };
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -24,15 +35,19 @@ export default function AccountSettingsPage() {
             <div className="flex items-center p-3">
                 <Shield className="w-6 h-6 text-muted-foreground mr-4" />
                 <div className="flex-1">
-                    <h3 className="font-medium">Security notifications</h3>
+                    <Label htmlFor="security-notifications" className="font-medium cursor-pointer">Security notifications</Label>
                     <p className="text-sm text-muted-foreground">Get notified when your security code changes for a contact.</p>
                 </div>
-                <Switch id="security-notifications" />
+                <Switch 
+                    id="security-notifications" 
+                    checked={securityNotifications}
+                    onCheckedChange={setSecurityNotifications}
+                />
             </div>
         </Card>
         
         <Card className="p-2">
-             <button className="flex items-center w-full gap-4 p-3 rounded-lg hover:bg-accent/50 transition-colors">
+             <button onClick={() => handleFeatureClick('Two-step verification')} className="flex items-center w-full gap-4 p-3 rounded-lg hover:bg-accent/50 transition-colors">
                 <KeyRound className="w-6 h-6 text-muted-foreground" />
                 <div className="flex-1 text-left">
                     <h3 className="font-medium">Two-step verification</h3>
@@ -43,7 +58,7 @@ export default function AccountSettingsPage() {
         </Card>
 
          <Card className="p-2">
-             <button className="flex items-center w-full gap-4 p-3 rounded-lg hover:bg-accent/50 transition-colors">
+             <button onClick={() => handleFeatureClick('Request account info')} className="flex items-center w-full gap-4 p-3 rounded-lg hover:bg-accent/50 transition-colors">
                 <FileText className="w-6 h-6 text-muted-foreground" />
                 <div className="flex-1 text-left">
                     <h3 className="font-medium">Request account info</h3>
@@ -54,7 +69,7 @@ export default function AccountSettingsPage() {
         </Card>
         
         <Card className="p-2">
-             <button className="flex items-center w-full gap-4 p-3 rounded-lg hover:bg-accent/50 transition-colors text-destructive">
+             <button onClick={() => handleFeatureClick('Delete my account')} className="flex items-center w-full gap-4 p-3 rounded-lg hover:bg-accent/50 transition-colors text-destructive">
                 <UserX className="w-6 h-6" />
                 <div className="flex-1 text-left">
                     <h3 className="font-medium">Delete my account</h3>

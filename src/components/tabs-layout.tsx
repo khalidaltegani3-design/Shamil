@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -11,6 +10,7 @@ import ViewPage from '@/app/view/page';
 import SettingsPage from '@/app/settings/page';
 import ProfilePage from '@/app/profile/[userId]/page';
 import CreateVideoPage from '@/app/create/page';
+import { cn } from '@/lib/utils';
 
 const TABS: Record<string, React.ComponentType> = {
     '/': ChatsPage,
@@ -42,11 +42,13 @@ export default function TabsLayout() {
 
 
   return (
-    <div className="h-full w-full flex flex-col">
-        <main className="flex-1 overflow-y-auto">
+    <div className={cn("h-full w-full", pathname === '/view' && 'pb-16')}>
+        <main className="h-full w-full">
             <ActiveComponent />
         </main>
         {isNavbarVisible && <BottomNavbar />}
     </div>
   );
 }
+
+    

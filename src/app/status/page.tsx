@@ -54,6 +54,10 @@ export default function StatusPage() {
   const handleAddStatus = (caption: string) => {
     // This is a placeholder for adding a status.
     console.log("Adding status:", { caption, file: statusDraft?.file.name });
+    toast({
+        title: "Status posted!",
+        description: "Your new status is now visible to your friends."
+    })
     setStatusDraft(null);
   };
   
@@ -192,41 +196,96 @@ export default function StatusPage() {
 function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], startIndex: number | null, onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = React.useState<number | null>(startIndex);
   const [progress, setProgress] = React.useState(0);
+  const [dragStart, setDragStart] = React.useState<{ y: number } | null>(null);
+  const [dragDeltaY, setDragDeltaY] = React.useState<number>(0);
+  
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
     setCurrentIndex(startIndex);
   }, [startIndex]);
 
-  React.useEffect(() => {
-    if (currentIndex === null) return;
-
+  const startTimer = React.useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    
     setProgress(0);
-    const progressInterval = setInterval(() => {
-      setProgress(p => p + 1);
+    
+    progressIntervalRef.current = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) {
+          clearInterval(progressIntervalRef.current!);
+          return 100;
+        }
+        return p + 1;
+      });
     }, 100);
 
-    const timer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
+      if (currentIndex === null) return;
       if (currentIndex < statuses.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
         onClose();
       }
     }, 10000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(progressInterval);
-    };
   }, [currentIndex, statuses.length, onClose]);
+
+  React.useEffect(() => {
+    if (currentIndex !== null) {
+      startTimer();
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [currentIndex, startTimer]);
+  
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    setDragStart({ y: e.clientY });
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragStart) return;
+    const deltaY = e.clientY - dragStart.y;
+    if (deltaY > 0) { // Only allow dragging down
+      setDragDeltaY(deltaY);
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (dragDeltaY > 100) { // Drag threshold to close
+      onClose();
+    } else {
+      setDragDeltaY(0);
+      startTimer(); // Resume timer
+    }
+    setDragStart(null);
+  };
 
   if (currentIndex === null) return null;
   
   const status = statuses[currentIndex];
   if (!status) return null;
+  
+  const dragOpacity = Math.max(1 - (dragDeltaY / 300), 0.5);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full flex flex-col items-center justify-center rounded-lg">
+      <DialogContent 
+        className="p-0 m-0 bg-transparent border-none w-screen h-screen max-w-full max-h-full flex flex-col items-center justify-center rounded-lg"
+        style={{ 
+            backgroundColor: `rgba(0, 0, 0, ${dragOpacity})`,
+            transform: `translateY(${dragDeltaY}px)`,
+            transition: dragStart ? 'none' : 'transform 0.3s ease-out, background-color 0.3s ease-out'
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
         <DialogHeader className="absolute top-4 left-4 right-4 z-20">
              <DialogTitle className="sr-only">Status from {status.user.name}</DialogTitle>
              <DialogDescription className="sr-only">{status.caption || "User status"}</DialogDescription>
@@ -319,3 +378,4 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
         </Dialog>
     );
 }
+

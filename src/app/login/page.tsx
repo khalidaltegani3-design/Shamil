@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -30,9 +31,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     const authInstance = getAuth(app);
-    // For testing purposes, you can disable app verification.
-    // In a production environment, you would not do this.
-    authInstance.settings.appVerificationDisabledForTesting = true;
     setAuth(authInstance);
   }, []);
   

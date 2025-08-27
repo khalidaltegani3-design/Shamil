@@ -80,15 +80,9 @@ export default function VideoCard({ video }: VideoCardProps) {
 
       <div className="absolute bottom-16 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent">
         <div className="flex justify-between items-end">
-            {/* Left side: User info & caption */}
+            {/* Left side: Video Info */}
             <div className="flex-1 pr-4 space-y-2">
-                <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2 group">
-                    <Avatar className="h-10 w-10 border-2 border-white">
-                        <AvatarImage src={video.user.avatarUrl} />
-                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <p className="font-bold text-base group-hover:underline">@{video.user.name}</p>
-                </Link>
+                <p className="font-bold text-base">@{video.user.name}</p>
                 <p className="text-sm">{video.caption}</p>
                  <div className="flex items-center gap-2">
                     <Music2 className="h-4 w-4" />
@@ -96,8 +90,14 @@ export default function VideoCard({ video }: VideoCardProps) {
                 </div>
             </div>
 
-            {/* Right side: Action buttons */}
+            {/* Right side: User avatar & Action buttons */}
             <div className="flex flex-col items-center gap-4">
+                 <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2 group mb-2">
+                    <Avatar className="h-12 w-12 border-2 border-white">
+                        <AvatarImage src={video.user.avatarUrl} />
+                        <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
                  <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1">
                     <Heart className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.likes.toLocaleString()}</span>

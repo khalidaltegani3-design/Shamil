@@ -5,7 +5,7 @@ import * as React from 'react';
 import { users, statuses as initialStatuses, type Status } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Camera, Plus, X } from 'lucide-react';
@@ -80,7 +80,7 @@ export default function StatusPage() {
         <div className="p-4 space-y-6">
             <div className="flex items-center gap-4 p-2">
               <div className="relative">
-                <Avatar className="h-16 w-16 border-2 border-primary/50 p-0.5">
+                <Avatar className="h-16 w-16">
                   <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -159,7 +159,8 @@ function StatusViewer({ status, onClose }: { status: Status | null, onClose: () 
 
   return (
     <Dialog open={!!status} onOpenChange={onClose}>
-      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full rounded-none flex flex-col items-center justify-center">
+      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full rounded-2xl flex flex-col items-center justify-center">
+        <DialogTitle className="sr-only">Status from {status.user.name}</DialogTitle>
         <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
             <Avatar className="h-10 w-10 border-2 border-white">
                 <AvatarImage src={status.user.avatarUrl} alt={status.user.name} />
@@ -224,6 +225,7 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
             <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] rounded-2xl">
+                <DialogTitle className="sr-only">Add New Status</DialogTitle>
                 <div className="flex-1 flex flex-col justify-between gap-4 pt-6">
                     <div className="flex-1 relative w-full rounded-md overflow-hidden border">
                         <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />

@@ -17,13 +17,6 @@ const mainNavItems = [
 export default function BottomNavbar() {
   const pathname = usePathname();
 
-  // The navbar should only be visible on the main tabs
-  const isVisible = mainNavItems.some(item => pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true));
-
-  if (!isVisible) {
-      return null;
-  }
-
   return (
     <nav className="bg-card border-t h-16 w-full flex-shrink-0">
       <div className="flex justify-around items-center h-full">

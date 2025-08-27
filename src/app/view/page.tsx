@@ -237,7 +237,7 @@ const VideoCard = ({
                 </Button>
             </div>
 
-            <div className="absolute bottom-4 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
+            <div className="absolute bottom-16 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-1.5 pr-16">
                       <h3 className="font-bold text-base">@{video.user.name}</h3>
@@ -372,5 +372,3 @@ export default function ViewPage() {
         </div>
     );
 }
-
-    

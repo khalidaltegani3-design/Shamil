@@ -17,16 +17,21 @@ const TABS: Record<string, React.ComponentType> = {
     '/settings': SettingsPage,
 };
 
+// A set of routes where the bottom navbar should be visible
+const NAVBAR_VISIBLE_ROUTES = new Set(Object.keys(TABS));
+
+
 export default function TabsLayout() {
   const pathname = usePathname();
   const ActiveComponent = TABS[pathname] || ChatsPage;
+  const isNavbarVisible = NAVBAR_VISIBLE_ROUTES.has(pathname);
 
   return (
     <div className="h-full grid grid-rows-[1fr_auto]">
       <main className="overflow-y-auto">
         <ActiveComponent />
       </main>
-      <BottomNavbar />
+      {isNavbarVisible && <BottomNavbar />}
     </div>
   );
 }

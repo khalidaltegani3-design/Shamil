@@ -1,7 +1,7 @@
 
 "use client"
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
@@ -9,19 +9,24 @@ import CallsPage from '@/app/calls/page';
 import SettingsPage from '@/app/settings/page';
 import ProfilePage from '@/app/profile/[userId]/page';
 import CreateVideoPage from '@/app/create/page';
-import BottomNavbar from './bottom-navbar';
+import ViewPage from '@/app/view/page';
+import Header from './header';
+import SideNavbar from './side-navbar';
 
 const TABS: Record<string, { component: React.ComponentType }> = {
     '/': { component: ChatsPage },
     '/status': { component: StatusPage },
     '/calls': { component: CallsPage },
     '/settings': { component: SettingsPage },
+    '/view': { component: ViewPage },
+    '/create': { component: CreateVideoPage },
 };
 
-const fullscreenPages = ['/create'];
+const fullscreenPages = ['/create', '/view'];
 
 export default function TabsLayout() {
   const pathname = usePathname();
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   let ActiveComponent: React.ComponentType;
 
@@ -29,21 +34,20 @@ export default function TabsLayout() {
     ActiveComponent = ProfilePage;
   } else if (TABS[pathname]) {
     ActiveComponent = TABS[pathname].component;
-  } else if (pathname.startsWith('/create')) {
-    ActiveComponent = CreateVideoPage;
   }
   else {
      ActiveComponent = TABS['/']?.component || ChatsPage;
   }
   
-  const showNavbar = !fullscreenPages.includes(pathname) && !pathname.startsWith('/profile/');
-
+  const showHeader = !fullscreenPages.includes(pathname);
+  
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col bg-background">
+        <SideNavbar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
+        {showHeader && <Header onMenuClick={() => setSidebarOpen(true)} />}
         <main className="flex-1 overflow-y-auto">
             <ActiveComponent />
         </main>
-        {showNavbar && <BottomNavbar />}
     </div>
   );
 }

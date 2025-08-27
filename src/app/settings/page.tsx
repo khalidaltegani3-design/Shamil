@@ -4,13 +4,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Bell, ChevronRight, HelpCircle, Image as ImageIcon, KeyRound, Lock, Palette, UserCircle } from "lucide-react"
+import { Bell, ChevronRight, HelpCircle, Image as ImageIcon, KeyRound, ListVideo, Lock, Palette, UserCircle } from "lucide-react"
 import Link from "next/link"
 import React from "react"
 
 const settingsOptions = [
     { icon: UserCircle, title: "Account", description: "Privacy, security, change number", href:"#" },
     { icon: Palette, title: "Appearance", description: "Theme, wallpaper, chat history", href:"#" },
+    { icon: ListVideo, title: "Content Preferences", description: "Customize your discover feed", href:"#" },
     { icon: Bell, title: "Notifications", description: "Message, group & call tones", href:"#" },
     { icon: KeyRound, title: "Privacy", description: "Block contacts, disappearing messages", href:"#" },
     { icon: Lock, title: "Security", description: "End-to-end encryption", href:"#" },
@@ -21,6 +22,9 @@ const settingsOptions = [
 export default function SettingsPage() {
     return (
         <div className="flex flex-col h-full bg-background text-foreground">
+            <header className="flex items-center gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+                <h1 className="text-xl font-bold">Settings</h1>
+            </header>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <Card className="p-4">
                     <Link href="#" className="flex items-center gap-4">

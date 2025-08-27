@@ -29,24 +29,26 @@ export default function LoginPage() {
   const router = useRouter();
   
   const auth = getAuth(app);
+  // THIS IS FOR DEVELOPMENT/TESTING ONLY.
+  // It allows using test phone numbers without a real reCAPTCHA.
+  // Make sure to configure test phone numbers in the Firebase Console.
+  // auth.settings.appVerificationDisabledForTesting = true;
 
   // This function sets up the reCAPTCHA verifier once
-  useEffect(() => {
+  const setupRecaptcha = () => {
+    // To avoid re-rendering issues, only create a new verifier if one doesn't exist
     if (!window.recaptchaVerifier) {
       // Ensure the container is empty before rendering
-      const container = document.getElementById('recaptcha-container');
-      if (container) {
-          container.innerHTML = '';
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (recaptchaContainer) {
+          recaptchaContainer.innerHTML = '';
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible'
+          });
       }
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          console.log("reCAPTCHA solved, ready to send code.");
-        }
-      });
-      window.recaptchaVerifier = verifier;
     }
-  }, [auth]);
+    return window.recaptchaVerifier;
+  }
 
   const handleSendCode = async () => {
     if (phoneNumber.length < 10) {
@@ -59,13 +61,8 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    const appVerifier = window.recaptchaVerifier;
-    if (!appVerifier) {
-        toast({variant: 'destructive', title: 'reCAPTCHA not initialized'});
-        setIsLoading(false);
-        return;
-    }
-    
+    const appVerifier = setupRecaptcha();
+
     try {
       const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       
@@ -75,7 +72,7 @@ export default function LoginPage() {
 
       toast({
           title: 'Code Sent!',
-          description: 'A verification code has been sent to your phone.',
+          description: 'A verification code has been sent to your phone (or use the test code).',
       });
 
     } catch (error) {
@@ -84,6 +81,8 @@ export default function LoginPage() {
        if (error instanceof FirebaseError) {
         if (error.code === 'auth/too-many-requests') {
           description = 'Too many requests sent. Please try again later.';
+        } else if (error.code === 'auth/captcha-check-failed') {
+            description = 'reCAPTCHA check failed. Please make sure your domain is authorized in the Firebase console.';
         } else {
           description = error.message;
         }
@@ -93,12 +92,13 @@ export default function LoginPage() {
           title: 'Failed to Send Code',
           description: description,
       });
-      // Reset the verifier if it fails.
-      appVerifier.render().then((widgetId) => {
-          if ((window as any).grecaptcha) {
-            (window as any).grecaptcha.reset(widgetId);
-          }
-      });
+       // Reset the verifier if it fails.
+       const recaptchaContainer = document.getElementById('recaptcha-container');
+       if (recaptchaContainer) {
+            recaptchaContainer.innerHTML = '';
+       }
+       window.recaptchaVerifier = undefined;
+
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +141,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-      {/* The reCAPTCHA container, it will be invisible */}
+      {/* The reCAPTCHA container, it will be invisible but is required by Firebase */}
       <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">

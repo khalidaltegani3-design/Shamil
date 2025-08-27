@@ -207,8 +207,8 @@ const VideoCard = ({
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
             
-            <div className="absolute bottom-20 right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
-                <Link href={`/profile/${video.user.id}`}>
+            <div className="absolute bottom-4 right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
+                 <Link href={`/profile/${video.user.id}`}>
                     <Avatar className="h-12 w-12 border-2 border-white">
                         <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
                         <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
@@ -219,7 +219,7 @@ const VideoCard = ({
                         <Camera className="h-8 w-8" />
                     </Button>
                 </Link>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-transparent hover:text-white flex flex-col h-auto" onClick={handleLike}>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-transparent focus:bg-transparent hover:text-white flex flex-col h-auto" onClick={handleLike}>
                     <Heart className={`h-8 w-8 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                     <span className="text-xs font-semibold">{video.likes.toLocaleString()}</span>
                 </Button>
@@ -236,7 +236,7 @@ const VideoCard = ({
                 </Button>
             </div>
 
-            <div className="absolute bottom-20 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
+            <div className="absolute bottom-4 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-1.5 pr-16">
                         <Link href={`/profile/${video.user.id}`}>
@@ -372,3 +372,5 @@ export default function ViewPage() {
         </div>
     );
 }
+
+    

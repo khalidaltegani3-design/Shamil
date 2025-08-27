@@ -8,6 +8,7 @@ import { Heart, MessageCircle, Share, Play, Pause, Music2, MoreHorizontal } from
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
 import CommentsSheet from './comments-sheet';
+import ShareSheet from './share-sheet';
 import type { Comment } from '@/lib/types';
 import { users } from '@/lib/mock-data';
 
@@ -20,6 +21,7 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [video, setVideo] = useState<Video>(initialVideo);
 
 
@@ -106,9 +108,7 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
         <div className="flex justify-between items-end">
             {/* Left side: Video Info */}
             <div className="flex-1 pr-4 space-y-2">
-                 <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2 group mb-2 w-fit">
-                     <p className="font-bold text-base">@{video.user.name}</p>
-                </Link>
+                <p className="font-bold text-base">@{video.user.name}</p>
                 <p className="font-medium text-sm">{video.caption}</p>
                  <div className="flex items-center gap-2">
                     <Music2 className="h-4 w-4" />
@@ -132,7 +132,7 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
                     <MessageCircle className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.comments.toLocaleString()}</span>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Share with contacts">
+                <Button onClick={() => setIsShareOpen(true)} variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Share with contacts">
                     <Share className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.shares.toLocaleString()}</span>
                 </Button>
@@ -148,6 +148,11 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
         comments={video.commentsData || []}
         commentCount={video.comments}
         onAddComment={handleAddComment}
+      />
+      <ShareSheet
+        isOpen={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        videoCaption={video.caption}
       />
     </div>
   );

@@ -173,12 +173,30 @@ const VideoCard = ({
     const handleShare = (selectedChatIds: string[]) => {
         onShare(video.id, selectedChatIds);
     }
+
+    const handleExternalShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Check out this video!',
+                    text: video.caption,
+                    url: window.location.href, // Or a direct link to the video
+                });
+                toast({ title: 'Video shared successfully!' });
+            } catch (error) {
+                console.error('Error sharing:', error);
+                toast({ variant: 'destructive', title: 'Could not share video.' });
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'Web Share API not supported in your browser.' });
+        }
+    };
     
     // Ensure comments is an array
     const comments = Array.isArray(video.commentsData) ? video.commentsData : [];
 
     return (
-        <div className="relative h-full w-full snap-start flex-shrink-0 bg-black">
+        <div className="relative h-screen w-full snap-start flex-shrink-0 bg-black">
             <video
                 ref={videoRef}
                 src={video.videoUrl}
@@ -213,7 +231,7 @@ const VideoCard = ({
                     <Send className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.shares.toLocaleString()}</span>
                 </Button>
-                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto">
+                 <Button variant="ghost" size="icon" className="text-white hover:text-white flex flex-col h-auto" onClick={handleExternalShare}>
                     <MoreHorizontal className="h-8 w-8" />
                 </Button>
             </div>
@@ -341,7 +359,7 @@ export default function ViewPage() {
     };
 
     return (
-        <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
+        <div className="h-screen w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
            {videos.map(video => (
                <VideoCard 
                     key={video.id} 

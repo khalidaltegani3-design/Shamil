@@ -6,12 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Send, Music, Camera, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { DialogFooter } from '@/components/ui/dialog';
 
 interface Comment {
     id: string;
@@ -239,7 +240,9 @@ const VideoCard = ({
             <div className="absolute bottom-20 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-1.5 pr-16">
-                        <h3 className="font-bold text-base">@{video.user.name}</h3>
+                        <Link href={`/profile/${video.user.id}`}>
+                          <h3 className="font-bold text-base">@{video.user.name}</h3>
+                        </Link>
                         <p className="text-sm">{video.caption}</p>
                         <div className="flex items-center gap-2 text-sm">
                             <Music className="h-4 w-4" />
@@ -357,7 +360,7 @@ export default function ViewPage() {
     };
 
     return (
-        <div className="h-screen w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
+        <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
            {videos.map(video => (
                <VideoCard 
                     key={video.id} 

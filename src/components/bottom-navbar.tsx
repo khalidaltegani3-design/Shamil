@@ -17,15 +17,16 @@ const mainNavItems = [
 export default function BottomNavbar() {
   const pathname = usePathname();
 
-  const isVisible = mainNavItems.some(item => item.href === pathname);
+  // The navbar should only be visible on the main tabs
+  const isVisible = mainNavItems.some(item => pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true));
 
   if (!isVisible) {
       return null;
   }
 
   return (
-    <nav className="bg-card border-t h-16 z-20 w-full flex-shrink-0">
-      <div className="flex justify-around items-center h-full max-w-md mx-auto">
+    <nav className="bg-card border-t h-16 w-full flex-shrink-0">
+      <div className="flex justify-around items-center h-full">
         {mainNavItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (

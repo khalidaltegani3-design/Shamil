@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -24,7 +23,7 @@ export default function TabsLayout() {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 min-h-0">
         <ActiveComponent />
       </main>
       <BottomNavbar />

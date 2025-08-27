@@ -2,13 +2,11 @@
 "use client";
 
 import * as React from 'react';
-import { users, statuses as initialStatuses, type Status, type User } from '@/lib/mock-data';
+import { users, statuses as initialStatuses, type Status } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Camera, Plus, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -40,7 +38,7 @@ const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (
 };
 
 export default function StatusPage() {
-  const [statuses, setStatuses] = React.useState<Status[]>(initialStatuses);
+  const [statuses] = React.useState<Status[]>(initialStatuses);
   const [selectedStatus, setSelectedStatus] = React.useState<Status | null>(null);
   const [statusDraft, setStatusDraft] = React.useState<{image: File, previewUrl: string} | null>(null);
 
@@ -51,14 +49,9 @@ export default function StatusPage() {
   const friendsStatuses = statuses.filter(s => s.user.id !== currentUser.id);
 
   const handleAddStatus = (caption: string, imageUrl: string) => {
-    const newStatus: Status = {
-      id: `status-${Date.now()}`,
-      user: currentUser,
-      caption,
-      imageUrl,
-      timestamp: new Date().toISOString(),
-    };
-    setStatuses(prev => [newStatus, ...prev]);
+    // This is a placeholder for adding a status.
+    // In a real app this would update a global state or call an API.
+    console.log("Adding status:", { caption, imageUrl });
     setStatusDraft(null); // Clear draft after posting
   };
   
@@ -85,9 +78,9 @@ export default function StatusPage() {
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 p-2">
               <div className="relative">
-                <Avatar className="h-16 w-16">
+                <Avatar className="h-16 w-16 border-2 border-primary/50 p-0.5">
                   <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -126,7 +119,7 @@ export default function StatusPage() {
                       className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
-                         <Avatar className="h-14 w-14 border-2 border-primary/50">
+                         <Avatar className="h-14 w-14 border-2 border-primary/50 p-0.5">
                             <AvatarImage src={status.user.avatarUrl} alt={status.user.name} data-ai-hint="avatar person" />
                             <AvatarFallback>{status.user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -214,7 +207,6 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
     const [caption, setCaption] = React.useState('');
 
     React.useEffect(() => {
-        // Reset caption when a new image is selected
         if (statusDraft) {
             setCaption('');
         }
@@ -222,8 +214,6 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
     
     const handleSubmit = () => {
         if (statusDraft) {
-            // In a real app, you'd upload statusDraft.image and get a URL.
-            // For this mock, we'll just use the preview URL.
             onAddStatus(caption, statusDraft.previewUrl);
             onClose();
         }
@@ -233,16 +223,12 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
 
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
-            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh]">
-                <DialogHeader>
-                    <DialogTitle>Add New Status</DialogTitle>
-                </DialogHeader>
-                <div className="flex-1 flex flex-col justify-between gap-4">
+            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] rounded-2xl">
+                <div className="flex-1 flex flex-col justify-between gap-4 pt-6">
                     <div className="flex-1 relative w-full rounded-md overflow-hidden border">
                         <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="caption">Caption (optional)</Label>
                         <Input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Add a caption..."/>
                     </div>
                      <Button onClick={handleSubmit} className="w-full">

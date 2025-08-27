@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, X } from 'lucide-react';
+import { Camera, Plus, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
+import { Separator } from '@/components/ui/separator';
 
 const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (formattedTime: string) => React.ReactNode }) => {
   const [timeAgo, setTimeAgo] = React.useState('');
@@ -75,16 +76,18 @@ export default function StatusPage() {
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
-      <header className="flex items-center gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="flex items-center justify-between gap-3 p-3 border-b h-16 flex-shrink-0 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <h1 className="text-xl font-bold">Status</h1>
+        <Button variant="ghost" size="icon" onClick={handlePlusClick}>
+            <Camera className="h-5 w-5"/>
+        </Button>
       </header>
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <div className="relative">
-                <Avatar className="h-16 w-16 border-2 border-dashed border-primary">
+                <Avatar className="h-16 w-16">
                   <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -97,7 +100,7 @@ export default function StatusPage() {
                 />
                  <button 
                   onClick={handlePlusClick}
-                  className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 hover:bg-primary/90 transition-colors">
+                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background hover:bg-primary/90 transition-colors">
                     <Plus className="h-4 w-4" />
                 </button>
               </div>
@@ -111,33 +114,34 @@ export default function StatusPage() {
                   ) : "Add to your status"}
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
           <div>
-            <h3 className="mb-2 font-semibold text-muted-foreground px-2">Recent Updates</h3>
-            <div className="space-y-1">
-              {friendsStatuses.map(status => (
-                <button
-                  key={status.id}
-                  onClick={() => setSelectedStatus(status)}
-                  className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                     <Avatar className="h-14 w-14 border-2 border-accent">
-                        <AvatarImage src={status.user.avatarUrl} alt={status.user.name} data-ai-hint="avatar person" />
-                        <AvatarFallback>{status.user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <h4 className="font-semibold">{status.user.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                           <ClientTimeAgo timestamp={status.timestamp}>
-                                {(time) => `${time} ago`}
-                           </ClientTimeAgo>
-                        </p>
-                    </div>
-                  </div>
-                </button>
+            <h3 className="mb-3 font-semibold text-muted-foreground px-1">Recent Updates</h3>
+            <div className="space-y-2">
+              {friendsStatuses.map((status, index) => (
+                <React.Fragment key={status.id}>
+                    <button
+                      onClick={() => setSelectedStatus(status)}
+                      className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                         <Avatar className="h-14 w-14 border-2 border-primary/50">
+                            <AvatarImage src={status.user.avatarUrl} alt={status.user.name} data-ai-hint="avatar person" />
+                            <AvatarFallback>{status.user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h4 className="font-semibold">{status.user.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                               <ClientTimeAgo timestamp={status.timestamp}>
+                                    {(time) => `${time} ago`}
+                               </ClientTimeAgo>
+                            </p>
+                        </div>
+                      </div>
+                    </button>
+                    {index < friendsStatuses.length - 1 && <Separator className="my-1" />}
+                </React.Fragment>
               ))}
             </div>
           </div>

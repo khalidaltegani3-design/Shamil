@@ -2,14 +2,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { videos as initialVideos, type Video } from '@/lib/mock-data';
+import { videos as initialVideos } from '@/lib/mock-data';
+import type { Video as VideoType } from '@/lib/types';
 import VideoCard from '@/components/video-card';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Camera, Video } from 'lucide-react';
 import Link from 'next/link';
-import { Camera } from 'lucide-react';
 
 export default function ViewPage() {
-  const [videos] = useState<Video[]>(initialVideos);
+  const [videos] = useState<VideoType[]>(initialVideos);
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (

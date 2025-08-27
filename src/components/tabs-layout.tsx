@@ -1,85 +1,33 @@
 
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react';
-import useEmblaCarousel from 'embla-carousel-react';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
+import React from 'react';
 import BottomNavbar from './bottom-navbar';
+import { usePathname } from 'next/navigation';
 import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
 import CallsPage from '@/app/calls/page';
 import ViewPage from '@/app/view/page';
-import { usePathname, useRouter } from 'next/navigation';
 
-const TABS = [
-    { component: <ChatsPage/>, path: '/' },
-    { component: <StatusPage/>, path: '/status' },
-    { component: <CallsPage/>, path: '/calls' },
-    { component: <ViewPage/>, path: '/view' },
-]
-
-const TAB_PATHS = ['/', '/status', '/calls', '/view'];
+const TABS: Record<string, React.ComponentType> = {
+    '/': ChatsPage,
+    '/status': StatusPage,
+    '/calls': CallsPage,
+    '/view': ViewPage,
+};
 
 export default function TabsLayout() {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const router = useRouter();
   const pathname = usePathname();
-
-  const handleSelect = useCallback(() => {
-    if (!emblaApi) return;
-    const newIndex = emblaApi.selectedScrollSnap();
-    setActiveIndex(newIndex);
-    const newPath = TAB_PATHS[newIndex];
-    if (pathname !== newPath) {
-        router.replace(newPath, { scroll: false });
-    }
-  }, [emblaApi, router, pathname]);
-
-
-  const handleTabChange = useCallback((index: number) => {
-    if (emblaApi) {
-        emblaApi.scrollTo(index);
-        setActiveIndex(index);
-    }
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    emblaApi.on('select', handleSelect);
-   
-    const currentPathIndex = TAB_PATHS.indexOf(pathname);
-    const initialTab = currentPathIndex !== -1 ? currentPathIndex : 0;
-    
-    if (initialTab !== emblaApi.selectedScrollSnap()) {
-      emblaApi.scrollTo(initialTab, true); // Use true for instant scroll without animation on load
-    }
-    setActiveIndex(initialTab);
-
-    return () => {
-      emblaApi.off('select', handleSelect);
-    };
-  }, [emblaApi, handleSelect, pathname]);
+  const ActiveComponent = TABS[pathname] || ChatsPage;
 
   return (
     <div className="h-full w-full flex flex-col">
       <main className="flex-1 overflow-hidden">
-          <Carousel setApi={emblaRef} className="h-full">
-            <CarouselContent className='h-full'>
-              {TABS.map((tab, index) => (
-                <CarouselItem key={index} className="h-full overflow-y-auto">
-                    {tab.component}
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+        <div className="h-full w-full">
+            <ActiveComponent />
+        </div>
       </main>
-      <BottomNavbar activeTab={activeIndex} onTabChange={handleTabChange} />
+      <BottomNavbar />
     </div>
   );
 }

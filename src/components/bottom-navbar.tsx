@@ -13,27 +13,20 @@ const mainNavItems = [
   { href: "/view", label: "View", icon: Video },
 ];
 
-interface BottomNavbarProps {
-    activeTab?: number;
-    onTabChange?: (index: number) => void;
-}
-
-export default function BottomNavbar({ activeTab, onTabChange }: BottomNavbarProps) {
+export default function BottomNavbar() {
   const pathname = usePathname();
 
-  // Don't show navbar on specific pages that are not part of the main tabs
   if (pathname.startsWith('/profile/') || pathname === '/create') {
       return null;
   }
 
-  // Swipeable Tabs Nav
   return (
     <nav className="bg-card border-t h-16 z-20 w-full flex-shrink-0">
       <div className="flex justify-around items-center h-full max-w-md mx-auto">
-        {mainNavItems.map(({ label, icon: Icon }, index) => {
-          const isActive = activeTab === index;
+        {mainNavItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
           return (
-            <button key={label} onClick={() => onTabChange?.(index)} className="flex-1">
+            <Link href={href} key={label} className="flex-1">
               <div
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 transition-colors",
@@ -43,7 +36,7 @@ export default function BottomNavbar({ activeTab, onTabChange }: BottomNavbarPro
                 <Icon className="h-6 w-6" />
                 <span className="text-xs font-medium">{label}</span>
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>

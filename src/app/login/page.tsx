@@ -30,7 +30,11 @@ export default function LoginPage() {
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setAuth(getAuth(app));
+    const authInstance = getAuth(app);
+    // For testing purposes, you can disable app verification.
+    // In a production environment, you would not do this.
+    // authInstance.settings.appVerificationDisabledForTesting = true;
+    setAuth(authInstance);
   }, []);
   
   useEffect(() => {
@@ -74,7 +78,7 @@ export default function LoginPage() {
          toast({
             variant: 'destructive',
             title: 'Failed to Send Code',
-            description: 'Could not send verification code. Please try again.',
+            description: (error as Error).message || 'Could not send verification code. Please try again.',
         });
     } finally {
         setIsLoading(false);

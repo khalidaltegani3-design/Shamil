@@ -22,8 +22,8 @@ export default function TabsLayout() {
   const ActiveComponent = TABS[pathname] || ChatsPage;
 
   return (
-    <div className="h-full w-full flex flex-col">
-      <main className="flex-1 min-h-0">
+    <div className="h-full grid grid-rows-[1fr_auto]">
+      <main className="overflow-y-auto">
         <ActiveComponent />
       </main>
       <BottomNavbar />

@@ -359,7 +359,7 @@ export default function ViewPage() {
     };
 
     return (
-        <div className="h-full w-full bg-black snap-y snap-mandatory overflow-auto">
+        <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-auto">
            {videos.map(video => (
                <VideoCard 
                     key={video.id} 

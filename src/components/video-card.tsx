@@ -82,8 +82,7 @@ export default function VideoCard({ video }: VideoCardProps) {
         <div className="flex justify-between items-end">
             {/* Left side: Video Info */}
             <div className="flex-1 pr-4 space-y-2">
-                <p className="font-bold text-base">@{video.user.name}</p>
-                <p className="text-sm">{video.caption}</p>
+                <p className="font-bold text-base">{video.caption}</p>
                  <div className="flex items-center gap-2">
                     <Music2 className="h-4 w-4" />
                     <p className="text-sm truncate">Original Sound - {video.user.name}</p>
@@ -92,25 +91,26 @@ export default function VideoCard({ video }: VideoCardProps) {
 
             {/* Right side: User avatar & Action buttons */}
             <div className="flex flex-col items-center gap-4">
-                 <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2 group mb-2">
+                 <Link href={`/profile/${video.user.id}`} className="flex flex-col items-center gap-2 group mb-2">
                     <Avatar className="h-12 w-12 border-2 border-white">
                         <AvatarImage src={video.user.avatarUrl} />
                         <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
+                     <p className="font-bold text-sm">@{video.user.name}</p>
                 </Link>
-                 <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1">
+                 <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Like video">
                     <Heart className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.likes.toLocaleString()}</span>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1">
+                <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Comment on video">
                     <MessageCircle className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.comments.toLocaleString()}</span>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1">
+                <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Share with contacts">
                     <Share className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.shares.toLocaleString()}</span>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-auto p-0 text-white">
+                <Button variant="ghost" size="icon" className="h-auto p-0 text-white" aria-label="Share with external apps">
                     <MoreHorizontal className="h-8 w-8" />
                 </Button>
             </div>

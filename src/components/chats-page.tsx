@@ -6,14 +6,16 @@ import { chats as initialChats, users, type Chat, type Message } from '@/lib/moc
 import ChatList from '@/components/chat-list';
 import ChatView from '@/components/chat-view';
 import { Input } from '@/components/ui/input';
-import { MoreVertical, Search } from 'lucide-react';
+import { MessageSquarePlus } from 'lucide-react';
 import { Button } from './ui/button';
+import { useRouter } from 'next/navigation';
 
 
 export default function ChatsPage() {
   const [chats, setChats] = React.useState<Chat[]>(initialChats);
   const [selectedChat, setSelectedChat] = React.useState<Chat | null>(null);
   const currentUser = users[0]; // Assume the first user is the current user
+  const router = useRouter();
 
   const handleSendMessage = (chatId: string, content: string, quotedMessage?: Message) => {
     if (!content.trim() && !quotedMessage) return;
@@ -55,7 +57,7 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
+    <div className="relative flex h-full w-full bg-background text-foreground overflow-hidden">
         <aside className="h-full w-full flex-shrink-0 flex flex-col">
             <ChatList
                 chats={chats}
@@ -64,6 +66,12 @@ export default function ChatsPage() {
                 currentUser={currentUser}
             />
         </aside>
+        <Button 
+            onClick={() => router.push('/new-chat')}
+            className="absolute bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+        >
+            <MessageSquarePlus className="h-6 w-6" />
+        </Button>
     </div>
   );
 }

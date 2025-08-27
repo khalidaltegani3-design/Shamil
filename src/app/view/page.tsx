@@ -6,13 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Send, Music, Camera, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { DialogFooter } from '@/components/ui/dialog';
 
 interface Comment {
     id: string;
@@ -360,7 +359,7 @@ export default function ViewPage() {
     };
 
     return (
-        <div className="h-full w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
+        <div className="h-screen w-full bg-black snap-y snap-mandatory overflow-y-scroll overflow-x-hidden scrollbar-hide">
            {videos.map(video => (
                <VideoCard 
                     key={video.id} 
@@ -373,5 +372,3 @@ export default function ViewPage() {
         </div>
     );
 }
-
-    

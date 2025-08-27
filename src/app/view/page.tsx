@@ -196,7 +196,7 @@ const VideoCard = ({
     const comments = Array.isArray(video.commentsData) ? video.commentsData : [];
 
     return (
-        <div className="h-full w-full snap-start flex-shrink-0 bg-black">
+        <div className="h-full w-full snap-start flex-shrink-0 relative bg-black">
             <video
                 ref={videoRef}
                 src={video.videoUrl}
@@ -207,7 +207,7 @@ const VideoCard = ({
                 onClick={() => videoRef.current?.paused ? videoRef.current?.play() : videoRef.current?.pause()}
             ></video>
             
-            <div className="absolute bottom-[80px] right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
+            <div className="absolute bottom-20 right-2 p-2 flex flex-col items-center space-y-4 z-10 text-white">
                 <Link href={`/profile/${video.user.id}`}>
                     <Avatar className="h-12 w-12 border-2 border-white">
                         <AvatarImage src={video.user.avatarUrl} data-ai-hint="avatar user"/>
@@ -236,12 +236,10 @@ const VideoCard = ({
                 </Button>
             </div>
 
-            <div className="absolute bottom-[80px] left-0 p-4 bg-gradient-to-t from-black/80 to-transparent w-full text-white">
+            <div className="absolute bottom-20 left-0 p-4 bg-gradient-to-t from-black/50 to-transparent w-full text-white">
                 <div className="flex items-end">
                     <div className="flex-1 space-y-1.5 pr-16">
-                        <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2">
-                           <h3 className="font-bold text-base">@{video.user.name}</h3>
-                        </Link>
+                        <h3 className="font-bold text-base">@{video.user.name}</h3>
                         <p className="text-sm">{video.caption}</p>
                         <div className="flex items-center gap-2 text-sm">
                             <Music className="h-4 w-4" />
@@ -372,3 +370,5 @@ export default function ViewPage() {
         </div>
     );
 }
+
+    

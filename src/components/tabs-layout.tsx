@@ -39,6 +39,9 @@ export default function TabsLayout() {
   } else if (pageLabels[pathname]) {
     ActiveComponent = TABS[pathname]?.component || ChatsPage;
     pageTitle = pageLabels[pathname];
+  } else if (TABS[pathname]) {
+    ActiveComponent = TABS[pathname].component;
+    pageTitle = TABS[pathname].label;
   } else {
      ActiveComponent = TABS['/']?.component;
      pageTitle = TABS['/']?.label;
@@ -58,7 +61,7 @@ export default function TabsLayout() {
     <div className="h-full w-full flex flex-col">
         <Header title={pageTitle} onMenuClick={() => setSidebarOpen(true)} />
         <SideNavbar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 h-full w-full overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
             <ActiveComponent />
         </main>
     </div>

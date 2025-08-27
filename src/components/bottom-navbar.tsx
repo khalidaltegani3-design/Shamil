@@ -22,7 +22,7 @@ export default function BottomNavbar({ activeTab, onTabChange }: BottomNavbarPro
   const pathname = usePathname();
 
   // Don't show navbar on specific pages that are not part of the main tabs
-  if (pathname.startsWith('/profile/') || pathname === '/create' || (pathname.startsWith('/view') && !onTabChange)) {
+  if (pathname.startsWith('/profile/') || pathname === '/create') {
       return null;
   }
 

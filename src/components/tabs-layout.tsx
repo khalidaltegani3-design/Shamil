@@ -8,12 +8,14 @@ import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
 import CallsPage from '@/app/calls/page';
 import ViewPage from '@/app/view/page';
+import SettingsPage from '@/app/settings/page';
 
 const TABS: Record<string, React.ComponentType> = {
     '/': ChatsPage,
     '/status': StatusPage,
     '/calls': CallsPage,
     '/view': ViewPage,
+    '/settings': SettingsPage,
 };
 
 export default function TabsLayout() {

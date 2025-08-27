@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, CircleDot, Phone, Video } from "lucide-react";
+import { MessageSquare, CircleDot, Phone, Video, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -11,12 +11,15 @@ const mainNavItems = [
   { href: "/status", label: "Status", icon: CircleDot },
   { href: "/calls", label: "Calls", icon: Phone },
   { href: "/view", label: "View", icon: Video },
+  { href: "/settings", label: "Settings", icon: User },
 ];
 
 export default function BottomNavbar() {
   const pathname = usePathname();
 
-  if (pathname.startsWith('/profile/') || pathname === '/create') {
+  const isVisible = mainNavItems.some(item => item.href === pathname);
+
+  if (!isVisible) {
       return null;
   }
 

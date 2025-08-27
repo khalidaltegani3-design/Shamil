@@ -22,10 +22,8 @@ export default function TabsLayout() {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <main className="flex-1 overflow-hidden">
-        <div className="h-full w-full">
-            <ActiveComponent />
-        </div>
+      <main className="flex-1 overflow-y-auto">
+        <ActiveComponent />
       </main>
       <BottomNavbar />
     </div>

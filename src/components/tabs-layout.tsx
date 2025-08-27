@@ -39,15 +39,12 @@ export default function TabsLayout() {
     const newIndex = emblaApi.selectedScrollSnap();
     setActiveIndex(newIndex);
     const newPath = TAB_PATHS[newIndex];
-    const newSearchParams = new URLSearchParams(searchParams.toString());
-    // keep tab param for non-path tabs if needed, or clear it
-    if (newPath !== '/') {
-        newSearchParams.set('tab', newIndex.toString());
-    } else {
-        newSearchParams.delete('tab');
+    if (pathname !== newPath) {
+        // We only push history state if the path is different
+        // to avoid loops and unnecessary history entries.
+        router.replace(newPath, { scroll: false });
     }
-    router.replace(`${newPath}?${newSearchParams.toString()}`, { scroll: false });
-  }, [emblaApi, router, searchParams]);
+  }, [emblaApi, router, pathname]);
 
 
   const handleTabChange = useCallback((index: number) => {
@@ -62,15 +59,7 @@ export default function TabsLayout() {
     emblaApi.on('select', handleSelect);
    
     const currentPathIndex = TAB_PATHS.indexOf(pathname);
-    const tab = searchParams.get('tab');
     let initialTab = currentPathIndex !== -1 ? currentPathIndex : 0;
-    
-    if (tab && !isNaN(parseInt(tab, 10))) {
-        const tabIndex = parseInt(tab, 10);
-        if(tabIndex >= 0 && tabIndex < TABS_COUNT) {
-            initialTab = tabIndex;
-        }
-    }
     
     if (initialTab !== emblaApi.selectedScrollSnap()) {
       emblaApi.scrollTo(initialTab, true);
@@ -80,7 +69,7 @@ export default function TabsLayout() {
     return () => {
       emblaApi.off('select', handleSelect);
     };
-  }, [emblaApi, handleSelect, searchParams, pathname]);
+  }, [emblaApi, handleSelect, pathname]);
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -88,7 +77,7 @@ export default function TabsLayout() {
           <Carousel setApi={emblaApi} className="h-full">
             <CarouselContent className='h-full'>
               {TABS.map((tab, index) => (
-                <CarouselItem key={index} className="h-full overflow-y-auto">
+                <CarouselItem key={index} className="h-full overflow-hidden">
                     {tab.component}
                 </CarouselItem>
               ))}

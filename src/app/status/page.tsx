@@ -105,7 +105,7 @@ export default function StatusPage() {
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          <button className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors">
+          <div className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors">
             <div className="flex items-center gap-4">
                 <div className="relative">
                 <Avatar className="h-16 w-16">
@@ -136,7 +136,7 @@ export default function StatusPage() {
                 </p>
                 </div>
             </div>
-          </button>
+          </div>
 
           <div>
             <h3 className="mb-3 font-semibold text-muted-foreground px-1">Recent Updates</h3>
@@ -226,7 +226,7 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full flex flex-col items-center justify-center">
+      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full flex flex-col items-center justify-center rounded-lg">
         <DialogHeader className="absolute top-4 left-4 right-4 z-20">
              <DialogTitle className="sr-only">Status from {status.user.name}</DialogTitle>
              <DialogDescription className="sr-only">{status.caption || "User status"}</DialogDescription>
@@ -295,7 +295,7 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
 
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
-            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] p-0 gap-0">
+            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] p-0 gap-0 rounded-2xl">
                 <DialogHeader>
                     <DialogTitle className="sr-only">Add New Status</DialogTitle>
                     <DialogDescription className="sr-only">Create a new status by adding a caption to your selected image or video.</DialogDescription>

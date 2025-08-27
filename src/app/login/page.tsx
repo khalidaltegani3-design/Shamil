@@ -27,33 +27,21 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   
-  const [auth, setAuth] = useState<Auth | null>(null);
+  const auth = getAuth(app);
 
-  useEffect(() => {
-    const authInstance = getAuth(app);
-    setAuth(authInstance);
-  }, []);
-
-  const setupRecaptcha = (authInstance: Auth) => {
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-    }
-    
-    const verifier = new RecaptchaVerifier(authInstance, 'recaptcha-container', {
+  // This function sets up the reCAPTCHA verifier
+  const setupRecaptcha = () => {
+    // It is important to create a new verifier each time.
+    return new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
           // reCAPTCHA solved, allow signInWithPhoneNumber.
-          console.log("reCAPTCHA solved");
+          console.log("reCAPTCHA solved, ready to send code.");
         }
     });
-    return verifier;
   }
 
   const handleSendCode = async () => {
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Firebase not initialized.'});
-        return;
-    }
     if (phoneNumber.length < 10) {
       toast({
         variant: 'destructive',
@@ -64,41 +52,43 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
+    const appVerifier = setupRecaptcha();
+    
     try {
-        const appVerifier = setupRecaptcha(auth);
-        
-        const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-        
-        window.recaptchaVerifier = appVerifier;
-        setConfirmationResult(result);
-        window.confirmationResult = result;
+      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      
+      // SMS sent. Prompt user to type the code from the message.
+      setConfirmationResult(result);
+      window.confirmationResult = result; // Persist in window object for robustness
+      window.recaptchaVerifier = appVerifier;
 
-        toast({
-            title: 'Code Sent!',
-            description: 'A verification code has been sent to your phone.',
-        });
+      toast({
+          title: 'Code Sent!',
+          description: 'A verification code has been sent to your phone.',
+      });
+
     } catch (error) {
-         console.error("Error sending verification code: ", error);
-         toast({
-            variant: 'destructive',
-            title: 'Failed to Send Code',
-            description: (error as Error).message || 'Could not send verification code. Please try again.',
-        });
-        
-        // Reset reCAPTCHA on error
-        window.recaptchaVerifier?.render().then((widgetId) => {
+       console.error("Error sending verification code: ", error);
+       toast({
+          variant: 'destructive',
+          title: 'Failed to Send Code',
+          description: (error as Error).message || 'Could not send verification code. Please try again.',
+      });
+      // It's important to render the verifier again if it fails.
+      appVerifier.render().then((widgetId) => {
+          // @ts-ignore
+          if (window.grecaptcha) {
             // @ts-ignore
-            if (window.grecaptcha) {
-              // @ts-ignore
-              window.grecaptcha.reset(widgetId);
-            }
-        })
+            window.grecaptcha.reset(widgetId);
+          }
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleVerifyCode = async () => {
+    // Prefer confirmationResult from state, but fallback to window object
     const result = confirmationResult || window.confirmationResult;
     if (!result) {
         toast({ variant: 'destructive', title: 'Verification process not started.'});
@@ -134,6 +124,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
+      {/* The reCAPTCHA container, it will be invisible */}
       <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">

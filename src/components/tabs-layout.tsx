@@ -1,7 +1,8 @@
+
 "use client"
 
 import React from 'react';
-import TopNavbar from './bottom-navbar';
+import BottomNavbar from './bottom-navbar';
 import { usePathname } from 'next/navigation';
 import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
@@ -19,9 +20,7 @@ const TABS: Record<string, React.ComponentType> = {
     '/settings': SettingsPage,
 };
 
-// A set of routes where the top navbar should be visible
 const NAVBAR_VISIBLE_ROUTES = new Set(Object.keys(TABS));
-const FULL_PAGE_ROUTES = ['/create', '/profile'];
 
 
 export default function TabsLayout() {
@@ -44,10 +43,10 @@ export default function TabsLayout() {
 
   return (
     <div className="h-full w-full flex flex-col">
-        {isNavbarVisible && <TopNavbar />}
         <main className="flex-1 overflow-y-auto">
             <ActiveComponent />
         </main>
+        {isNavbarVisible && <BottomNavbar />}
     </div>
   );
 }

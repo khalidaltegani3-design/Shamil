@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,8 @@ import { Phone, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { app } from '@/lib/firebase';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, type Auth } from "firebase/auth";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { FirebaseError } from 'firebase/app';
 
 // Define recaptcha verifier on the window object
 declare global {
@@ -32,6 +33,9 @@ export default function LoginPage() {
   // This function sets up the reCAPTCHA verifier
   const setupRecaptcha = () => {
     // It is important to create a new verifier each time.
+    if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+    }
     return new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
@@ -60,7 +64,6 @@ export default function LoginPage() {
       // SMS sent. Prompt user to type the code from the message.
       setConfirmationResult(result);
       window.confirmationResult = result; // Persist in window object for robustness
-      window.recaptchaVerifier = appVerifier;
 
       toast({
           title: 'Code Sent!',
@@ -69,17 +72,23 @@ export default function LoginPage() {
 
     } catch (error) {
        console.error("Error sending verification code: ", error);
+       let description = 'Could not send verification code. Please try again.';
+       if (error instanceof FirebaseError) {
+        if (error.code === 'auth/too-many-requests') {
+          description = 'Too many requests sent. Please try again later.';
+        } else {
+          description = error.message;
+        }
+       }
        toast({
           variant: 'destructive',
           title: 'Failed to Send Code',
-          description: (error as Error).message || 'Could not send verification code. Please try again.',
+          description: description,
       });
       // It's important to render the verifier again if it fails.
       appVerifier.render().then((widgetId) => {
-          // @ts-ignore
-          if (window.grecaptcha) {
-            // @ts-ignore
-            window.grecaptcha.reset(widgetId);
+          if ((window as any).grecaptcha) {
+            (window as any).grecaptcha.reset(widgetId);
           }
       });
     } finally {

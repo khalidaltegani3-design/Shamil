@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
 import CallsPage from '@/app/calls/page';
-import ViewPage from '@/app/view/page';
 import SettingsPage from '@/app/settings/page';
 import ProfilePage from '@/app/profile/[userId]/page';
 import CreateVideoPage from '@/app/create/page';
@@ -18,7 +17,6 @@ const TABS: Record<string, { component: React.ComponentType, label: string }> = 
     '/': { component: ChatsPage, label: 'Zoliapp' },
     '/status': { component: StatusPage, label: 'Status' },
     '/calls': { component: CallsPage, label: 'Calls' },
-    '/view': { component: ViewPage, label: 'View' },
     '/settings': { component: SettingsPage, label: 'Settings' },
 };
 

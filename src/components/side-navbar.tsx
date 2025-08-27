@@ -13,7 +13,6 @@ const mainNavItems = [
   { href: "/", label: "Chats", icon: MessageSquare },
   { href: "/status", label: "Status", icon: CircleDot },
   { href: "/calls", label: "Calls", icon: Phone },
-  { href: "/view", label: "View", icon: Video },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -9,12 +9,13 @@ import { Phone, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { app } from '@/lib/firebase';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, type Auth } from "firebase/auth";
 
 // Define recaptcha verifier on the window object
 declare global {
   interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
+    recaptchaVerifier?: RecaptchaVerifier;
+    confirmationResult?: ConfirmationResult;
   }
 }
 
@@ -26,26 +27,30 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   
-  const [auth, setAuth] = useState<any>(null);
+  const [auth, setAuth] = useState<Auth | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const authInstance = getAuth(app);
     setAuth(authInstance);
   }, []);
-  
-  useEffect(() => {
-    if (!auth || !recaptchaContainerRef.current) return;
 
-    if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-            'size': 'invisible',
-            'callback': (response: any) => {
-              // reCAPTCHA solved, allow signInWithPhoneNumber.
-            }
-        });
+  const setupRecaptcha = (authInstance: Auth) => {
+    if (!recaptchaContainerRef.current) return null;
+    
+    // Cleanup previous instance if it exists
+    if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
     }
-  }, [auth]);
+
+    const verifier = new RecaptchaVerifier(authInstance, recaptchaContainerRef.current, {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        }
+    });
+    return verifier;
+  }
 
   const handleSendCode = async () => {
     if (!auth) {
@@ -63,9 +68,17 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-        const appVerifier = window.recaptchaVerifier;
+        const appVerifier = setupRecaptcha(auth);
+        if (!appVerifier) {
+            throw new Error("reCAPTCHA container not found.");
+        }
+        
         const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        
+        window.recaptchaVerifier = appVerifier;
         setConfirmationResult(result);
+        window.confirmationResult = result;
+
         toast({
             title: 'Code Sent!',
             description: 'A verification code has been sent to your phone.',
@@ -77,13 +90,19 @@ export default function LoginPage() {
             title: 'Failed to Send Code',
             description: (error as Error).message || 'Could not send verification code. Please try again.',
         });
+        // Reset reCAPTCHA on error
+        window.recaptchaVerifier?.render().then((widgetId) => {
+            // @ts-ignore
+            window.grecaptcha?.reset(widgetId);
+        })
     } finally {
         setIsLoading(false);
     }
   };
 
   const handleVerifyCode = async () => {
-    if (!confirmationResult) {
+    const result = confirmationResult || window.confirmationResult;
+    if (!result) {
         toast({ variant: 'destructive', title: 'Verification process not started.'});
         return;
     }
@@ -97,7 +116,7 @@ export default function LoginPage() {
     }
     setIsLoading(true);
     try {
-        await confirmationResult.confirm(verificationCode);
+        await result.confirm(verificationCode);
         toast({
             title: 'Success!',
             description: 'You have been successfully logged in.',

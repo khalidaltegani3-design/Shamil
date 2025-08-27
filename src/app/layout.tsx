@@ -20,7 +20,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
       </head>
       <body className="font-doodle antialiased">
-        <div className="flex h-screen w-full max-w-md mx-auto flex-col relative">
+        <div className="h-screen w-full max-w-md mx-auto flex flex-col">
           {children}
         </div>
         <Toaster />

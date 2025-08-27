@@ -28,7 +28,7 @@ export default function BottomNavbar({ activeTab, onTabChange }: BottomNavbarPro
 
   // Swipeable Tabs Nav
   return (
-    <nav className="bg-card border-t h-16 z-20 w-full flex-shrink-0 fixed bottom-0 max-w-md mx-auto left-0 right-0">
+    <nav className="bg-card border-t h-16 z-20 w-full flex-shrink-0">
       <div className="flex justify-around items-center h-full max-w-md mx-auto">
         {mainNavItems.map(({ label, icon: Icon }, index) => {
           const isActive = activeTab === index;

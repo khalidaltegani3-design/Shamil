@@ -83,7 +83,7 @@ export default function TabsLayout() {
   }, [emblaApi, handleSelect, searchParams, pathname]);
 
   return (
-    <>
+    <div className="h-full w-full flex flex-col">
       <main className="flex-1 overflow-hidden">
           <Carousel setApi={emblaApi} className="h-full">
             <CarouselContent className='h-full'>
@@ -96,6 +96,6 @@ export default function TabsLayout() {
           </Carousel>
       </main>
       <BottomNavbar activeTab={activeIndex} onTabChange={handleTabChange} />
-    </>
+    </div>
   );
 }

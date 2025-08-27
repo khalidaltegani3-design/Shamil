@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react';
@@ -62,6 +63,7 @@ export default function ProfilePage() {
                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <h2 className="text-2xl font-bold">@{user.name}</h2>
+                         <Button>Follow</Button>
                     </div>
 
                     <div className="flex justify-around bg-muted/50 p-3 rounded-lg">

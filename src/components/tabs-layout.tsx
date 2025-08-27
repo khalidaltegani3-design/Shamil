@@ -28,17 +28,21 @@ export default function TabsLayout() {
 
   let ActiveComponent: React.ComponentType;
   let showHeader = false;
+  let showNavbar = true;
 
   if (pathname.startsWith('/profile/')) {
     ActiveComponent = ProfilePage;
     showHeader = false;
+    showNavbar = false;
   } else if (TABS[pathname]) {
     ActiveComponent = TABS[pathname].component;
     showHeader = TABS[pathname].hasHeader;
+    showNavbar = !['/view', '/create'].includes(pathname)
   }
   else {
      ActiveComponent = TABS['/']?.component || ChatsPage;
      showHeader = TABS['/']?.hasHeader ?? true;
+     showNavbar = true;
   }
   
   return (
@@ -47,7 +51,7 @@ export default function TabsLayout() {
         <main className="flex-1 overflow-y-auto">
             <ActiveComponent />
         </main>
-        <BottomNavbar />
+        {showNavbar && <BottomNavbar />}
     </div>
   );
 }

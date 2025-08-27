@@ -78,7 +78,7 @@ export default function VideoCard({ video }: VideoCardProps) {
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent">
+      <div className="absolute bottom-16 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent">
         <div className="flex justify-between items-end">
             {/* Left side: User info & caption */}
             <div className="flex-1 pr-4 space-y-2">

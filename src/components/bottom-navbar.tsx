@@ -18,10 +18,18 @@ const mainNavItems = [
 export default function BottomNavbar() {
   const pathname = usePathname();
 
+  const isCreatePage = pathname === '/create';
+  const isViewPage = pathname === '/view';
+
+  if (isCreatePage || isViewPage) {
+    return null;
+  }
+
   return (
     <footer className="sticky bottom-0 w-full bg-background border-t z-10">
       <nav className="flex items-center justify-around h-16">
         {mainNavItems.map(({ href, label, icon: Icon }) => {
+          if (href === '/create') return null; // Hide create from bottom bar
           const isActive = pathname === href;
           return (
             <Link href={href} key={label} className="flex-1">

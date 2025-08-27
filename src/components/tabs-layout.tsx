@@ -10,44 +10,44 @@ import SettingsPage from '@/app/settings/page';
 import ProfilePage from '@/app/profile/[userId]/page';
 import CreateVideoPage from '@/app/create/page';
 import ViewPage from '@/app/view/page';
+import BottomNavbar from './bottom-navbar';
 import Header from './header';
-import SideNavbar from './side-navbar';
 
-const TABS: Record<string, { component: React.ComponentType }> = {
-    '/': { component: ChatsPage },
-    '/status': { component: StatusPage },
-    '/calls': { component: CallsPage },
-    '/settings': { component: SettingsPage },
-    '/view': { component: ViewPage },
-    '/create': { component: CreateVideoPage },
+const TABS: Record<string, { component: React.ComponentType, hasHeader: boolean }> = {
+    '/': { component: ChatsPage, hasHeader: true },
+    '/status': { component: StatusPage, hasHeader: true },
+    '/calls': { component: CallsPage, hasHeader: true },
+    '/settings': { component: SettingsPage, hasHeader: true },
+    '/view': { component: ViewPage, hasHeader: false },
+    '/create': { component: CreateVideoPage, hasHeader: false },
 };
-
-const fullscreenPages = ['/create', '/view'];
 
 export default function TabsLayout() {
   const pathname = usePathname();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   let ActiveComponent: React.ComponentType;
+  let showHeader = false;
 
   if (pathname.startsWith('/profile/')) {
     ActiveComponent = ProfilePage;
+    showHeader = false;
   } else if (TABS[pathname]) {
     ActiveComponent = TABS[pathname].component;
+    showHeader = TABS[pathname].hasHeader;
   }
   else {
      ActiveComponent = TABS['/']?.component || ChatsPage;
+     showHeader = TABS['/']?.hasHeader ?? true;
   }
-  
-  const showHeader = !fullscreenPages.includes(pathname);
   
   return (
     <div className="h-full w-full flex flex-col bg-background">
-        <SideNavbar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
         {showHeader && <Header onMenuClick={() => setSidebarOpen(true)} />}
         <main className="flex-1 overflow-y-auto">
             <ActiveComponent />
         </main>
+        <BottomNavbar />
     </div>
   );
 }

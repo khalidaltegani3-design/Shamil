@@ -9,14 +9,14 @@ import Link from "next/link"
 import React from "react"
 
 const settingsOptions = [
-    { icon: UserCircle, title: "Account", description: "Privacy, security, change number", href:"#" },
-    { icon: Palette, title: "Appearance", description: "Theme, wallpaper, chat history", href:"#" },
-    { icon: ListVideo, title: "Content Preferences", description: "Customize your discover feed", href:"#" },
-    { icon: Bell, title: "Notifications", description: "Message, group & call tones", href:"#" },
-    { icon: KeyRound, title: "Privacy", description: "Block contacts, disappearing messages", href:"#" },
-    { icon: Lock, title: "Security", description: "End-to-end encryption", href:"#" },
-    { icon: ImageIcon, title: "Chat Wallpaper", description: "Change your chat wallpaper", href:"#" },
-    { icon: HelpCircle, title: "Help", description: "Help center, contact us, privacy policy", href:"#" },
+    { icon: UserCircle, title: "Account", description: "Privacy, security, change number", href:"/settings/account" },
+    { icon: Palette, title: "Appearance", description: "Theme, wallpaper, chat history", href:"/settings/appearance" },
+    { icon: ListVideo, title: "Content Preferences", description: "Customize your discover feed", href:"/settings/content-preferences" },
+    { icon: Bell, title: "Notifications", description: "Message, group & call tones", href:"/settings/notifications" },
+    { icon: KeyRound, title: "Privacy", description: "Block contacts, disappearing messages", href:"/settings/privacy" },
+    { icon: Lock, title: "Security", description: "End-to-end encryption", href:"/settings/security" },
+    { icon: ImageIcon, title: "Chat Wallpaper", description: "Change your chat wallpaper", href:"/settings/chat-wallpaper" },
+    { icon: HelpCircle, title: "Help", description: "Help center, contact us, privacy policy", href:"/settings/help" },
 ]
 
 export default function SettingsPage() {
@@ -27,7 +27,7 @@ export default function SettingsPage() {
             </header>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <Card className="p-4">
-                    <Link href="#" className="flex items-center gap-4">
+                    <Link href="/profile/user-1" className="flex items-center gap-4">
                         <Avatar className="h-16 w-16">
                             <AvatarImage src="https://placehold.co/100x100.png" alt="User Name" data-ai-hint="user avatar"/>
                             <AvatarFallback>U</AvatarFallback>

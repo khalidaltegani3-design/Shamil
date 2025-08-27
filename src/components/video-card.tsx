@@ -7,15 +7,21 @@ import { Button } from './ui/button';
 import { Heart, MessageCircle, Share, Play, Pause, Music2, MoreHorizontal } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
+import CommentsSheet from './comments-sheet';
+import type { Comment } from '@/lib/types';
+import { users } from '@/lib/mock-data';
 
 interface VideoCardProps {
   video: Video;
 }
 
-export default function VideoCard({ video }: VideoCardProps) {
+export default function VideoCard({ video: initialVideo }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [video, setVideo] = useState<Video>(initialVideo);
+
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -48,17 +54,35 @@ export default function VideoCard({ video }: VideoCardProps) {
       { threshold: 0.5 } // 50% of the video should be visible to play
     );
 
-    if (videoRef.current) {
-      observer.observe(videoRef.current);
+    const currentVideoRef = videoRef.current;
+    if (currentVideoRef) {
+      observer.observe(currentVideoRef);
     }
 
     return () => {
-      if (videoRef.current) {
-        observer.unobserve(videoRef.current);
+      if (currentVideoRef) {
+        observer.unobserve(currentVideoRef);
       }
     };
   }, [video]);
 
+  const handleAddComment = (commentText: string) => {
+    const newComment: Comment = {
+      id: `comment-${Date.now()}`,
+      user: users[0], // Assuming current user is users[0]
+      text: commentText,
+      timestamp: new Date().toISOString(),
+    };
+    
+    setVideo(prevVideo => {
+        const updatedComments = [...(prevVideo.commentsData || []), newComment];
+        return {
+            ...prevVideo,
+            commentsData: updatedComments,
+            comments: updatedComments.length,
+        }
+    });
+  };
 
   return (
     <div className="relative h-full w-full bg-black rounded-lg overflow-hidden">
@@ -82,7 +106,10 @@ export default function VideoCard({ video }: VideoCardProps) {
         <div className="flex justify-between items-end">
             {/* Left side: Video Info */}
             <div className="flex-1 pr-4 space-y-2">
-                <p className="font-bold text-base">{video.caption}</p>
+                 <Link href={`/profile/${video.user.id}`} className="flex items-center gap-2 group mb-2 w-fit">
+                     <p className="font-bold text-base">@{video.user.name}</p>
+                </Link>
+                <p className="font-medium text-sm">{video.caption}</p>
                  <div className="flex items-center gap-2">
                     <Music2 className="h-4 w-4" />
                     <p className="text-sm truncate">Original Sound - {video.user.name}</p>
@@ -96,13 +123,12 @@ export default function VideoCard({ video }: VideoCardProps) {
                         <AvatarImage src={video.user.avatarUrl} />
                         <AvatarFallback>{video.user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                     <p className="font-bold text-sm">@{video.user.name}</p>
                 </Link>
                  <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Like video">
                     <Heart className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.likes.toLocaleString()}</span>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Comment on video">
+                <Button onClick={() => setIsCommentsOpen(true)} variant="ghost" size="icon" className="h-auto p-0 flex-col text-white gap-1" aria-label="Comment on video">
                     <MessageCircle className="h-8 w-8" />
                     <span className="text-xs font-semibold">{video.comments.toLocaleString()}</span>
                 </Button>
@@ -116,6 +142,13 @@ export default function VideoCard({ video }: VideoCardProps) {
             </div>
         </div>
       </div>
+      <CommentsSheet 
+        isOpen={isCommentsOpen}
+        onOpenChange={setIsCommentsOpen}
+        comments={video.commentsData || []}
+        commentCount={video.comments}
+        onAddComment={handleAddComment}
+      />
     </div>
   );
 }

@@ -27,8 +27,8 @@ export default function TabsLayout() {
   const isNavbarVisible = NAVBAR_VISIBLE_ROUTES.has(pathname);
 
   return (
-    <div className="h-full grid grid-rows-[1fr_auto]">
-      <main className="overflow-y-auto">
+    <div className="h-full w-full relative">
+      <main className="h-full overflow-y-auto pb-24">
         <ActiveComponent />
       </main>
       {isNavbarVisible && <BottomNavbar />}

@@ -5,15 +5,15 @@ import * as React from 'react';
 import { users, statuses as initialStatuses, type Status } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Camera, Plus, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
-import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { VideoTrimmer } from '@/components/video-trimmer';
 
 const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (formattedTime: string) => React.ReactNode }) => {
   const [timeAgo, setTimeAgo] = React.useState('');
@@ -32,7 +32,6 @@ const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (
   }, [timestamp]);
 
   if (!timeAgo) {
-    // Render a placeholder or nothing on the server
     return null; 
   }
 
@@ -42,7 +41,8 @@ const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (
 export default function StatusPage() {
   const [statuses] = React.useState<Status[]>(initialStatuses);
   const [selectedStatusIndex, setSelectedStatusIndex] = React.useState<number | null>(null);
-  const [statusDraft, setStatusDraft] = React.useState<{image: File, previewUrl: string} | null>(null);
+  const [statusDraft, setStatusDraft] = React.useState<{file: File, previewUrl: string} | null>(null);
+  const [videoToTrim, setVideoToTrim] = React.useState<{file: File, previewUrl: string} | null>(null);
   const { toast } = useToast();
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -51,11 +51,10 @@ export default function StatusPage() {
   const myStatus = statuses.find(s => s.user.id === currentUser.id);
   const friendsStatuses = statuses.filter(s => s.user.id !== currentUser.id);
 
-  const handleAddStatus = (caption: string, imageUrl: string) => {
+  const handleAddStatus = (caption: string) => {
     // This is a placeholder for adding a status.
-    // In a real app this would update a global state or call an API.
-    console.log("Adding status:", { caption, imageUrl });
-    setStatusDraft(null); // Clear draft after posting
+    console.log("Adding status:", { caption, file: statusDraft?.file.name });
+    setStatusDraft(null);
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,25 +68,27 @@ export default function StatusPage() {
         video.onloadedmetadata = () => {
           window.URL.revokeObjectURL(video.src);
           if (video.duration > 60) {
-            toast({
-              variant: 'destructive',
-              title: 'Video Too Long',
-              description: 'Please select a video that is 60 seconds or less.',
-            });
-            // Reset the file input
-            if(fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
+            setVideoToTrim({ file, previewUrl });
           } else {
-            setStatusDraft({ image: file, previewUrl });
+            setStatusDraft({ file, previewUrl });
           }
         };
         video.src = previewUrl;
       } else {
-         setStatusDraft({ image: file, previewUrl });
+         setStatusDraft({ file, previewUrl });
       }
     }
+    // Reset the file input so the same file can be selected again
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
   };
+
+  const handleTrimComplete = (trimmedVideoFile: File) => {
+    const previewUrl = URL.createObjectURL(trimmedVideoFile);
+    setStatusDraft({ file: trimmedVideoFile, previewUrl });
+    setVideoToTrim(null);
+  }
 
   const handlePlusClick = () => {
     fileInputRef.current?.click();
@@ -104,44 +105,46 @@ export default function StatusPage() {
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          <div className="flex items-center gap-4 p-2">
-            <div className="relative">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
-                <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept="image/*,video/*"
-              />
-                <button 
-                onClick={handlePlusClick}
-                className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background hover:bg-primary/90 transition-colors">
-                  <Plus className="h-4 w-4" />
-              </button>
+          <button className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors">
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                <Avatar className="h-16 w-16">
+                    <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
+                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*,video/*"
+                />
+                    <button 
+                    onClick={handlePlusClick}
+                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background hover:bg-primary/90 transition-colors">
+                    <Plus className="h-4 w-4" />
+                </button>
+                </div>
+                <div>
+                <h2 className="font-semibold text-lg">My Status</h2>
+                <p className="text-sm text-muted-foreground">
+                    {myStatus ? (
+                        <ClientTimeAgo timestamp={myStatus.timestamp}>
+                        {(time) => `Updated ${time} ago`}
+                    </ClientTimeAgo>
+                    ) : "Add to your status"}
+                </p>
+                </div>
             </div>
-            <div>
-              <h2 className="font-semibold text-lg">My Status</h2>
-              <p className="text-sm text-muted-foreground">
-                {myStatus ? (
-                    <ClientTimeAgo timestamp={myStatus.timestamp}>
-                      {(time) => `Updated ${time} ago`}
-                  </ClientTimeAgo>
-                ) : "Add to your status"}
-              </p>
-            </div>
-          </div>
+          </button>
 
           <div>
             <h3 className="mb-3 font-semibold text-muted-foreground px-1">Recent Updates</h3>
-            <div className="space-y-2">
-              {friendsStatuses.map((status, index) => (
-                <React.Fragment key={status.id}>
+            <div className="space-y-1">
+              {friendsStatuses.map((status) => (
                     <button
-                      onClick={() => setSelectedStatusIndex(index)}
+                      key={status.id}
+                      onClick={() => setSelectedStatusIndex(friendsStatuses.indexOf(status))}
                       className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
@@ -159,8 +162,6 @@ export default function StatusPage() {
                         </div>
                       </div>
                     </button>
-                    {index < friendsStatuses.length - 1 && <Separator className="my-1" />}
-                </React.Fragment>
               ))}
             </div>
           </div>
@@ -177,6 +178,13 @@ export default function StatusPage() {
         onClose={() => setStatusDraft(null)}
         onAddStatus={handleAddStatus}
       />
+      {videoToTrim && (
+        <VideoTrimmer 
+            videoFile={videoToTrim.file}
+            onClose={() => setVideoToTrim(null)}
+            onTrimComplete={handleTrimComplete}
+        />
+      )}
     </div>
   );
 }
@@ -203,7 +211,7 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
       } else {
         onClose();
       }
-    }, 10000); // 10 seconds
+    }, 10000);
 
     return () => {
       clearTimeout(timer);
@@ -218,10 +226,10 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full rounded-none sm:rounded-2xl flex flex-col items-center justify-center">
-        <DialogTitle className="sr-only">Status from {status.user.name}</DialogTitle>
-        <DialogDescription className="sr-only">{status.caption || "User status"}</DialogDescription>
-        <div className="absolute top-4 left-4 right-4 z-20">
+      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full flex flex-col items-center justify-center">
+        <DialogHeader className="absolute top-4 left-4 right-4 z-20">
+             <DialogTitle className="sr-only">Status from {status.user.name}</DialogTitle>
+             <DialogDescription className="sr-only">{status.caption || "User status"}</DialogDescription>
             <Progress value={progress} className="h-1 bg-white/30" />
             <div className="flex items-center gap-3 mt-2">
                 <Avatar className="h-10 w-10 border-2 border-white">
@@ -237,16 +245,16 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
                     </p>
                 </div>
             </div>
-        </div>
+        </DialogHeader>
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-9 w-9 text-white hover:bg-white/20 z-20" onClick={onClose}>
             <X className="h-6 w-6"/>
         </Button>
         <div className="relative w-full h-full flex items-center justify-center">
              <Image 
                 src={status.imageUrl} 
-                alt={status.caption} 
+                alt={status.caption || 'Status image'} 
                 fill
-                objectFit="contain"
+                className="object-contain"
                 data-ai-hint="status background"
              />
              {status.caption && (
@@ -264,9 +272,9 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
 
 
 function AddStatusDialog({ statusDraft, onClose, onAddStatus }: { 
-    statusDraft: {image: File, previewUrl: string} | null, 
+    statusDraft: {file: File, previewUrl: string} | null, 
     onClose: () => void, 
-    onAddStatus: (caption: string, imageUrl: string) => void 
+    onAddStatus: (caption: string) => void 
 }) {
     const [caption, setCaption] = React.useState('');
 
@@ -278,7 +286,7 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
     
     const handleSubmit = () => {
         if (statusDraft) {
-            onAddStatus(caption, statusDraft.previewUrl);
+            onAddStatus(caption);
             onClose();
         }
     };
@@ -287,24 +295,26 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
 
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
-            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] sm:rounded-2xl">
-                <DialogTitle className="sr-only">Add New Status</DialogTitle>
-                <DialogDescription className="sr-only">Create a new status by adding a caption to your selected image or video.</DialogDescription>
-                <div className="flex-1 flex flex-col justify-between gap-4 pt-6">
-                    <div className="flex-1 relative w-full rounded-md overflow-hidden border">
-                      {statusDraft.image.type.startsWith('video/') ? (
-                        <video src={statusDraft.previewUrl} className="w-full h-full object-cover" autoPlay loop muted />
-                      ) : (
-                        <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                        <Input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Add a caption..."/>
-                    </div>
-                     <Button onClick={handleSubmit} className="w-full">
-                        Post Status
-                    </Button>
+            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] p-0 gap-0">
+                <DialogHeader>
+                    <DialogTitle className="sr-only">Add New Status</DialogTitle>
+                    <DialogDescription className="sr-only">Create a new status by adding a caption to your selected image or video.</DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 relative w-full overflow-hidden">
+                    {statusDraft.file.type.startsWith('video/') ? (
+                    <video src={statusDraft.previewUrl} className="w-full h-full object-cover" autoPlay loop muted />
+                    ) : (
+                    <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />
+                    )}
                 </div>
+                <DialogFooter className="p-4 border-t bg-background">
+                    <div className="w-full space-y-3">
+                         <Input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Add a caption..."/>
+                         <Button onClick={handleSubmit} className="w-full">
+                            Post Status
+                        </Button>
+                    </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

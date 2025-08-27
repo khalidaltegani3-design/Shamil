@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,26 +29,39 @@ export default function LoginPage() {
   const router = useRouter();
   
   const auth = getAuth(app);
-  // THIS IS FOR DEVELOPMENT/TESTING ONLY.
-  // It allows using test phone numbers without a real reCAPTCHA.
-  // Make sure to configure test phone numbers in the Firebase Console.
-  // auth.settings.appVerificationDisabledForTesting = true;
 
-  // This function sets up the reCAPTCHA verifier once
-  const setupRecaptcha = () => {
-    // To avoid re-rendering issues, only create a new verifier if one doesn't exist
-    if (!window.recaptchaVerifier) {
-      // Ensure the container is empty before rendering
+  // Function to clean up existing reCAPTCHA instances
+  const cleanupRecaptcha = () => {
+      if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+      }
       const recaptchaContainer = document.getElementById('recaptcha-container');
       if (recaptchaContainer) {
           recaptchaContainer.innerHTML = '';
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible'
-          });
       }
+  };
+
+  // Set up reCAPTCHA verifier
+  const setupRecaptcha = useCallback(() => {
+    cleanupRecaptcha();
+    
+    const recaptchaContainer = document.getElementById('recaptcha-container');
+    if (!recaptchaContainer) {
+        console.error("reCAPTCHA container not found");
+        return null;
     }
-    return window.recaptchaVerifier;
-  }
+
+    try {
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible'
+      });
+      window.recaptchaVerifier = verifier;
+      return verifier;
+    } catch(e) {
+        console.error("Error creating RecaptchaVerifier", e);
+        return null;
+    }
+  }, [auth]);
 
   const handleSendCode = async () => {
     if (phoneNumber.length < 10) {
@@ -62,17 +75,26 @@ export default function LoginPage() {
 
     setIsLoading(true);
     const appVerifier = setupRecaptcha();
+    if (!appVerifier) {
+         toast({
+          variant: 'destructive',
+          title: 'Setup Failed',
+          description: 'Could not set up reCAPTCHA verifier. Please refresh and try again.',
+        });
+        setIsLoading(false);
+        return;
+    }
 
     try {
       const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       
       // SMS sent. Prompt user to type the code from the message.
       setConfirmationResult(result);
-      window.confirmationResult = result; // Persist in window object for robustness
+      window.confirmationResult = result; // Persist in window object
 
       toast({
           title: 'Code Sent!',
-          description: 'A verification code has been sent to your phone (or use the test code).',
+          description: 'A verification code has been sent to your phone.',
       });
 
     } catch (error) {
@@ -80,9 +102,11 @@ export default function LoginPage() {
        let description = 'Could not send verification code. Please try again.';
        if (error instanceof FirebaseError) {
         if (error.code === 'auth/too-many-requests') {
-          description = 'Too many requests sent. Please try again later.';
+          description = 'Too many requests have been sent. Please try again later.';
         } else if (error.code === 'auth/captcha-check-failed') {
-            description = 'reCAPTCHA check failed. Please make sure your domain is authorized in the Firebase console.';
+            description = 'reCAPTCHA check failed. Ensure your app domain is authorized in the Firebase console.';
+        } else if (error.code === 'auth/operation-not-allowed') {
+             description = 'SMS sending is not enabled for this region. Please contact the app administrator.';
         } else {
           description = error.message;
         }
@@ -92,12 +116,7 @@ export default function LoginPage() {
           title: 'Failed to Send Code',
           description: description,
       });
-       // Reset the verifier if it fails.
-       const recaptchaContainer = document.getElementById('recaptcha-container');
-       if (recaptchaContainer) {
-            recaptchaContainer.innerHTML = '';
-       }
-       window.recaptchaVerifier = undefined;
+      cleanupRecaptcha();
 
     } finally {
       setIsLoading(false);

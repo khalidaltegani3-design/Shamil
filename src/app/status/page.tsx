@@ -5,7 +5,7 @@ import * as React from 'react';
 import { users, statuses as initialStatuses, type Status } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Camera, Plus, X } from 'lucide-react';
@@ -109,46 +109,44 @@ export default function StatusPage() {
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          <div className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors">
-            <div className="flex items-center gap-4">
-                <div className="relative">
-                <Avatar className="h-16 w-16">
-                    <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
-                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept="image/*,video/*"
-                />
-                    <button 
-                    onClick={handlePlusClick}
-                    className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background hover:bg-primary/90 transition-colors">
-                    <Plus className="h-4 w-4" />
-                </button>
-                </div>
-                <div>
-                <h2 className="font-semibold text-lg">My Status</h2>
-                <p className="text-sm text-muted-foreground">
-                    {myStatus ? (
-                        <ClientTimeAgo timestamp={myStatus.timestamp}>
-                        {(time) => `Updated ${time} ago`}
-                    </ClientTimeAgo>
-                    ) : "Add to your status"}
-                </p>
-                </div>
-            </div>
+          <div className="flex items-center gap-4 w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors">
+              <div className="relative">
+              <Avatar className="h-16 w-16">
+                  <AvatarImage src={myStatus?.imageUrl || currentUser.avatarUrl} alt={currentUser.name} />
+                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*,video/*"
+              />
+                  <button 
+                  onClick={handlePlusClick}
+                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1 border-2 border-background hover:bg-primary/90 transition-colors">
+                  <Plus className="h-4 w-4" />
+              </button>
+              </div>
+              <div>
+              <h2 className="font-semibold text-lg">My Status</h2>
+              <p className="text-sm text-muted-foreground">
+                  {myStatus ? (
+                      <ClientTimeAgo timestamp={myStatus.timestamp}>
+                      {(time) => `Updated ${time} ago`}
+                  </ClientTimeAgo>
+                  ) : "Add to your status"}
+              </p>
+              </div>
           </div>
 
           <div>
             <h3 className="mb-3 font-semibold text-muted-foreground px-1">Recent Updates</h3>
             <div className="space-y-1">
-              {friendsStatuses.map((status) => (
+              {friendsStatuses.map((status, index) => (
                     <button
                       key={status.id}
-                      onClick={() => setSelectedStatusIndex(friendsStatuses.indexOf(status))}
+                      onClick={() => setSelectedStatusIndex(index)}
                       className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
@@ -196,15 +194,28 @@ export default function StatusPage() {
 function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], startIndex: number | null, onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = React.useState<number | null>(startIndex);
   const [progress, setProgress] = React.useState(0);
-  const [dragStart, setDragStart] = React.useState<{ y: number } | null>(null);
-  const [dragDeltaY, setDragDeltaY] = React.useState<number>(0);
+  const [dragStart, setDragStart] = React.useState<{ x: number, y: number } | null>(null);
+  const [dragDelta, setDragDelta] = React.useState<{ x: number, y: number }>({ x: 0, y: 0 });
   
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  React.useEffect(() => {
-    setCurrentIndex(startIndex);
-  }, [startIndex]);
+  const goToNext = React.useCallback(() => {
+    if (currentIndex === null) return;
+    if (currentIndex < statuses.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      onClose();
+    }
+  }, [currentIndex, statuses.length, onClose]);
+
+  const goToPrevious = React.useCallback(() => {
+    if (currentIndex === null) return;
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  }, [currentIndex]);
+
 
   const startTimer = React.useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -223,14 +234,13 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
     }, 100);
 
     timerRef.current = setTimeout(() => {
-      if (currentIndex === null) return;
-      if (currentIndex < statuses.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        onClose();
-      }
+      goToNext();
     }, 10000);
-  }, [currentIndex, statuses.length, onClose]);
+  }, [goToNext]);
+
+  React.useEffect(() => {
+    setCurrentIndex(startIndex);
+  }, [startIndex]);
 
   React.useEffect(() => {
     if (currentIndex !== null) {
@@ -245,23 +255,36 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
   const handlePointerDown = (e: React.PointerEvent) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    setDragStart({ y: e.clientY });
+    setDragStart({ x: e.clientX, y: e.clientY });
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragStart) return;
     const deltaY = e.clientY - dragStart.y;
-    if (deltaY > 0) { // Only allow dragging down
-      setDragDeltaY(deltaY);
-    }
+    const deltaX = e.clientX - dragStart.x;
+    setDragDelta({ x: deltaX, y: deltaY > 0 ? deltaY : 0 }); // Only allow dragging down
   };
 
-  const handlePointerUp = () => {
-    if (dragDeltaY > 100) { // Drag threshold to close
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!dragStart) return;
+    
+    const dragDistanceY = Math.abs(dragDelta.y);
+    const dragDistanceX = Math.abs(dragDelta.x);
+
+    if (dragDistanceY > 100) { // Drag threshold to close
       onClose();
+    } else if (dragDistanceY < 10 && dragDistanceX < 10) {
+      // It's a click/tap
+      const clickX = e.clientX;
+      const screenWidth = window.innerWidth;
+      if (clickX > screenWidth / 2) {
+        goToNext();
+      } else {
+        goToPrevious();
+      }
     } else {
-      setDragDeltaY(0);
-      startTimer(); // Resume timer
+        setDragDelta({ x: 0, y: 0 });
+        startTimer(); // Resume timer if not a dismiss drag or click
     }
     setDragStart(null);
   };
@@ -271,7 +294,7 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
   const status = statuses[currentIndex];
   if (!status) return null;
   
-  const dragOpacity = Math.max(1 - (dragDeltaY / 300), 0.5);
+  const dragOpacity = Math.max(1 - (dragDelta.y / 300), 0.5);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -279,7 +302,7 @@ function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], s
         className="p-0 m-0 bg-transparent border-none w-screen h-screen max-w-full max-h-full flex flex-col items-center justify-center rounded-lg"
         style={{ 
             backgroundColor: `rgba(0, 0, 0, ${dragOpacity})`,
-            transform: `translateY(${dragDeltaY}px)`,
+            transform: `translateY(${dragDelta.y}px)`,
             transition: dragStart ? 'none' : 'transform 0.3s ease-out, background-color 0.3s ease-out'
         }}
         onPointerDown={handlePointerDown}
@@ -355,25 +378,25 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
             <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] p-0 gap-0 rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle className="sr-only">Add New Status</DialogTitle>
+                <DialogHeader className="p-4 border-b">
+                    <DialogTitle>Add New Status</DialogTitle>
                     <DialogDescription className="sr-only">Create a new status by adding a caption to your selected image or video.</DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 relative w-full overflow-hidden">
                     {statusDraft.file.type.startsWith('video/') ? (
                     <video src={statusDraft.previewUrl} className="w-full h-full object-cover" autoPlay loop muted />
                     ) : (
-                    <Image src={statusDraft.previewUrl} alt="Image preview" layout="fill" objectFit="cover" />
+                    <Image src={statusDraft.previewUrl} alt="Image preview" fill objectFit="cover" />
                     )}
                 </div>
-                <DialogFooter className="p-4 border-t bg-background">
+                <div className="p-4 border-t bg-background">
                     <div className="w-full space-y-3">
                          <Input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Add a caption..."/>
                          <Button onClick={handleSubmit} className="w-full">
                             Post Status
                         </Button>
                     </div>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

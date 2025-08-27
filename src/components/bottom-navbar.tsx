@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import React from "react";
 
 const mainNavItems = [
-  { href: "/", label: "Chats", icon: MessageSquare },
+  { href: "/chats", label: "Chats", icon: MessageSquare },
   { href: "/status", label: "Status", icon: CircleDot },
   { href: "/create", label: "Create", icon: Video },
   { href: "/calls", label: "Calls", icon: Phone },
@@ -20,8 +20,9 @@ export default function BottomNavbar() {
 
   const isCreatePage = pathname === '/create';
   const isViewPage = pathname === '/view';
+  const isLoginPage = pathname === '/login' || pathname === '/';
 
-  if (isCreatePage || isViewPage) {
+  if (isCreatePage || isViewPage || isLoginPage) {
     return null;
   }
 

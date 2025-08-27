@@ -13,14 +13,17 @@ import ViewPage from '@/app/view/page';
 import BottomNavbar from './bottom-navbar';
 import Header from './header';
 import GenericSettingsPage from './generic-settings-page';
+import LoginPage from '@/app/login/page';
 
 const TABS: Record<string, { component: React.ComponentType, hasHeader: boolean }> = {
-    '/': { component: ChatsPage, hasHeader: true },
+    '/chats': { component: ChatsPage, hasHeader: true },
     '/status': { component: StatusPage, hasHeader: true },
     '/calls': { component: CallsPage, hasHeader: true },
     '/settings': { component: SettingsPage, hasHeader: false }, // Header is now part of the page
     '/view': { component: ViewPage, hasHeader: false },
     '/create': { component: CreateVideoPage, hasHeader: false },
+    '/login': { component: LoginPage, hasHeader: false },
+    '/': { component: LoginPage, hasHeader: false },
 };
 
 // A simple way to get the title for the generic settings page
@@ -51,12 +54,12 @@ export default function TabsLayout() {
   } else if (TABS[pathname]) {
     ActiveComponent = TABS[pathname].component;
     showHeader = TABS[pathname].hasHeader;
-    showNavbar = !['/view', '/create'].includes(pathname)
+    showNavbar = !['/view', '/create', '/login', '/'].includes(pathname)
   }
   else {
-     ActiveComponent = TABS['/']?.component || ChatsPage;
-     showHeader = TABS['/']?.hasHeader ?? true;
-     showNavbar = true;
+     ActiveComponent = TABS['/']?.component || LoginPage;
+     showHeader = TABS['/']?.hasHeader ?? false;
+     showNavbar = false;
   }
   
   return (

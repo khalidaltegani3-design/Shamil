@@ -1,7 +1,7 @@
-import TabsLayout from "@/components/tabs-layout";
+import LoginPage from "./login/page";
 
 export default function Home() {
   return (
-    <TabsLayout />
+    <LoginPage />
   );
 }

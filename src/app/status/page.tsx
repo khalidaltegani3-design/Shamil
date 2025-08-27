@@ -12,6 +12,7 @@ import { Camera, Plus, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 
 const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (formattedTime: string) => React.ReactNode }) => {
   const [timeAgo, setTimeAgo] = React.useState('');
@@ -39,7 +40,7 @@ const ClientTimeAgo = ({ timestamp, children }: { timestamp: string, children: (
 
 export default function StatusPage() {
   const [statuses] = React.useState<Status[]>(initialStatuses);
-  const [selectedStatus, setSelectedStatus] = React.useState<Status | null>(null);
+  const [selectedStatusIndex, setSelectedStatusIndex] = React.useState<number | null>(null);
   const [statusDraft, setStatusDraft] = React.useState<{image: File, previewUrl: string} | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -115,7 +116,7 @@ export default function StatusPage() {
               {friendsStatuses.map((status, index) => (
                 <React.Fragment key={status.id}>
                     <button
-                      onClick={() => setSelectedStatus(status)}
+                      onClick={() => setSelectedStatusIndex(index)}
                       className="w-full text-left p-2 rounded-lg hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
@@ -142,8 +143,9 @@ export default function StatusPage() {
       </ScrollArea>
 
       <StatusViewer 
-        status={selectedStatus} 
-        onClose={() => setSelectedStatus(null)} 
+        statuses={friendsStatuses} 
+        startIndex={selectedStatusIndex}
+        onClose={() => setSelectedStatusIndex(null)} 
       />
       <AddStatusDialog 
         statusDraft={statusDraft} 
@@ -154,25 +156,60 @@ export default function StatusPage() {
   );
 }
 
-function StatusViewer({ status, onClose }: { status: Status | null, onClose: () => void }) {
+function StatusViewer({ statuses, startIndex, onClose }: { statuses: Status[], startIndex: number | null, onClose: () => void }) {
+  const [currentIndex, setCurrentIndex] = React.useState<number | null>(startIndex);
+  const [progress, setProgress] = React.useState(0);
+
+  React.useEffect(() => {
+    setCurrentIndex(startIndex);
+  }, [startIndex]);
+
+  React.useEffect(() => {
+    if (currentIndex === null) return;
+
+    setProgress(0);
+    const progressInterval = setInterval(() => {
+      setProgress(p => p + 1);
+    }, 100);
+
+    const timer = setTimeout(() => {
+      if (currentIndex < statuses.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        onClose();
+      }
+    }, 10000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(progressInterval);
+    };
+  }, [currentIndex, statuses.length, onClose]);
+
+  if (currentIndex === null) return null;
+  
+  const status = statuses[currentIndex];
   if (!status) return null;
 
   return (
-    <Dialog open={!!status} onOpenChange={onClose}>
-      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full rounded-2xl flex flex-col items-center justify-center">
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="p-0 m-0 bg-black/90 border-none w-screen h-screen max-w-full max-h-full rounded-none sm:rounded-2xl flex flex-col items-center justify-center">
         <DialogTitle className="sr-only">Status from {status.user.name}</DialogTitle>
-        <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-white">
-                <AvatarImage src={status.user.avatarUrl} alt={status.user.name} />
-                <AvatarFallback>{status.user.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-                <p className="font-semibold text-white">{status.user.name}</p>
-                <p className="text-xs text-gray-300">
-                    <ClientTimeAgo timestamp={status.timestamp}>
-                        {(time) => `${time} ago`}
-                    </ClientTimeAgo>
-                </p>
+        <div className="absolute top-4 left-4 right-4 z-20">
+            <Progress value={progress} className="h-1 bg-white/30" />
+            <div className="flex items-center gap-3 mt-2">
+                <Avatar className="h-10 w-10 border-2 border-white">
+                    <AvatarImage src={status.user.avatarUrl} alt={status.user.name} />
+                    <AvatarFallback>{status.user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="font-semibold text-white">{status.user.name}</p>
+                    <p className="text-xs text-gray-300">
+                        <ClientTimeAgo timestamp={status.timestamp}>
+                            {(time) => `${time} ago`}
+                        </ClientTimeAgo>
+                    </p>
+                </div>
             </div>
         </div>
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-9 w-9 text-white hover:bg-white/20 z-20" onClick={onClose}>
@@ -224,7 +261,7 @@ function AddStatusDialog({ statusDraft, onClose, onAddStatus }: {
 
     return (
         <Dialog open={!!statusDraft} onOpenChange={onClose}>
-            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] rounded-2xl">
+            <DialogContent className="flex flex-col h-[90vh] max-h-[90vh] sm:rounded-2xl">
                 <DialogTitle className="sr-only">Add New Status</DialogTitle>
                 <div className="flex-1 flex flex-col justify-between gap-4 pt-6">
                     <div className="flex-1 relative w-full rounded-md overflow-hidden border">

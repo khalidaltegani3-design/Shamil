@@ -13,14 +13,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-doodle antialiased">
-        <div className="h-screen w-full max-w-md mx-auto flex flex-col">
+      <body className="font-doodle antialiased h-full">
+        <div className="h-full w-full max-w-md mx-auto flex flex-col bg-background">
           {children}
         </div>
         <Toaster />

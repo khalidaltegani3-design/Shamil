@@ -7,16 +7,14 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  type CarouselApi,
 } from "@/components/ui/carousel";
 import BottomNavbar from './bottom-navbar';
 import ChatsPage from './chats-page';
 import StatusPage from '@/app/status/page';
 import CallsPage from '@/app/calls/page';
 import ViewPage from '@/app/view/page';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
-const TABS_COUNT = 4;
 const TABS = [
     { component: <ChatsPage/>, path: '/' },
     { component: <StatusPage/>, path: '/status' },
@@ -32,7 +30,6 @@ export default function TabsLayout() {
 
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const handleSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -40,8 +37,6 @@ export default function TabsLayout() {
     setActiveIndex(newIndex);
     const newPath = TAB_PATHS[newIndex];
     if (pathname !== newPath) {
-        // We only push history state if the path is different
-        // to avoid loops and unnecessary history entries.
         router.replace(newPath, { scroll: false });
     }
   }, [emblaApi, router, pathname]);
@@ -59,10 +54,10 @@ export default function TabsLayout() {
     emblaApi.on('select', handleSelect);
    
     const currentPathIndex = TAB_PATHS.indexOf(pathname);
-    let initialTab = currentPathIndex !== -1 ? currentPathIndex : 0;
+    const initialTab = currentPathIndex !== -1 ? currentPathIndex : 0;
     
     if (initialTab !== emblaApi.selectedScrollSnap()) {
-      emblaApi.scrollTo(initialTab, true);
+      emblaApi.scrollTo(initialTab, true); // Use true for instant scroll without animation on load
     }
     setActiveIndex(initialTab);
 
@@ -74,10 +69,10 @@ export default function TabsLayout() {
   return (
     <div className="h-full w-full flex flex-col">
       <main className="flex-1 overflow-hidden">
-          <Carousel setApi={emblaApi} className="h-full">
+          <Carousel setApi={emblaRef} className="h-full">
             <CarouselContent className='h-full'>
               {TABS.map((tab, index) => (
-                <CarouselItem key={index} className="h-full overflow-hidden">
+                <CarouselItem key={index} className="h-full overflow-y-auto">
                     {tab.component}
                 </CarouselItem>
               ))}

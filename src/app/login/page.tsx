@@ -1,69 +1,156 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone } from 'lucide-react';
+import { Phone, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { app } from '@/lib/firebase';
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  
+  // Need to use 'any' type for auth as the types between client and admin SDKs can cause issues
+  const [auth, setAuth] = useState<any>(null);
 
-  const handleSendCode = () => {
-    // Basic phone number validation
+  useEffect(() => {
+    setAuth(getAuth(app));
+  }, []);
+  
+  useEffect(() => {
+    if (!auth) return;
+
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        }
+    });
+  }, [auth]);
+
+  const handleSendCode = async () => {
+    if (!auth) {
+        toast({ variant: 'destructive', title: 'Firebase not initialized.'});
+        return;
+    }
     if (phoneNumber.length < 10) {
       toast({
         variant: 'destructive',
         title: 'Invalid Phone Number',
-        description: 'Please enter a valid phone number.',
+        description: 'Please enter a valid phone number with country code.',
       });
       return;
     }
 
     setIsLoading(true);
-    // Placeholder for Firebase auth logic
-    console.log(`Sending verification code to ${phoneNumber}`);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: 'Code Sent!',
-        description: 'A verification code has been sent to your phone.',
-      });
-      // Navigate to a verification page (to be created)
-      // router.push('/verify'); 
-    }, 2000);
+    try {
+        const appVerifier = window.recaptchaVerifier;
+        const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        setConfirmationResult(result);
+        toast({
+            title: 'Code Sent!',
+            description: 'A verification code has been sent to your phone.',
+        });
+    } catch (error) {
+         console.error("Error sending verification code: ", error);
+         toast({
+            variant: 'destructive',
+            title: 'Failed to Send Code',
+            description: 'Could not send verification code. Please try again.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
+
+  const handleVerifyCode = async () => {
+    if (!confirmationResult) {
+        toast({ variant: 'destructive', title: 'Verification process not started.'});
+        return;
+    }
+     if (verificationCode.length !== 6) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Code',
+        description: 'Verification code must be 6 digits.',
+      });
+      return;
+    }
+    setIsLoading(true);
+    try {
+        await confirmationResult.confirm(verificationCode);
+        toast({
+            title: 'Success!',
+            description: 'You have been successfully logged in.',
+        });
+        router.push('/chats');
+    } catch(error) {
+         console.error("Error verifying code: ", error);
+         toast({
+            variant: 'destructive',
+            title: 'Verification Failed',
+            description: 'The code you entered is incorrect. Please try again.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
+      <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Welcome to Zoliapp</CardTitle>
-          <CardDescription>Enter your phone number to get started.</CardDescription>
+          <CardDescription>
+            {confirmationResult ? 'Enter the code sent to your phone.' : 'Enter your phone number to get started.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="tel"
-                placeholder="Phone number"
-                className="pl-10"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                disabled={isLoading}
-              />
+          {!confirmationResult ? (
+            <div className="space-y-4">
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  placeholder="+1 123 456 7890"
+                  className="pl-10"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <Button onClick={handleSendCode} className="w-full" disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send Verification Code'}
+              </Button>
             </div>
-            <Button onClick={handleSendCode} className="w-full" disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Send Verification Code'}
-            </Button>
-          </div>
+          ) : (
+             <div className="space-y-4">
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Verification Code"
+                  className="pl-10"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <Button onClick={handleVerifyCode} className="w-full" disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify Code'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

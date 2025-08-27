@@ -16,12 +16,15 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'commondatastorage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
     // Allow blob URLs for image previews
     domains: ['blob'],
-  },
-  devIndicators: {
-    buildActivity: false
   },
 };
 

@@ -4,7 +4,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Video } from '@/lib/types';
 import { Button } from './ui/button';
-import { Heart, MessageCircle, Share, Play, Pause, Music2, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share, Play, Pause, Music2, MoreHorizontal, Volume2, VolumeX } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
 import CommentsSheet from './comments-sheet';
@@ -25,15 +25,11 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
   const [video, setVideo] = useState<Video>(initialVideo);
 
 
-  const togglePlay = () => {
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent video from pausing
     if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
+        videoRef.current.muted = !videoRef.current.muted;
+        setIsMuted(videoRef.current.muted);
     }
   };
   
@@ -85,9 +81,21 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
         }
     });
   };
+  
+   const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
 
   return (
-    <div className="relative h-full w-full bg-black rounded-lg overflow-hidden">
+    <div className="relative h-full w-full bg-black rounded-lg overflow-hidden" onClick={togglePlay}>
       <video
         ref={videoRef}
         src={video.videoUrl}
@@ -95,16 +103,24 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
         playsInline
         muted={isMuted}
         className="w-full h-full object-cover"
-        onClick={togglePlay}
       />
       
       {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
             <Play className="h-20 w-20 text-white/50" />
         </div>
       )}
+      
+       <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-4 right-4 text-white bg-black/30 hover:bg-black/50"
+            onClick={toggleMute}
+        >
+            {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+        </Button>
 
-      <div className="absolute bottom-16 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent">
+      <div className="absolute bottom-16 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
         <div className="flex justify-between items-end">
             {/* Left side: Video Info */}
             <div className="flex-1 pr-4 space-y-2">
@@ -117,7 +133,7 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
             </div>
 
             {/* Right side: User avatar & Action buttons */}
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-4 pointer-events-auto">
                  <Link href={`/profile/${video.user.id}`} className="flex flex-col items-center gap-2 group mb-2">
                     <Avatar className="h-12 w-12 border-2 border-white">
                         <AvatarImage src={video.user.avatarUrl} />

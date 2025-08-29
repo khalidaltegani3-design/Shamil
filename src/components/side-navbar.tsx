@@ -10,7 +10,7 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const mainNavItems = [
-  { href: "/", label: "Chats", icon: MessageSquare },
+  { href: "/chats", label: "Chats", icon: MessageSquare },
   { href: "/view", label: "Discover", icon: Video },
   { href: "/status", label: "Status", icon: CircleDot },
   { href: "/calls", label: "Calls", icon: Phone },

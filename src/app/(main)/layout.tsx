@@ -1,3 +1,4 @@
+
 "use client";
 
 import BottomNavbar from "@/components/bottom-navbar";
@@ -5,7 +6,7 @@ import Header from "@/components/header";
 import SideNavbar from "@/components/side-navbar";
 import { useState } from "react";
 
-export default function ChatsLayout({
+export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;

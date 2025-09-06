@@ -17,19 +17,7 @@ const mainNavItems = [
 
 export default function BottomNavbar() {
   const pathname = usePathname();
-
-  const isLoginPage = pathname === '/login' || pathname === '/';
-
-  if (isLoginPage) {
-    return null;
-  }
   
-  if (pathname === '/create') {
-      // Special bar for create page can be handled here if needed, for now we hide it.
-      return null;
-  }
-  
-  // For the discover page, we want a different look and feel for the navbar
   const isDiscoverPage = pathname === '/view';
 
   return (

@@ -6,7 +6,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import LoginPage from "./login/page";
-import ChatsPage from "./chats/page";
+import MainLayout from './(main)/layout';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
@@ -19,6 +19,7 @@ export default function Home() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        // User is logged in, redirect to chats
         router.replace('/chats');
       } else {
         setUser(null);
@@ -40,8 +41,8 @@ export default function Home() {
         </div>
     )
   }
-
-  // This part will likely not be visible for long due to the redirects,
-  // but it's a fallback.
-  return user ? <ChatsPage /> : <LoginPage />;
+  
+  // Based on the auth state, the router will redirect.
+  // We can return a generic loader or null here as the user will be quickly navigated away.
+  return null;
 }

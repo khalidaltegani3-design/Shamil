@@ -114,16 +114,16 @@ export default function VideoCard({ video: initialVideo }: VideoCardProps) {
        <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute top-4 right-4 text-white bg-black/30 hover:bg-black/50"
+            className="absolute top-16 right-4 text-white bg-black/30 hover:bg-black/50 z-20"
             onClick={toggleMute}
         >
             {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
         </Button>
 
-      <div className="absolute bottom-16 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 text-white z-10 p-4 bg-gradient-to-t from-black/60 to-transparent pointer-events-none w-full">
         <div className="flex justify-between items-end">
             {/* Left side: Video Info */}
-            <div className="flex-1 pr-4 space-y-2">
+            <div className="flex-1 pr-4 space-y-2 min-w-0">
                 <p className="font-bold text-base">@{video.user.name}</p>
                 <p className="font-medium text-sm">{video.caption}</p>
                  <div className="flex items-center gap-2">

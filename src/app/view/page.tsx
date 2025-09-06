@@ -5,7 +5,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { videos as initialVideos } from '@/lib/mock-data';
 import type { Video as VideoType } from '@/lib/types';
 import VideoCard from '@/components/video-card';
-import BottomNavbar from '@/components/bottom-navbar';
 import { cn } from '@/lib/utils';
 
 
@@ -55,7 +54,6 @@ export default function ViewPage() {
             ))}
         </main>
       
-        <BottomNavbar />
     </div>
   );
 }

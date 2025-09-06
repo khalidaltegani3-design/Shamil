@@ -5,8 +5,6 @@ import { useEffect, useState } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import LoginPage from "./login/page";
-import MainLayout from './(main)/layout';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {

@@ -1,26 +1,22 @@
-import { FileText, Building2, BarChart3, Settings } from 'lucide-react';
+import { FileText, BarChart3, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
-// This is the main dashboard for the user after logging in.
-// We are skipping the login page for now and going straight to the main app interface.
 
 function AppHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-4">
-        {/* Placeholder for the ministry logo */}
         <div className="flex h-8 w-24 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
           الشعار
         </div>
-        <h1 className="text-lg font-semibold">منصة البلاغات الداخلية</h1>
+        <h1 className="text-lg font-semibold">منصة البلاغات</h1>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-          <Settings className="h-5 w-5" />
-          <span className="sr-only">الإعدادات</span>
-        </Button>
+        <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-muted-foreground"/>
+            <span className="text-sm font-medium">علي حمد</span>
+        </div>
         <div className="h-10 w-10 rounded-full bg-secondary" />
       </div>
     </header>
@@ -64,18 +60,18 @@ export default function DashboardPage() {
           <StatCard 
             title="إجمالي البلاغات" 
             value="1,250" 
-            description="جميع البلاغات المقدمة"
+            description="جميع البلاغات المقدمة من قبلك"
             icon={FileText} 
           />
           <StatCard 
             title="البلاغات المفتوحة" 
             value="42" 
             description="بلاغات قيد المراجعة أو التنفيذ"
-            icon={Building2}
+            icon={Clock}
           />
           <StatCard 
-            title="متوسط ​​وقت الحل" 
-            value="3.5 يوم" 
+            title="متوسط وقت الحل" 
+            value="3.5 أيام" 
             description="معدل سرعة إغلاق البلاغات"
             icon={BarChart3}
           />
@@ -86,7 +82,6 @@ export default function DashboardPage() {
             <CardDescription>نظرة سريعة على آخر 5 بلاغات قمت بتقديمها.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Placeholder for a table or list of recent reports */}
             <div className="flex h-48 items-center justify-center rounded-md border border-dashed">
               <p className="text-muted-foreground">جدول البلاغات الأخيرة سيظهر هنا.</p>
             </div>

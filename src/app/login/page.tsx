@@ -11,8 +11,6 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd have authentication logic here.
-    // For now, we'll just navigate to the dashboard.
     router.push('/');
   };
 
@@ -21,7 +19,6 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-              {/* Placeholder for the ministry logo */}
               <div className="flex h-12 w-32 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
                 شعار الوزارة
               </div>
@@ -35,7 +32,7 @@ export default function LoginPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="employeeId">رقم الموظف</Label>
-              <Input id="employeeId" type="text" placeholder="أدخل رقمك الوظيفي" required />
+              <Input id="employeeId" type="text" placeholder="أدخل الرقم الوظيفي" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
@@ -43,7 +40,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button className="w-full" type="submit">دخول</Button>
+            <Button className="w-full" type="submit">تسجيل الدخول</Button>
             <p className="mt-4 text-center text-xs text-muted-foreground">
               تواجه مشكلة؟ <a href="#" className="underline">تواصل مع الدعم الفني</a>
             </p>

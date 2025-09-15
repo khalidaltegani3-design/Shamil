@@ -4,9 +4,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Zoliapp Lite',
-  description: 'An intuitive chat interface for seamless messaging.',
-  manifest: '/manifest.json',
+  title: 'New Project',
+  description: 'Ready to build something amazing!',
 };
 
 export default function RootLayout({
@@ -16,17 +15,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
-      </head>
-      <body className="font-doodle antialiased h-full">
-        <div className="h-full w-full max-w-md mx-auto bg-background">
-          {children}
-        </div>
+      <body className="antialiased h-full">
+        {children}
         <Toaster />
       </body>
     </html>

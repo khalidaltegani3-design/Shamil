@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Paperclip, MapPin } from 'lucide-react';
+import { ArrowRight, Paperclip, MapPin, X, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,7 @@ export default function CreateReportPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
+  const [files, setFiles] = useState<File[]>([]);
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
     loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,
@@ -64,6 +65,17 @@ export default function CreateReportPage() {
       });
       router.push('/');
     }, 1500);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const newFiles = Array.from(event.target.files);
+      setFiles(prevFiles => [...prevFiles, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   };
 
 
@@ -117,8 +129,26 @@ export default function CreateReportPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="attachments">المرفقات (اختياري)</Label>
+               <div className="space-y-2">
+                <Label htmlFor="attachments">
+                  المرفقات {files.length > 0 ? `(${files.length})` : '(اختياري)'}
+                </Label>
+                {files.length > 0 && (
+                  <div className="space-y-2">
+                    {files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between rounded-md border p-2">
+                        <div className="flex items-center gap-2">
+                          <FileIcon className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm font-medium">{file.name}</span>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => removeFile(index)}>
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove file</span>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center justify-center w-full">
                   <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -126,7 +156,7 @@ export default function CreateReportPage() {
                           <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للإرفاق</span> أو قم بالسحب والإفلات</p>
                           <p className="text-xs text-muted-foreground">صور أو مستندات (بحد أقصى 5 ميجابايت)</p>
                       </div>
-                      <Input id="dropzone-file" type="file" className="hidden" />
+                      <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleFileChange} />
                   </Label>
                 </div> 
               </div>

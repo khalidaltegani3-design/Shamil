@@ -43,13 +43,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const reports = [
-    { id: "بل-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "جديد", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24" },
-    { id: "بل-8564", title: "مخالفة بناء في منطقة الوكرة", status: "جديد", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23" },
-    { id: "بل-2651", title: "تجمع مياه أمطار في بن محمود", status: "قيد المراجعة", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22" },
-    { id: "بل-7531", title: "اقتراح لتحسين إشارات المرور", status: "قيد المراجعة", user: "سارة المطيري", location: "الدحيل، تقاطع الجامعة", date: "2023-06-19" },
-    { id: "بل-3214", title: "طلب صيانة إنارة شارع", status: "تم الحل", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21" },
-    { id: "بل-9574", title: "سيارة مهملة في اللؤلؤة", status: "تم الحل", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20" },
-    { id: "بل-4821", title: "عطل في نظام التكييف المركزي", status: "مرفوض", user: "مريم عبدالله", location: "الإدارة المالية", date: "2023-06-18" },
+    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "جديد", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24" },
+    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "جديد", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23" },
+    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "قيد المراجعة", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22" },
+    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "قيد المراجعة", user: "سارة المطيري", location: "الدحيل، تقاطع الجامعة", date: "2023-06-19" },
+    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "تم الحل", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21" },
+    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "تم الحل", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20" },
+    { id: "BL-4821", title: "عطل في نظام التكييف المركزي", status: "مرفوض", user: "مريم عبدالله", location: "الإدارة المالية", date: "2023-06-18" },
 ];
 
 type Report = typeof reports[0];
@@ -107,7 +107,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                             <Link href={`/supervisor/report/${report.id.replace('بل-','')}`} passHref>
+                             <Link href={`/supervisor/report/${report.id.replace('BL-','')}`} passHref>
                                 <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
                              </Link>
                             <DropdownMenuItem>تحويل</DropdownMenuItem>

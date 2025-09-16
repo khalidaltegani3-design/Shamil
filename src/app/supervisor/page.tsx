@@ -3,9 +3,8 @@ import Link from "next/link";
 import {
   File,
   ListFilter,
-  Menu,
+  MoreHorizontal,
   PlusCircle,
-  Search,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -40,7 +39,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 const reports = [
     { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "جديد", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24" },
@@ -101,7 +99,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                               size="icon"
                               variant="ghost"
                             >
-                              <Menu className="h-4 w-4" />
+                              <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">Toggle menu</span>
                             </Button>
                           </DropdownMenuTrigger>
@@ -173,55 +171,19 @@ export default function SupervisorDashboard() {
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input type="search" placeholder="بحث بالرقم أو العنوان..." className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px] bg-card" />
-            </div>
           </div>
         </div>
         <TabsContent value="all">
-            <Card>
-                <CardHeader>
-                    <CardTitle>كافة البلاغات</CardTitle>
-                    <CardDescription>قائمة بجميع البلاغات المقدمة من الموظفين.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ReportTable reportsToShow={reports} />
-                </CardContent>
-            </Card>
+            <ReportTable reportsToShow={reports} />
         </TabsContent>
         <TabsContent value="new">
-            <Card>
-                <CardHeader>
-                    <CardTitle>البلاغات الجديدة</CardTitle>
-                    <CardDescription>البلاغات التي لم تتم مراجعتها بعد.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ReportTable reportsToShow={newReports} />
-                </CardContent>
-            </Card>
+            <ReportTable reportsToShow={newReports} />
         </TabsContent>
         <TabsContent value="in-progress">
-             <Card>
-                <CardHeader>
-                    <CardTitle>بلاغات قيد المراجعة</CardTitle>
-                    <CardDescription>البلاغات التي يتم العمل عليها حالياً.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ReportTable reportsToShow={inProgressReports} />
-                </CardContent>
-            </Card>
+             <ReportTable reportsToShow={inProgressReports} />
         </TabsContent>
         <TabsContent value="resolved">
-             <Card>
-                <CardHeader>
-                    <CardTitle>البلاغات المغلقة</CardTitle>
-                    <CardDescription>البلاغات التي تم حلها أو رفضها.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ReportTable reportsToShow={resolvedReports} />
-                </CardContent>
-            </Card>
+             <ReportTable reportsToShow={resolvedReports} />
         </TabsContent>
       </Tabs>
     </>

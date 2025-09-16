@@ -6,23 +6,19 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useEffect } from 'react';
 
-// Fix for default icon not showing
-const iconRetinaUrl = '/leaflet/marker-icon-2x.png';
-const iconUrl = '/leaflet/marker-icon.png';
-const shadowUrl = '/leaflet/marker-shadow.png';
-
-const DefaultIcon = L.icon({
-    iconRetinaUrl,
-    iconUrl,
-    shadowUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+// This useEffect hook is the key to fixing the marker icon issue in Next.js.
+// It runs once on the client-side after the component mounts.
+// By deleting and re-initializing the default icon, we ensure that Leaflet
+// uses the correct image paths bundled by Webpack.
+useEffect(() => {
+    // @ts-ignore
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+        iconUrl: require('leaflet/dist/images/marker-icon.png'),
+        shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+    });
+}, []);
 
 
 interface MapProps {

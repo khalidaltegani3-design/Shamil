@@ -38,6 +38,7 @@ export default function CreateReportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
   const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
     loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,
@@ -73,6 +74,10 @@ export default function CreateReportPage() {
       setFiles(prevFiles => [...prevFiles, ...newFiles]);
     }
   };
+  
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
+  };
 
   const removeFile = (index: number) => {
     setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
@@ -92,18 +97,23 @@ export default function CreateReportPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-               <div className="space-y-2">
-                <Label htmlFor="report-location">الموقع</Label>
+               <div className="space-y-4">
+                <Label htmlFor="report-location">تحديد الموقع على الخريطة</Label>
                 <div className="relative w-full h-64 rounded-lg overflow-hidden border">
                     <Map position={position} setPosition={setPosition} />
                 </div>
                  {position && (
-                    <p className="text-sm text-muted-foreground pt-2 text-center dir-ltr">
+                    <p className="text-sm text-muted-foreground pt-1 text-center dir-ltr">
                         Lat: {position[0].toFixed(6)}, Lng: {position[1].toFixed(6)}
                     </p>
                 )}
               </div>
               
+              <div className="space-y-2">
+                  <Label htmlFor="location-description">وصف الموقع (اختياري)</Label>
+                  <Input id="location-description" placeholder="مثال: مبنى 5، بالقرب من المدخل الرئيسي" />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="report-department">الإدارة المعنية</Label>
                 <Select dir="rtl">
@@ -131,34 +141,38 @@ export default function CreateReportPage() {
 
                <div className="space-y-2">
                 <Label htmlFor="attachments">
-                  المرفقات {files.length > 0 ? `(${files.length})` : '(اختياري)'}
+                  المرفقات {files.length > 0 && `(${files.length})`}
                 </Label>
-                {files.length > 0 && (
+                <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleFileChange} ref={fileInputRef} />
+                {files.length === 0 ? (
+                  <div className="flex items-center justify-center w-full">
+                    <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <Paperclip className="w-8 h-8 mb-3 text-muted-foreground" />
+                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للإرفاق</span> أو قم بالسحب والإفلات</p>
+                            <p className="text-xs text-muted-foreground">صور أو مستندات (بحد أقصى 5 ميجابايت)</p>
+                        </div>
+                    </Label>
+                  </div> 
+                ) : (
                   <div className="space-y-2">
                     {files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between rounded-md border p-2">
-                        <div className="flex items-center gap-2">
+                      <div key={index} className="flex items-center justify-between rounded-md border p-2.5">
+                        <div className="flex items-center gap-3">
                           <FileIcon className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm font-medium">{file.name}</span>
+                          <span className="text-sm font-medium truncate">{file.name}</span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeFile(index)}>
+                        <Button variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-8 w-8">
                           <X className="h-4 w-4" />
                           <span className="sr-only">Remove file</span>
                         </Button>
                       </div>
                     ))}
+                     <Button type="button" variant="outline" className="w-full" onClick={triggerFileSelect}>
+                        إضافة المزيد من المرفقات
+                    </Button>
                   </div>
                 )}
-                <div className="flex items-center justify-center w-full">
-                  <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Paperclip className="w-8 h-8 mb-3 text-muted-foreground" />
-                          <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للإرفاق</span> أو قم بالسحب والإفلات</p>
-                          <p className="text-xs text-muted-foreground">صور أو مستندات (بحد أقصى 5 ميجابايت)</p>
-                      </div>
-                      <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleFileChange} />
-                  </Label>
-                </div> 
               </div>
 
             </CardContent>

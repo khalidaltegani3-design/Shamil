@@ -52,6 +52,7 @@ const reports = [
     { id: "بل-4821", title: "عطل في نظام التكييف المركزي", status: "مرفوض", user: "مريم عبدالله", location: "الإدارة المالية", date: "2023-06-18" },
 ];
 
+type Report = typeof reports[0];
 
 function getStatusVariant(status: string) {
     switch (status) {
@@ -63,8 +64,80 @@ function getStatusVariant(status: string) {
     }
 }
 
+function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
+    return (
+        <Card>
+            <CardContent className="pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>رقم البلاغ</TableHead>
+                    <TableHead>عنوان البلاغ</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>مقدم البلاغ</TableHead>
+                    <TableHead>الموقع/الإدارة</TableHead>
+                    <TableHead>تاريخ التقديم</TableHead>
+                    <TableHead>
+                      <span className="sr-only">إجراءات</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reportsToShow.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell className="font-medium">{report.id}</TableCell>
+                      <TableCell>{report.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(report.status)}>{report.status}</Badge>
+                      </TableCell>
+                      <TableCell>{report.user}</TableCell>
+                      <TableCell>{report.location}</TableCell>
+                      <TableCell>{report.date}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-haspopup="true"
+                              size="icon"
+                              variant="ghost"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+                             <Link href={`/supervisor/report/${report.id.replace('بل-','')}`} passHref>
+                                <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
+                             </Link>
+                            <DropdownMenuItem>تحويل</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter>
+              <div className="text-xs text-muted-foreground">
+                عرض <strong>{reportsToShow.length}</strong> من <strong>{reports.length}</strong> بلاغ
+              </div>
+            </CardFooter>
+          </Card>
+    )
+}
+
 
 export default function SupervisorDashboard() {
+  const newReports = reports.filter(r => r.status === 'جديد');
+  const inProgressReports = reports.filter(r => r.status === 'قيد المراجعة');
+  const resolvedReports = reports.filter(r => r.status === 'تم الحل' || r.status === 'مرفوض');
+
   return (
     <>
       <div className="flex items-center">
@@ -107,75 +180,48 @@ export default function SupervisorDashboard() {
           </div>
         </div>
         <TabsContent value="all">
-          <Card>
-            <CardHeader>
-              <CardTitle>البلاغات الواردة</CardTitle>
-              <CardDescription>
-                قائمة بجميع البلاغات المقدمة من الموظفين.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>رقم البلاغ</TableHead>
-                    <TableHead>عنوان البلاغ</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>مقدم البلاغ</TableHead>
-                    <TableHead>الموقع/الإدارة</TableHead>
-                    <TableHead>تاريخ التقديم</TableHead>
-                    <TableHead>
-                      <span className="sr-only">إجراءات</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">{report.id}</TableCell>
-                      <TableCell>{report.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(report.status)}>{report.status}</Badge>
-                      </TableCell>
-                      <TableCell>{report.user}</TableCell>
-                      <TableCell>{report.location}</TableCell>
-                      <TableCell>{report.date}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              aria-haspopup="true"
-                              size="icon"
-                              variant="ghost"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                             <Link href={`/supervisor/report/${report.id.replace('بل-','')}`} passHref>
-                                <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
-                             </Link>
-                            <DropdownMenuItem>تحويل</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              حذف
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter>
-              <div className="text-xs text-muted-foreground">
-                عرض <strong>{reports.length}</strong> من <strong>{reports.length}</strong> بلاغ
-              </div>
-            </CardFooter>
-          </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>كافة البلاغات</CardTitle>
+                    <CardDescription>قائمة بجميع البلاغات المقدمة من الموظفين.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ReportTable reportsToShow={reports} />
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="new">
+            <Card>
+                <CardHeader>
+                    <CardTitle>البلاغات الجديدة</CardTitle>
+                    <CardDescription>البلاغات التي لم تتم مراجعتها بعد.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ReportTable reportsToShow={newReports} />
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="in-progress">
+             <Card>
+                <CardHeader>
+                    <CardTitle>بلاغات قيد المراجعة</CardTitle>
+                    <CardDescription>البلاغات التي يتم العمل عليها حالياً.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ReportTable reportsToShow={inProgressReports} />
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="resolved">
+             <Card>
+                <CardHeader>
+                    <CardTitle>البلاغات المغلقة</CardTitle>
+                    <CardDescription>البلاغات التي تم حلها أو رفضها.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ReportTable reportsToShow={resolvedReports} />
+                </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
     </>

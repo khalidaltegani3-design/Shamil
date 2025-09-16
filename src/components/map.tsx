@@ -6,21 +6,6 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useEffect } from 'react';
 
-// This useEffect hook is the key to fixing the marker icon issue in Next.js.
-// It runs once on the client-side after the component mounts.
-// By deleting and re-initializing the default icon, we ensure that Leaflet
-// uses the correct image paths bundled by Webpack.
-useEffect(() => {
-    // @ts-ignore
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-        iconUrl: require('leaflet/dist/images/marker-icon.png'),
-        shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-    });
-}, []);
-
-
 interface MapProps {
   position: [number, number] | null;
   setPosition: (position: [number, number]) => void;
@@ -48,6 +33,20 @@ function LocationMarker({ position, setPosition }: MapProps) {
 
 
 export default function Map({ position, setPosition }: MapProps) {
+  // This useEffect hook is the key to fixing the marker icon issue in Next.js.
+  // It runs once on the client-side after the component mounts.
+  // By deleting and re-initializing the default icon, we ensure that Leaflet
+  // uses the correct image paths bundled by Webpack.
+  useEffect(() => {
+      // @ts-ignore
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+          iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+          iconUrl: require('leaflet/dist/images/marker-icon.png'),
+          shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+      });
+  }, []);
+
   return (
     <MapContainer 
         center={position || [25.2854, 51.5310]} 

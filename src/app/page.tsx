@@ -1,4 +1,4 @@
-import { FileText, BarChart3, Clock, User } from 'lucide-react';
+import { FileText, BarChart3, Clock, User, LogIn } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -52,9 +52,17 @@ export default function DashboardPage() {
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold tracking-tight">لوحة المعلومات</h2>
-          <Link href="/create-report">
-            <Button>إنشاء بلاغ جديد</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/create-report" passHref>
+              <Button>إنشاء بلاغ جديد</Button>
+            </Link>
+             <Link href="/login" passHref>
+                <Button variant="outline">
+                    <LogIn className="ml-2 h-4 w-4" />
+                    واجهة المشرف
+                </Button>
+            </Link>
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
           <StatCard 

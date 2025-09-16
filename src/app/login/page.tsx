@@ -11,7 +11,8 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/');
+    // TODO: Differentiate between employee and supervisor login
+    router.push('/supervisor');
   };
 
   return (

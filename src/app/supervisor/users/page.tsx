@@ -6,11 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 
 const users = [
-    { id: "USR-001", name: "خالد الأحمد", email: "k.alahmad@gov.sa", role: "مشرف", status: "نشط" },
-    { id: "USR-002", name: "نورة القحطاني", email: "n.alqahtani@gov.sa", role: "موظف", status: "نشط" },
-    { id: "USR-003", name: "سلطان العتيبي", email: "s.alotaibi@gov.sa", role: "موظف", status: "غير نشط" },
-    { id: "USR-004", name: "أحمد الغامدي", email: "a.alghamdi@gov.sa", role: "رئيس قسم", status: "نشط" },
-    { id: "USR-005", name: "فاطمة الزهراني", email: "f.alzahrani@gov.sa", role: "موظف", status: "نشط" },
+    { id: "E-1023", name: "خالد الأحمد", employeeId: "E-1023", role: "مشرف", status: "نشط" },
+    { id: "E-1029", name: "نورة القحطاني", employeeId: "E-1029", role: "موظف", status: "نشط" },
+    { id: "E-1035", name: "سلطان العتيبي", employeeId: "E-1035", role: "موظف", status: "غير نشط" },
+    { id: "E-1041", name: "أحمد الغامدي", employeeId: "E-1041", role: "رئيس قسم", status: "نشط" },
+    { id: "E-1048", name: "فاطمة الزهراني", employeeId: "E-1048", role: "موظف", status: "نشط" },
 ]
 
 function getStatusVariant(status: string) {
@@ -19,7 +19,7 @@ function getStatusVariant(status: string) {
 
 function getRoleVariant(role: string): "default" | "secondary" | "destructive" | "outline" | null | undefined {
     switch(role) {
-        case 'مشرف': return 'default';
+        case 'مشرف': return 'primary';
         case 'رئيس قسم': return 'secondary';
         default: return 'outline';
     }
@@ -49,7 +49,7 @@ export default function UserManagementPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>الاسم</TableHead>
-                                <TableHead>البريد الإلكتروني</TableHead>
+                                <TableHead>رقم الموظف</TableHead>
                                 <TableHead>الدور/الصلاحية</TableHead>
                                 <TableHead>الحالة</TableHead>
                                 <TableHead>
@@ -61,7 +61,7 @@ export default function UserManagementPage() {
                             {users.map(user => (
                                 <TableRow key={user.id}>
                                     <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>{user.employeeId}</TableCell>
                                     <TableCell>
                                         <Badge variant={getRoleVariant(user.role)}>{user.role}</Badge>
                                     </TableCell>

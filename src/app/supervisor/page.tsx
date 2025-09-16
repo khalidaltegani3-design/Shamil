@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   File,
   ListFilter,
-  MoreHorizontal,
+  Menu,
   PlusCircle,
   Search,
 } from "lucide-react";
@@ -101,7 +101,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                               size="icon"
                               variant="ghost"
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <Menu className="h-4 w-4" />
                               <span className="sr-only">Toggle menu</span>
                             </Button>
                           </DropdownMenuTrigger>

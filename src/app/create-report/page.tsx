@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Paperclip, MapPin, X, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ export default function CreateReportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
   const [files, setFiles] = useState<File[]>([]);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
     loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,

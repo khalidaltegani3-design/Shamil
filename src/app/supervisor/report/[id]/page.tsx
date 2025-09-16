@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Clock, Gavel, HelpCircle, Send, User, MapPin, Building, Calendar, Paperclip, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Gavel, HelpCircle, Send, User, MapPin, Building, Calendar, Paperclip, XCircle, PlusCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 // Mock data for a single report
@@ -26,7 +26,9 @@ const reportDetails = {
   },
   location: "مبنى 3، الطابق 5، مكتب 501",
   timeline: [
-    { action: "إنشاء البلاغ", user: "نورة القحطاني", date: "2023-06-23 10:30 ص", icon: <PlusCircle className="h-4 w-4" /> },
+    { action: "إنشاء البلاغ", user: "نورة القحطاني", date: "2023-06-23 10:30 ص" },
+    { action: "قبول البلاغ", user: "خالد الأحمد", date: "2023-06-23 11:00 ص" },
+    { action: "تحويل البلاغ", user: "خالد الأحمد", date: "2023-06-23 11:01 ص" },
   ]
 };
 
@@ -50,11 +52,11 @@ function getImportanceVariant(importance: string) {
 }
 
 const timelineIcons: { [key: string]: React.ReactNode } = {
-  "إنشاء البلاغ": <CheckCircle className="h-4 w-4 text-green-500" />,
+  "إنشاء البلاغ": <PlusCircle className="h-4 w-4" />,
   "قبول البلاغ": <CheckCircle className="h-4 w-4 text-green-500" />,
   "رفض البلاغ": <XCircle className="h-4 w-4 text-red-500" />,
-  "طلب معلومات إضافية": <HelpCircle className="h-4 w-4 text-blue-500" />,
-  "تحويل البلاغ": <Send className="h-4 w-4 text-purple-500" />,
+  "طلب معلومات إضافية": <HelpCircle className="h-4 w-4 text-primary" />,
+  "تحويل البلاغ": <Send className="h-4 w-4 text-muted-foreground" />,
   "إضافة رد": <Gavel className="h-4 w-4 text-gray-500" />,
 };
 

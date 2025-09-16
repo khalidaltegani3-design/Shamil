@@ -17,9 +17,9 @@ function getStatusVariant(status: string) {
     return status === 'نشط' ? 'default' : 'secondary';
 }
 
-function getRoleVariant(role: string) {
+function getRoleVariant(role: string): "default" | "secondary" | "destructive" | "outline" | null | undefined {
     switch(role) {
-        case 'مشرف': return 'destructive';
+        case 'مشرف': return 'default';
         case 'رئيس قسم': return 'secondary';
         default: return 'outline';
     }

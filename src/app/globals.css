@@ -13,7 +13,7 @@
     --popover: 240 10% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 221 44% 45%; /* Official Blue - Placeholder */
+    --primary: 340 71% 31%; /* Qatar Maroon from Logo */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 240 5% 90%; /* Light Gray */
@@ -30,7 +30,7 @@
 
     --border: 240 6% 90%;
     --input: 240 6% 94%;
-    --ring: 221 44% 45%;
+    --ring: 340 71% 31%; /* Qatar Maroon from Logo */
 
     --radius: 0.5rem;
   }
@@ -45,7 +45,7 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 221 44% 55%;
+    --primary: 340 71% 41%; /* Lighter Maroon for dark mode */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 240 4% 10%;
@@ -62,7 +62,7 @@
 
     --border: 240 4% 15%;
     --input: 240 4% 15%;
-    --ring: 221 44% 55%;
+    --ring: 340 71% 41%;
   }
 }
 

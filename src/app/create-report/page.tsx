@@ -1,8 +1,9 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ChevronDown, Paperclip } from 'lucide-react';
+import { ArrowRight, Paperclip, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
+import dynamic from 'next/dynamic';
 
 function AppHeader() {
   const router = useRouter();
@@ -34,9 +36,23 @@ export default function CreateReportPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
+
+  const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
+    loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,
+    ssr: false 
+  }), []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+     if (!position) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى تحديد الموقع على الخريطة.",
+      });
+      return;
+    }
     setIsSubmitting(true);
 
     // Simulate API call
@@ -60,13 +76,20 @@ export default function CreateReportPage() {
             <CardHeader>
               <CardTitle>تفاصيل البلاغ</CardTitle>
               <CardDescription>
-                يرجى ملء الحقول التالية بدقة ووضوح.
+                يرجى ملء الحقول التالية وتحديد الموقع على الخريطة.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="report-title">عنوان البلاغ</Label>
-                <Input id="report-title" placeholder="أدخل عنوانًا واضحًا للبلاغ" required />
+               <div className="space-y-2">
+                <Label htmlFor="report-location">الموقع</Label>
+                <div className="relative w-full h-64 rounded-lg overflow-hidden border">
+                    <Map position={position} setPosition={setPosition} />
+                </div>
+                 {position && (
+                    <p className="text-sm text-muted-foreground pt-2 text-center dir-ltr">
+                        Lat: {position[0].toFixed(6)}, Lng: {position[1].toFixed(6)}
+                    </p>
+                )}
               </div>
               
               <div className="space-y-2">

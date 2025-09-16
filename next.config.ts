@@ -36,6 +36,14 @@ const nextConfig: NextConfig = {
     // Allow blob URLs for image previews
     domains: ['blob'],
   },
+   async rewrites() {
+    return [
+      {
+        source: '/leaflet/:path*',
+        destination: '/node_modules/leaflet/dist/images/:path*',
+      },
+    ]
+  },
 };
 
 export default nextConfig;

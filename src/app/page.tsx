@@ -1,4 +1,4 @@
-import { FileText, BarChart3, Clock, User, LogIn } from 'lucide-react';
+import { FileText, BarChart3, Clock, User, LogOut } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -58,8 +58,8 @@ export default function DashboardPage() {
             </Link>
              <Link href="/login" passHref>
                 <Button variant="outline">
-                    <LogIn className="ml-2 h-4 w-4" />
-                    تسجيل الدخول
+                    <LogOut className="ml-2 h-4 w-4" />
+                    تسجيل الخروج
                 </Button>
             </Link>
           </div>

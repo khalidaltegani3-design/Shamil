@@ -59,7 +59,7 @@ export default function DashboardPage() {
              <Link href="/login" passHref>
                 <Button variant="outline">
                     <LogIn className="ml-2 h-4 w-4" />
-                    واجهة المشرف
+                    تسجيل الدخول
                 </Button>
             </Link>
           </div>

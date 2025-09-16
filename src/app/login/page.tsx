@@ -1,19 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { Shield, User } from "lucide-react";
 
-export default function LoginPage() {
+export default function RoleSelectionPage() {
   const router = useRouter();
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Differentiate between employee and supervisor login
-    router.push('/supervisor');
-  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4" dir="rtl">
@@ -24,29 +17,21 @@ export default function LoginPage() {
                 شعار الوزارة
               </div>
           </div>
-          <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
+          <CardTitle className="text-2xl">اختيار الواجهة</CardTitle>
           <CardDescription>
-            منصة البلاغات الداخلية للموظفين
+            يرجى تحديد الواجهة التي تريد الدخول إليها
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="employeeId">رقم الموظف</Label>
-              <Input id="employeeId" type="text" placeholder="أدخل الرقم الوظيفي" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" placeholder="أدخل كلمة المرور" required />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col">
-            <Button className="w-full" type="submit">تسجيل الدخول</Button>
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              تواجه مشكلة؟ <a href="#" className="underline">تواصل مع الدعم الفني</a>
-            </p>
-          </CardFooter>
-        </form>
+        <CardContent className="grid gap-4 pt-4">
+            <Button size="lg" onClick={() => router.push('/login/supervisor')}>
+                <Shield className="ml-2 h-5 w-5" />
+                واجهة المشرف
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => router.push('/login/employee')}>
+                 <User className="ml-2 h-5 w-5" />
+                واجهة الموظف
+            </Button>
+        </CardContent>
       </Card>
     </main>
   );

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
+import { allDepartments } from '@/lib/departments';
 
 function AppHeader() {
   const router = useRouter();
@@ -32,14 +33,6 @@ function AppHeader() {
     </header>
   );
 }
-
-// Mock departments data
-const allDepartments = [
-  { id: "it-support", name: "الدعم الفني" },
-  { id: "maintenance", name: "الصيانة" },
-  { id: "general-services", name: "الخدمات العامة" },
-  { id: "human-resources", name: "الموارد البشرية" },
-];
 
 
 export default function CreateReportPage() {

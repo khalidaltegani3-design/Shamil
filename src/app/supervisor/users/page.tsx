@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { allDepartments } from "@/lib/departments";
 
 
 const initialUsers = [
@@ -22,14 +23,6 @@ const initialUsers = [
     { id: "E-1035", name: "سلطان العتيبي", email: "s.otaibi@example.com", role: "employee" as const, status: "غير نشط" as "نشط" | "غير نشط", homeDepartmentId: "general-services", supervisorOf: [] },
     { id: "E-1041", name: "أحمد الغامدي", email: "a.ghamdi@example.com", role: "supervisor" as const, status: "نشط" as "نشط" | "غير نشط", homeDepartmentId: "maintenance", supervisorOf: ["maintenance"] },
     { id: "E-1048", name: "فاطمة الزهراني", email: "f.zahrani@example.com", role: "employee" as const, status: "نشط" as "نشط" | "غير نشط", homeDepartmentId: "human-resources", supervisorOf: [] },
-];
-
-const allDepartments = [
-  { id: "executive-management", name: "الإدارة العليا" },
-  { id: "it-support", name: "الدعم الفني" },
-  { id: "maintenance", name: "الصيانة" },
-  { id: "general-services", name: "الخدمات العامة" },
-  { id: "human-resources", name: "الموارد البشرية" },
 ];
 
 

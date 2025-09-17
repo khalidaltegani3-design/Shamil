@@ -6,12 +6,7 @@ import { Save } from "lucide-react";
 
 // Mock data for gamification rules
 const rules = [
-    { id: "submit_report", label: "تقديم بلاغ جديد", points: 10 },
-    { id: "report_accepted", label: "قبول البلاغ من المشرف", points: 20 },
-    { id: "report_resolved_quickly", label: "حل البلاغ في أقل من 24 ساعة", points: 50 },
-    { id: "provide_feedback", label: "تقديم تقييم على حل البلاغ", points: 5 },
-    { id: "report_rejected", label: "رفض البلاغ (خصم نقاط)", points: -15 },
-    { id: "suggestion_accepted", label: "قبول اقتراح مقدم", points: 100 },
+    { id: "submit_report", label: "تقديم بلاغ جديد", points: 5 },
 ];
 
 export default function GamificationSettingsPage() {
@@ -24,7 +19,7 @@ export default function GamificationSettingsPage() {
         <CardHeader>
           <CardTitle>قواعد منح النقاط</CardTitle>
           <CardDescription>
-            حدد القيم الرقمية لكل حدث داخل النظام لتحفيز الموظفين على التفاعل الإيجابي.
+            حدد القيمة الرقمية لكل حدث داخل النظام لتحفيز الموظفين على التفاعل الإيجابي.
           </CardDescription>
         </CardHeader>
         <CardContent>

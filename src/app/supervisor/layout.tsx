@@ -86,13 +86,15 @@ export default function SupervisorLayout({
                   إدارة المستخدمين
                 </Link>
               )}
-               <Link
-                href="/supervisor/gamification"
-                className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-              >
-                <Trophy className="h-5 w-5" />
-                النقاط والمكافآت
-              </Link>
+               {isAdmin && (
+                <Link
+                  href="/supervisor/gamification"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Trophy className="h-5 w-5" />
+                  النقاط والمكافآت
+                </Link>
+              )}
               <Link
                 href="#"
                 className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"

@@ -9,6 +9,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        sans: ['var(--font-inter)'],
+        amiri: ['var(--font-amiri)'],
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
         code: ['monospace'],

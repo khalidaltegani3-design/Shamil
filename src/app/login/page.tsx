@@ -16,7 +16,7 @@ export default function RoleSelectionPage() {
           <div className="flex justify-center mb-4">
               <h1 className="text-2xl font-bold">بلدية الريان</h1>
           </div>
-          <CardTitle className="text-2xl">اختيار الواجهة</CardTitle>
+          <CardTitle className="text-4xl font-amiri">شامل</CardTitle>
           <CardDescription>
             يرجى تحديد الواجهة التي تريد الدخول إليها
           </CardDescription>

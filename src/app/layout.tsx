@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Using Inter as a placeholder for a proper Arabic/English font
+import { Inter, Amiri } from 'next/font/google'; 
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
-// If the ministry has a specific font, we can add it here.
-// For now, Inter is a good, clean, and versatile choice.
-const font = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const amiri = Amiri({
+  subsets: ['arabic'],
+  weight: ['400', '700'],
+  variable: '--font-amiri',
+});
 
 export const metadata: Metadata = {
   title: 'منصة البلاغات الداخلية - وزارة البلدية',
@@ -19,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${font.className} antialiased`}>
+      <body className={`${inter.variable} ${amiri.variable} font-sans antialiased`}>
         {children}
         <Toaster />
       </body>

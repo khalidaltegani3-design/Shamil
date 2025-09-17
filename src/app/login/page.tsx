@@ -13,10 +13,8 @@ export default function RoleSelectionPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4" dir="rtl">
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-              <h1 className="text-2xl font-bold">بلدية الريان</h1>
-          </div>
-          <CardTitle className="text-7xl font-amiri font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</CardTitle>
+           <CardTitle className="text-7xl font-amiri font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</CardTitle>
+            <p className="text-lg font-semibold text-muted-foreground">بلدية الريان</p>
         </CardHeader>
         <CardContent className="grid gap-4 pt-4">
             <CardDescription className="text-center pb-2">

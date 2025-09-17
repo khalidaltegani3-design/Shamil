@@ -1,4 +1,6 @@
 
+"use client";
+
 import Link from "next/link";
 import {
   Bell,
@@ -25,13 +27,29 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { initialUsers } from "@/lib/users";
 
+type User = typeof initialUsers[0];
 
 export default function SupervisorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // In a real app, you'd get the user from an auth context.
+    // Here, we simulate it by finding the admin user from our mock data.
+    const user = initialUsers.find(u => u.id === "E-1023"); // Assuming E-1023 is the logged-in admin
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
+
+  const isAdmin = currentUser?.role === 'admin';
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40" dir="rtl">
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -59,13 +77,15 @@ export default function SupervisorLayout({
                 <Home className="h-5 w-5" />
                 لوحة المعلومات
               </Link>
-              <Link
-                href="/supervisor/users"
-                className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-              >
-                <Users className="h-5 w-5" />
-                إدارة المستخدمين
-              </Link>
+              {isAdmin && (
+                 <Link
+                  href="/supervisor/users"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Users className="h-5 w-5" />
+                  إدارة المستخدمين
+                </Link>
+              )}
                <Link
                 href="/supervisor/gamification"
                 className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"

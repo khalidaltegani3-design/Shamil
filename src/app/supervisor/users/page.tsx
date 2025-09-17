@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ export default function UserManagementPage() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     
     // States for dialogs
+    const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
     const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
     const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
     const [isPasswordResetAlertOpen, setIsPasswordResetAlertOpen] = useState(false);
@@ -56,6 +58,27 @@ export default function UserManagementPage() {
         if (action === "password") setIsPasswordResetAlertOpen(true);
         if (action === "deactivate") setIsDeactivateAlertOpen(true);
         if (action === "activate") setIsActivateAlertOpen(true);
+    };
+
+    const handleCreateUser = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const newUser = {
+            id: formData.get('employeeId') as string,
+            name: formData.get('name') as string,
+            email: formData.get('email') as string,
+            role: formData.get('role') as "admin" | "supervisor" | "employee",
+            status: "نشط" as "نشط" | "غير نشط",
+            homeDepartmentId: formData.get('department') as string,
+            supervisorOf: []
+        };
+        // TODO: Call actual cloud function `adminCreateUser(newUser)`
+        setUsers([newUser, ...users]);
+        toast({
+            title: "تم إنشاء المستخدم بنجاح",
+            description: `تم إرسال رابط تفعيل الحساب إلى ${newUser.email}.`,
+        });
+        setIsCreateUserDialogOpen(false);
     };
 
     const handlePasswordReset = () => {
@@ -97,12 +120,64 @@ export default function UserManagementPage() {
                 <div className="flex items-center">
                     <h1 className="text-lg font-semibold md:text-2xl">إدارة المستخدمين والصلاحيات</h1>
                     <div className="ml-auto flex items-center gap-2">
-                        <Button size="sm" className="h-8 gap-1">
-                            <PlusCircle className="h-3.5 w-3.5" />
-                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                            إنشاء مستخدم
-                            </span>
-                        </Button>
+                         <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" className="h-8 gap-1">
+                                    <PlusCircle className="h-3.5 w-3.5" />
+                                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                        إنشاء مستخدم
+                                    </span>
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>إنشاء مستخدم جديد</DialogTitle>
+                                    <DialogDescription>أدخل بيانات المستخدم لإضافته للنظام وإرسال دعوة له.</DialogDescription>
+                                </DialogHeader>
+                                <form id="createUserForm" onSubmit={handleCreateUser} className="grid gap-4 py-4">
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="name" className="text-right">الاسم</Label>
+                                        <Input id="name" name="name" className="col-span-3" placeholder="الاسم الكامل" required />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="email" className="text-right">البريد الإلكتروني</Label>
+                                        <Input id="email" name="email" type="email" className="col-span-3" placeholder="user@example.com" required />
+                                    </div>
+                                     <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="employeeId" className="text-right">الرقم الوظيفي</Label>
+                                        <Input id="employeeId" name="employeeId" className="col-span-3" placeholder="E-1234" required />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="password" className="text-right">كلمة مرور أولية</Label>
+                                        <Input id="password" name="password" type="password" className="col-span-3" required />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="role" className="text-right">الدور</Label>
+                                        <Select dir="rtl" name="role" required defaultValue="employee">
+                                            <SelectTrigger id="role" className="col-span-3"><SelectValue placeholder="اختر الدور" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="employee">موظف</SelectItem>
+                                                <SelectItem value="supervisor">مشرف</SelectItem>
+                                                <SelectItem value="admin">مدير نظام</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="department" className="text-right">الإدارة</Label>
+                                        <Select dir="rtl" name="department" required>
+                                            <SelectTrigger id="department" className="col-span-3"><SelectValue placeholder="اختر الإدارة" /></SelectTrigger>
+                                            <SelectContent>
+                                                {allDepartments.map(dept => (<SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </form>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>إلغاء</Button>
+                                    <Button type="submit" form="createUserForm">إنشاء مستخدم</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </div>
                 <Card>
@@ -284,3 +359,5 @@ export default function UserManagementPage() {
         </>
     )
 }
+
+    

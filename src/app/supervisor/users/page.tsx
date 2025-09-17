@@ -6,11 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 
 const users = [
-    { id: "E-1023", name: "خالد الأحمد", employeeId: "E-1023", role: "admin", status: "نشط", homeDepartment: "الإدارة العليا", supervisorOf: ["it-support", "maintenance"] },
-    { id: "E-1029", name: "نورة القحطاني", employeeId: "E-1029", role: "supervisor", status: "نشط", homeDepartment: "الدعم الفني", supervisorOf: ["it-support"] },
-    { id: "E-1035", name: "سلطان العتيبي", employeeId: "E-1035", role: "employee", status: "غير نشط", homeDepartment: "الخدمات العامة", supervisorOf: [] },
-    { id: "E-1041", name: "أحمد الغامدي", employeeId: "E-1041", role: "supervisor", status: "نشط", homeDepartment: "الصيانة", supervisorOf: ["maintenance"] },
-    { id: "E-1048", name: "فاطمة الزهراني", employeeId: "E-1048", role: "employee", status: "نشط", homeDepartment: "الموارد البشرية", supervisorOf: [] },
+    { id: "E-1023", name: "خالد الأحمد", email: "k.ahmed@example.com", role: "admin", status: "نشط", homeDepartment: "الإدارة العليا", supervisorOf: ["it-support", "maintenance"] },
+    { id: "E-1029", name: "نورة القحطاني", email: "n.qahtani@example.com", role: "supervisor", status: "نشط", homeDepartment: "الدعم الفني", supervisorOf: ["it-support"] },
+    { id: "E-1035", name: "سلطان العتيبي", email: "s.otaibi@example.com", role: "employee", status: "غير نشط", homeDepartment: "الخدمات العامة", supervisorOf: [] },
+    { id: "E-1041", name: "أحمد الغامدي", email: "a.ghamdi@example.com", role: "supervisor", status: "نشط", homeDepartment: "الصيانة", supervisorOf: ["maintenance"] },
+    { id: "E-1048", name: "فاطمة الزهراني", email: "f.zahrani@example.com", role: "employee", status: "نشط", homeDepartment: "الموارد البشرية", supervisorOf: [] },
 ]
 
 function getStatusVariant(status: string) {
@@ -90,7 +90,7 @@ export default function UserManagementPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                                                <DropdownMenuItem>تعديل الدور والإدارة</DropdownMenuItem>
+                                                <DropdownMenuItem>تحديث الدور والإدارة</DropdownMenuItem>
                                                 <DropdownMenuItem>تعيين كـ مشرف</DropdownMenuItem>
                                                 <DropdownMenuItem>إعادة تعيين كلمة المرور</DropdownMenuItem>
                                                 <DropdownMenuItem className="text-destructive">

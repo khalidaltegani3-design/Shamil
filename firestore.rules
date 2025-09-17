@@ -62,7 +62,7 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
 
-    match /notifications/{id} {
+    match /notifications/{notifId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.toUserId;
       allow write: if false;
     }

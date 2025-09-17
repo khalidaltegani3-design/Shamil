@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,8 @@ export default function EmployeeLoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1 text-center">
            <div className="flex justify-center mb-4">
-              <div className="flex h-12 w-32 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-                شعار الوزارة
+              <div className="flex h-12 w-auto px-6 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
+                بلدية الريان
               </div>
           </div>
           <CardTitle className="text-2xl">دخول الموظفين</CardTitle>

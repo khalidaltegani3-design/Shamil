@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Bell,
@@ -44,10 +45,10 @@ export default function SupervisorLayout({
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="/supervisor"
-                className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+                className="group flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
               >
-                 <div className="flex h-8 w-24 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-                    الشعار
+                 <div className="flex h-8 w-auto px-4 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
+                    بلدية الريان
                  </div>
               </Link>
               <Link

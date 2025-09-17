@@ -1,3 +1,4 @@
+
 import { FileText, BarChart3, Clock, User, LogOut } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,8 @@ function AppHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-4">
-        <div className="flex h-8 w-24 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-          الشعار
+        <div className="flex h-8 w-auto px-4 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
+          بلدية الريان
         </div>
         <h1 className="text-lg font-semibold">منصة البلاغات</h1>
       </div>

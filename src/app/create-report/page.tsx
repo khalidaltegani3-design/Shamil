@@ -24,8 +24,8 @@ function AppHeader() {
         </Button>
         <h1 className="text-lg font-semibold">إنشاء بلاغ جديد</h1>
       </div>
-       <div className="flex h-8 w-24 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-          الشعار
+       <div className="flex h-8 w-auto px-4 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
+          بلدية الريان
         </div>
     </header>
   );

@@ -121,10 +121,9 @@ export default function CreateReportPage() {
                     <SelectValue placeholder="اختر الإدارة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="general-supervision">الرقابة العامة</SelectItem>
-                    <SelectItem value="health-supervision">الرقابة الصحية</SelectItem>
-                    <SelectItem value="technical-supervision">الرقابة الفنية</SelectItem>
-                    <SelectItem value="other-violations">مخالفات اخرى</SelectItem>
+                    <SelectItem value="it-support">الدعم الفني</SelectItem>
+                    <SelectItem value="maintenance">الصيانة</SelectItem>
+                    <SelectItem value="general-services">الخدمات العامة</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

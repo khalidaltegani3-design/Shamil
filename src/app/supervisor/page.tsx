@@ -41,24 +41,29 @@ import {
 import { Button } from "@/components/ui/button";
 
 const reports = [
-    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "جديد", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24" },
-    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "جديد", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23" },
-    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "قيد المراجعة", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22" },
-    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "قيد المراجعة", user: "سارة المطيري", location: "الدحيل، تقاطع الجامعة", date: "2023-06-19" },
-    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "تم الحل", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21" },
-    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "تم الحل", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20" },
-    { id: "BL-4821", title: "عطل في نظام التكييف المركزي", status: "مرفوض", user: "مريم عبدالله", location: "الإدارة المالية", date: "2023-06-18" },
+    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24" },
+    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23" },
+    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22" },
+    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open", user: "سارة المطيري", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19" },
+    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21" },
+    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20" },
 ];
 
 type Report = typeof reports[0];
 
-function getStatusVariant(status: string) {
+function getStatusVariant(status: string): "default" | "secondary" {
     switch (status) {
-        case "جديد": return "default";
-        case "قيد المراجعة": return "secondary";
-        case "تم الحل": return "outline";
-        case "مرفوض": return "destructive";
+        case "open": return "default";
+        case "closed": return "secondary";
         default: return "default";
+    }
+}
+
+function getStatusText(status: string) {
+    switch (status) {
+        case "open": return "مفتوح";
+        case "closed": return "مغلق";
+        default: return "غير معروف";
     }
 }
 
@@ -86,7 +91,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                       <TableCell className="font-medium">{report.id}</TableCell>
                       <TableCell>{report.title}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(report.status)}>{report.status}</Badge>
+                        <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
                       </TableCell>
                       <TableCell>{report.user}</TableCell>
                       <TableCell>{report.location}</TableCell>
@@ -108,11 +113,6 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                              <Link href={`/supervisor/report/${report.id.replace('BL-','')}`} passHref>
                                 <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
                              </Link>
-                            <DropdownMenuItem>تحويل</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              حذف
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -132,9 +132,8 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
 
 
 export default function SupervisorDashboard() {
-  const newReports = reports.filter(r => r.status === 'جديد');
-  const inProgressReports = reports.filter(r => r.status === 'قيد المراجعة');
-  const resolvedReports = reports.filter(r => r.status === 'تم الحل' || r.status === 'مرفوض');
+  const openReports = reports.filter(r => r.status === 'open');
+  const closedReports = reports.filter(r => r.status === 'closed');
 
   return (
     <>
@@ -145,9 +144,8 @@ export default function SupervisorDashboard() {
         <div className="flex items-center">
           <TabsList>
             <TabsTrigger value="all">الكل</TabsTrigger>
-            <TabsTrigger value="new">جديد</TabsTrigger>
-            <TabsTrigger value="in-progress">قيد المراجعة</TabsTrigger>
-            <TabsTrigger value="resolved">تم الحل</TabsTrigger>
+            <TabsTrigger value="open">مفتوح</TabsTrigger>
+            <TabsTrigger value="closed">مغلق</TabsTrigger>
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
@@ -176,14 +174,11 @@ export default function SupervisorDashboard() {
         <TabsContent value="all">
             <ReportTable reportsToShow={reports} />
         </TabsContent>
-        <TabsContent value="new">
-            <ReportTable reportsToShow={newReports} />
+        <TabsContent value="open">
+            <ReportTable reportsToShow={openReports} />
         </TabsContent>
-        <TabsContent value="in-progress">
-             <ReportTable reportsToShow={inProgressReports} />
-        </TabsContent>
-        <TabsContent value="resolved">
-             <ReportTable reportsToShow={resolvedReports} />
+        <TabsContent value="closed">
+             <ReportTable reportsToShow={closedReports} />
         </TabsContent>
       </Tabs>
     </>

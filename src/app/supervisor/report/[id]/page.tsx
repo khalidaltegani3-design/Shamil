@@ -1,15 +1,20 @@
+
+"use client";
+
+import { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Clock, Gavel, HelpCircle, Send, User, MapPin, Building, Calendar, Paperclip, XCircle, PlusCircle } from "lucide-react";
+import { CheckCircle, Send, User, MapPin, Calendar, Paperclip, PlusCircle, Clock, Gavel } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data for a single report
-const reportDetails = {
+const initialReportDetails = {
   id: "BL-8564",
   title: "عطل في نظام التكييف المركزي",
   description: "نواجه مشكلة مستمرة في نظام التكييف بالطابق الخامس من مبنى 3. النظام يتوقف عن العمل بشكل متكرر خلال اليوم، مما يؤثر على بيئة العمل وإنتاجية الموظفين. قمنا بمحاولة إعادة تشغيله عدة مرات ولكن دون جدوى. نرجو إرسال فريق الصيانة بشكل عاجل.",
-  status: "جديد",
+  status: "open",
   importance: "عاجل",
   date: "2023-06-23",
   attachments: [
@@ -27,20 +32,29 @@ const reportDetails = {
   location: "مبنى 3، الطابق 5، مكتب 501",
   timeline: [
     { action: "إنشاء البلاغ", user: "نورة القحطاني", date: "2023-06-23 10:30 ص" },
-    { action: "قبول البلاغ", user: "خالد الأحمد", date: "2023-06-23 11:00 ص" },
-    { action: "تحويل البلاغ", user: "خالد الأحمد", date: "2023-06-23 11:01 ص" },
-  ]
+  ],
+  receivedBy: null,
+  receivedAt: null,
 };
 
-function getStatusVariant(status: string) {
+type Report = typeof initialReportDetails;
+
+function getStatusVariant(status: string): "default" | "secondary" {
     switch (status) {
-        case "جديد": return "default";
-        case "قيد المراجعة": return "secondary";
-        case "تم الحل": return "outline";
-        case "مرفوض": return "destructive";
+        case "open": return "default";
+        case "closed": return "secondary";
         default: return "default";
     }
 }
+
+function getStatusText(status: string) {
+    switch (status) {
+        case "open": return "مفتوح";
+        case "closed": return "مغلق";
+        default: return "غير معروف";
+    }
+}
+
 
 function getImportanceVariant(importance: string) {
     switch (importance) {
@@ -53,34 +67,51 @@ function getImportanceVariant(importance: string) {
 
 const timelineIcons: { [key: string]: React.ReactNode } = {
   "إنشاء البلاغ": <PlusCircle className="h-4 w-4" />,
-  "قبول البلاغ": <CheckCircle className="h-4 w-4 text-green-500" />,
-  "رفض البلاغ": <XCircle className="h-4 w-4 text-red-500" />,
-  "طلب معلومات إضافية": <HelpCircle className="h-4 w-4 text-primary" />,
-  "تحويل البلاغ": <Send className="h-4 w-4 text-muted-foreground" />,
-  "إضافة رد": <Gavel className="h-4 w-4 text-gray-500" />,
+  "تم استلام البلاغ": <CheckCircle className="h-4 w-4 text-green-500" />,
 };
 
 
 export default function ReportDetailsPage({ params }: { params: { id: string } }) {
+  const [report, setReport] = useState<Report>(initialReportDetails);
+  const { toast } = useToast();
+
+  const handleCloseReport = () => {
+    const now = new Date();
+    setReport(prev => ({
+        ...prev,
+        status: "closed",
+        receivedBy: "خالد الأحمد", // Mock supervisor ID
+        receivedAt: now.toLocaleString('ar-QA'),
+        timeline: [
+            ...prev.timeline,
+            { action: "تم استلام البلاغ", user: "خالد الأحمد", date: now.toLocaleString('ar-QA', { dateStyle: 'short', timeStyle: 'short' }) }
+        ]
+    }));
+    toast({
+        title: "تم استلام البلاغ بنجاح",
+        description: `تم إشعار الموظف ${report.submitter.name} بذلك.`,
+    });
+  };
+
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-2">
-      <h1 className="text-3xl font-semibold">تفاصيل البلاغ: {reportDetails.id}</h1>
+      <h1 className="text-3xl font-semibold">تفاصيل البلاغ: {report.id}</h1>
 
       <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-[1fr_300px] lg:gap-8">
         <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
           <Card>
             <CardHeader>
-              <CardTitle>{reportDetails.title}</CardTitle>
+              <CardTitle>{report.title}</CardTitle>
               <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
                 <div className="flex items-center gap-1">
-                  <Badge variant={getStatusVariant(reportDetails.status)}>{reportDetails.status}</Badge>
+                  <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Badge variant={getImportanceVariant(reportDetails.importance)}>{reportDetails.importance}</Badge>
+                  <Badge variant={getImportanceVariant(report.importance)}>{report.importance}</Badge>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>{reportDetails.date}</span>
+                  <span>{report.date}</span>
                 </div>
               </div>
             </CardHeader>
@@ -88,22 +119,22 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
               <div className="grid gap-6">
                 <div>
                     <h3 className="font-semibold mb-2">الوصف التفصيلي</h3>
-                    <p className="text-muted-foreground leading-relaxed">{reportDetails.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">{report.description}</p>
                 </div>
-                {reportDetails.location && (
+                {report.location && (
                     <div>
                         <h3 className="font-semibold mb-2">الموقع</h3>
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <MapPin className="h-4 w-4" />
-                            <span>{reportDetails.location}</span>
+                            <span>{report.location}</span>
                         </div>
                     </div>
                 )}
-                {reportDetails.attachments.length > 0 && (
+                {report.attachments.length > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-2">المرفقات ({reportDetails.attachments.length})</h3>
+                    <h3 className="font-semibold mb-2">المرفقات ({report.attachments.length})</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {reportDetails.attachments.map((file, index) => (
+                      {report.attachments.map((file, index) => (
                         <div key={index} className="flex items-center gap-2 rounded-md border p-2">
                           <Paperclip className="h-5 w-5 text-muted-foreground" />
                           <div className="flex-1">
@@ -122,12 +153,12 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
           
           <Card>
             <CardHeader>
-              <CardTitle>سجل القرارات (Timeline)</CardTitle>
+              <CardTitle>سجل الإجراءات</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="relative pl-6">
                 <div className="absolute right-0 top-0 h-full w-px bg-border translate-x-1/2"></div>
-                {reportDetails.timeline.map((item, index) => (
+                {report.timeline.map((item, index) => (
                   <div key={index} className="mb-8 flex items-start gap-4">
                     <div className="z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card border">
                       {timelineIcons[item.action] || <Clock className="h-4 w-4" />}
@@ -140,7 +171,7 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
                     </div>
                   </div>
                 ))}
-                {/* Placeholder for the next action */}
+                {report.status === 'open' && (
                  <div className="flex items-start gap-4">
                     <div className="z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-dashed">
                       <Gavel className="h-4 w-4 text-muted-foreground" />
@@ -149,6 +180,7 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
                       <p className="font-semibold text-muted-foreground">الإجراء التالي...</p>
                     </div>
                   </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -158,13 +190,20 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
         <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>الإجراءات</CardTitle>
+                    <CardTitle>الإجراء</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-2">
-                    <Button><CheckCircle className="ml-2 h-4 w-4"/> قبول البلاغ</Button>
-                    <Button variant="destructive"><XCircle className="ml-2 h-4 w-4"/> رفض البلاغ</Button>
-                    <Button variant="outline"><HelpCircle className="ml-2 h-4 w-4"/> طلب معلومات إضافية</Button>
-                    <Button variant="secondary"><Send className="ml-2 h-4 w-4"/> تحويل لجهة مختصة</Button>
+                    {report.status === 'open' ? (
+                        <Button onClick={handleCloseReport}>
+                            <CheckCircle className="ml-2 h-4 w-4"/> إغلاق البلاغ وتأكيد الاستلام
+                        </Button>
+                    ) : (
+                        <div className="text-sm text-center text-muted-foreground p-4 bg-muted rounded-md">
+                            <p className="font-semibold">تم إغلاق هذا البلاغ</p>
+                            <p>بواسطة: {report.receivedBy}</p>
+                            <p>في: {report.receivedAt}</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
             <Card>
@@ -177,23 +216,23 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
                             <User className="h-6 w-6 text-muted-foreground"/>
                         </div>
                         <div>
-                            <p className="font-semibold">{reportDetails.submitter.name}</p>
-                            <p className="text-sm text-muted-foreground">{reportDetails.submitter.id}</p>
+                            <p className="font-semibold">{report.submitter.name}</p>
+                            <p className="text-sm text-muted-foreground">{report.submitter.id}</p>
                         </div>
                     </div>
                     <Separator />
                      <div className="grid gap-2 text-sm">
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">الإدارة</span>
-                            <span>{reportDetails.submitter.department}</span>
+                            <span>{report.submitter.department}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">تاريخ التعيين</span>
-                            <span>{reportDetails.submitter.joinDate}</span>
+                            <span>{report.submitter.joinDate}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">إجمالي البلاغات</span>
-                            <Badge variant="secondary">{reportDetails.submitter.reportsCount}</Badge>
+                            <Badge variant="secondary">{report.submitter.reportsCount}</Badge>
                         </div>
                     </div>
                     <Button variant="outline" size="sm">عرض الملف الشخصي الكامل</Button>

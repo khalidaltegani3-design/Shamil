@@ -18,7 +18,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export { app, auth, db };
+export { app, auth, db, getAuth };
 
 // FCM Token Management
 export async function registerWebFcmToken(userId: string) {

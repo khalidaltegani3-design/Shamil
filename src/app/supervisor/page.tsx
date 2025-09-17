@@ -1,6 +1,12 @@
 
 
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 import {
   File,
   ListFilter,
@@ -41,16 +47,16 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
-const reports = [
-    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24", departmentId: "it-support" },
-    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23", departmentId: "municipal-inspections" },
-    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22", departmentId: "public-works" },
-    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open", user: "سارة المطيري", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19", departmentId: "public-works" },
-    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21", departmentId: "maintenance" },
-    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20", departmentId: "municipal-inspections" },
+const initialReports = [
+    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open" as const, user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24", departmentId: "it-support" },
+    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open" as const, user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23", departmentId: "municipal-inspections" },
+    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open" as const, user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22", departmentId: "public-works" },
+    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open" as const, user: "سارة المطيري", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19", departmentId: "public-works" },
+    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed" as const, user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21", departmentId: "maintenance" },
+    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed" as const, user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20", departmentId: "municipal-inspections" },
 ];
 
-type Report = typeof reports[0];
+type Report = typeof initialReports[0];
 
 function getStatusVariant(status: string): "default" | "secondary" {
     switch (status) {
@@ -68,7 +74,84 @@ function getStatusText(status: string) {
     }
 }
 
-function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
+function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (reportId: string, newStatus: "closed") => void }) {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const markAsReceived = async () => {
+    if (loading || report.status !== "open") return;
+    const uid = auth.currentUser?.uid;
+    // In a real app, you'd have the UID from auth state.
+    // We'll use a placeholder for now as we're not fully authenticated.
+    if (!uid && process.env.NODE_ENV !== "development") {
+        toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "يجب تسجيل الدخول أولاً."
+        });
+        return;
+    }
+    
+    setLoading(true);
+
+    try {
+      const reportRef = doc(db, "reports", report.id);
+      await updateDoc(reportRef, {
+        status: "closed",
+        receivedBy: uid || "mock_supervisor_uid", // Use actual UID in production
+        receivedAt: serverTimestamp(),
+      });
+       // Optimistic update in parent component
+      onUpdate(report.id, "closed");
+      toast({
+          variant: "default",
+          title: "تم بنجاح",
+          description: `تم إغلاق البلاغ رقم ${report.id} وإشعار صاحبه.`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: "destructive",
+        title: "فشل",
+        description: "تعذّر إغلاق البلاغ. قد لا تملك الصلاحية أو حدث خطأ في الشبكة.",
+      });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-haspopup="true"
+          size="icon"
+          variant="ghost"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Toggle menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+         <Link href={`/supervisor/report/${report.id.replace('BL-','')}`} passHref>
+            <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
+         </Link>
+         {report.status === 'open' && (
+            <DropdownMenuItem
+              disabled={loading}
+              onClick={markAsReceived}
+            >
+              {loading ? 'جارٍ الإغلاق...' : 'إغلاق البلاغ'}
+            </DropdownMenuItem>
+         )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (reportId: string, newStatus: "closed") => void }) {
     return (
         <Card>
             <CardContent className="pt-6">
@@ -87,7 +170,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportsToShow.map((report) => (
+                  {reports.map((report) => (
                     <TableRow key={report.id}>
                       <TableCell className="font-medium">{report.id}</TableCell>
                       <TableCell>{report.title}</TableCell>
@@ -98,24 +181,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
                       <TableCell>{report.location}</TableCell>
                       <TableCell>{report.date}</TableCell>
                       <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              aria-haspopup="true"
-                              size="icon"
-                              variant="ghost"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                             <Link href={`/supervisor/report/${report.id.replace('BL-','')}`} passHref>
-                                <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
-                             </Link>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <ReportActions report={report} onUpdate={onUpdate} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -124,7 +190,7 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
             </CardContent>
             <CardFooter>
               <div className="text-xs text-muted-foreground">
-                عرض <strong>{reportsToShow.length}</strong> من <strong>{reports.length}</strong> بلاغ
+                عرض <strong>{reports.length}</strong> من <strong>{reports.length}</strong> بلاغ
               </div>
             </CardFooter>
           </Card>
@@ -133,6 +199,14 @@ function ReportTable({ reportsToShow }: { reportsToShow: Report[] }) {
 
 
 export default function SupervisorDashboard() {
+  const [reports, setReports] = useState<Report[]>(initialReports);
+
+  const handleUpdateReport = (reportId: string, newStatus: "closed") => {
+    setReports(prevReports => 
+        prevReports.map(r => r.id === reportId ? { ...r, status: newStatus } : r)
+    );
+  };
+  
   const openReports = reports.filter(r => r.status === 'open');
   const closedReports = reports.filter(r => r.status === 'closed');
 
@@ -172,13 +246,13 @@ export default function SupervisorDashboard() {
           </div>
         </div>
         <TabsContent value="all">
-            <ReportTable reportsToShow={reports} />
+            <ReportTable reports={reports} onUpdate={handleUpdateReport} />
         </TabsContent>
         <TabsContent value="open">
-            <ReportTable reportsToShow={openReports} />
+            <ReportTable reports={openReports} onUpdate={handleUpdateReport} />
         </TabsContent>
         <TabsContent value="closed">
-             <ReportTable reportsToShow={closedReports} />
+             <ReportTable reports={closedReports} onUpdate={handleUpdateReport} />
         </TabsContent>
       </Tabs>
     </>

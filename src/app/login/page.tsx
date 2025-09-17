@@ -2,10 +2,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Shield, User } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 
 export default function RoleSelectionPage() {
   const router = useRouter();
@@ -14,7 +12,7 @@ export default function RoleSelectionPage() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4" dir="rtl">
       <div className="flex flex-col items-center gap-8 w-full max-w-sm">
         <div className="text-center space-y-2">
-           <h1 className="text-8xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</h1>
+           <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</h1>
             <p className="text-xl font-semibold text-muted-foreground">بلدية الريان</p>
         </div>
         

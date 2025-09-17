@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -100,8 +99,9 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
         receivedBy: uid, 
         receivedAt: serverTimestamp(),
       });
-       // Optimistic update in parent component
+      
       onUpdate(report.id, "closed");
+      
       toast({
           variant: "default",
           title: "تم بنجاح",

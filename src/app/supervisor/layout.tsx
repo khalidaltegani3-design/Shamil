@@ -104,12 +104,24 @@ export default function SupervisorLayout({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>حسابي</DropdownMenuLabel>
+             <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">خالد الأحمد</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  E-1023
+                </p>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>الإعدادات</DropdownMenuItem>
-            <DropdownMenuItem>الدعم</DropdownMenuItem>
+            <DropdownMenuItem>إعادة ضبط كلمة السر</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
+             <Link href="/login" passHref>
+                <DropdownMenuItem>
+                    <LogOut className="ml-2 h-4 w-4" />
+                    تسجيل الخروج
+                </DropdownMenuItem>
+            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>

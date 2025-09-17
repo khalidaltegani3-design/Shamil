@@ -3,6 +3,14 @@ import { FileText, BarChart3, Clock, User, LogOut } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function AppHeader() {
   return (
@@ -11,11 +19,36 @@ function AppHeader() {
         <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
       </div>
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-            <User className="h-5 w-5 text-muted-foreground"/>
-            <span className="text-sm font-medium">علي حمد</span>
-        </div>
-        <div className="h-10 w-10 rounded-full bg-secondary" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="overflow-hidden rounded-full"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">علي حمد</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  E-10293
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>إعادة ضبط كلمة السر</DropdownMenuItem>
+            <DropdownMenuSeparator />
+             <Link href="/login" passHref>
+                <DropdownMenuItem>
+                    <LogOut className="ml-2 h-4 w-4" />
+                    تسجيل الخروج
+                </DropdownMenuItem>
+            </Link>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
@@ -53,12 +86,6 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Link href="/create-report" passHref>
               <Button>إنشاء بلاغ جديد</Button>
-            </Link>
-             <Link href="/login" passHref>
-                <Button variant="outline">
-                    <LogOut className="ml-2 h-4 w-4" />
-                    تسجيل الخروج
-                </Button>
             </Link>
           </div>
         </div>

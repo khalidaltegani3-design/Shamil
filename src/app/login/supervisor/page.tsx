@@ -19,17 +19,17 @@ export default function SupervisorLoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4" dir="rtl">
       <Card className="w-full max-w-sm">
-        <CardHeader className="space-y-1 text-center">
-           <div className="flex justify-center mb-4">
-              <h1 className="text-2xl font-bold">بلدية الريان</h1>
+        <CardHeader className="space-y-2 text-center">
+           <div className="flex flex-col items-center justify-center mb-4">
+              <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+              <p className="text-muted-foreground font-semibold">بلدية الريان</p>
           </div>
-          <CardTitle className="text-2xl">دخول المشرفين</CardTitle>
           <CardDescription>
             منصة إدارة ومتابعة البلاغات
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="employeeId">اسم المستخدم</Label>
               <Input id="username" type="text" placeholder="أدخل اسم المستخدم" required />

@@ -16,7 +16,7 @@ export default function RoleSelectionPage() {
           <div className="flex justify-center mb-4">
               <h1 className="text-2xl font-bold">بلدية الريان</h1>
           </div>
-          <CardTitle className="text-4xl font-amiri">شامل</CardTitle>
+          <CardTitle className="text-7xl font-amiri font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 pt-4">
             <CardDescription className="text-center pb-2">

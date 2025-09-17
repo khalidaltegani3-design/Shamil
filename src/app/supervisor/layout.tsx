@@ -49,6 +49,7 @@ export default function SupervisorLayout({
   children: React.ReactNode;
 }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [hasNotification, setHasNotification] = useState(true); // Mock state
 
   useEffect(() => {
     // In a real app, you'd get the user from an auth context.
@@ -69,10 +70,27 @@ export default function SupervisorLayout({
             <Link href="/supervisor" className="flex items-center gap-2 font-semibold">
               <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
             </Link>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Toggle notifications</span>
-            </Button>
+             <div className="mr-auto flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8 relative" onClick={() => setHasNotification(false)}>
+                      <Bell className="h-4 w-4" />
+                       {hasNotification && <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />}
+                      <span className="sr-only">Toggle notifications</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                   <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                        <div className="flex flex-col">
+                            <p className="font-semibold">بلاغ جديد</p>
+                            <p className="text-xs text-muted-foreground">تم إنشاء بلاغ جديد في قسم الصيانة.</p>
+                        </div>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
@@ -205,7 +223,7 @@ export default function SupervisorLayout({
 
             <div className="w-full flex-1">
                  <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-semibold md:text-2xl">صندوق البلاغات</h1>
+                    <h1 className="text-xl font-semibold hidden md:block">صندوق البلاغات</h1>
                 </div>
             </div>
 
@@ -248,3 +266,5 @@ export default function SupervisorLayout({
     </div>
   );
 }
+
+    

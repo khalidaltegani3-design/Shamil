@@ -1,5 +1,5 @@
 
-import { FileText, BarChart3, Clock, User, LogOut } from 'lucide-react';
+import { FileText, BarChart3, Clock, User, LogOut, KeyRound } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -39,7 +39,10 @@ function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>إعادة ضبط كلمة السر</DropdownMenuItem>
+            <DropdownMenuItem>
+                <KeyRound className="ml-2 h-4 w-4" />
+                إعادة ضبط كلمة السر
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
              <Link href="/login" passHref>
                 <DropdownMenuItem>

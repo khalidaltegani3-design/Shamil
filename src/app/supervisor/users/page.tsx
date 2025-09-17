@@ -6,11 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 
 const users = [
-    { id: "E-1023", name: "خالد الأحمد", employeeId: "E-1023", role: "مشرف", status: "نشط" },
-    { id: "E-1029", name: "نورة القحطاني", employeeId: "E-1029", role: "موظف", status: "نشط" },
-    { id: "E-1035", name: "سلطان العتيبي", employeeId: "E-1035", role: "موظف", status: "غير نشط" },
-    { id: "E-1041", name: "أحمد الغامدي", employeeId: "E-1041", role: "رئيس قسم", status: "نشط" },
-    { id: "E-1048", name: "فاطمة الزهراني", employeeId: "E-1048", role: "موظف", status: "نشط" },
+    { id: "E-1023", name: "خالد الأحمد", employeeId: "E-1023", role: "admin", status: "نشط", homeDepartment: "الإدارة العليا", supervisorOf: ["it-support", "maintenance"] },
+    { id: "E-1029", name: "نورة القحطاني", employeeId: "E-1029", role: "supervisor", status: "نشط", homeDepartment: "الدعم الفني", supervisorOf: ["it-support"] },
+    { id: "E-1035", name: "سلطان العتيبي", employeeId: "E-1035", role: "employee", status: "غير نشط", homeDepartment: "الخدمات العامة", supervisorOf: [] },
+    { id: "E-1041", name: "أحمد الغامدي", employeeId: "E-1041", role: "supervisor", status: "نشط", homeDepartment: "الصيانة", supervisorOf: ["maintenance"] },
+    { id: "E-1048", name: "فاطمة الزهراني", employeeId: "E-1048", role: "employee", status: "نشط", homeDepartment: "الموارد البشرية", supervisorOf: [] },
 ]
 
 function getStatusVariant(status: string) {
@@ -19,22 +19,30 @@ function getStatusVariant(status: string) {
 
 function getRoleVariant(role: string): "default" | "secondary" | "destructive" | "outline" | null | undefined {
     switch(role) {
-        case 'مشرف': return 'primary';
-        case 'رئيس قسم': return 'secondary';
+        case 'admin': return 'destructive';
+        case 'supervisor': return 'secondary';
         default: return 'outline';
     }
 }
+const roleNames: {[key: string]: string} = {
+    admin: 'مدير نظام',
+    supervisor: 'مشرف',
+    employee: 'موظف'
+}
 
 export default function UserManagementPage() {
+    // In a real app, this page would be protected and only visible to admins.
+    // The `users` data would be fetched from Firestore.
+    // Admin actions would call the Cloud Functions.
     return (
         <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
             <div className="flex items-center">
-                 <h1 className="text-lg font-semibold md:text-2xl">إدارة المستخدمين</h1>
+                 <h1 className="text-lg font-semibold md:text-2xl">إدارة المستخدمين والصلاحيات</h1>
                 <div className="ml-auto flex items-center gap-2">
                     <Button size="sm" className="h-8 gap-1">
                         <PlusCircle className="h-3.5 w-3.5" />
                         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        إضافة مستخدم جديد
+                        إنشاء مستخدم
                         </span>
                     </Button>
                 </div>
@@ -49,8 +57,9 @@ export default function UserManagementPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>الاسم</TableHead>
-                                <TableHead>رقم الموظف</TableHead>
                                 <TableHead>الدور/الصلاحية</TableHead>
+                                <TableHead>الإدارة التابع لها</TableHead>
+                                <TableHead>مشرف على</TableHead>
                                 <TableHead>الحالة</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Actions</span>
@@ -61,9 +70,12 @@ export default function UserManagementPage() {
                             {users.map(user => (
                                 <TableRow key={user.id}>
                                     <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.employeeId}</TableCell>
                                     <TableCell>
-                                        <Badge variant={getRoleVariant(user.role)}>{user.role}</Badge>
+                                        <Badge variant={getRoleVariant(user.role)}>{roleNames[user.role]}</Badge>
+                                    </TableCell>
+                                    <TableCell>{user.homeDepartment}</TableCell>
+                                     <TableCell>
+                                        {user.supervisorOf.length > 0 ? user.supervisorOf.join(', ') : '—'}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={getStatusVariant(user.status)}>{user.status}</Badge>
@@ -78,9 +90,9 @@ export default function UserManagementPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                                                <DropdownMenuItem>تعديل الصلاحيات</DropdownMenuItem>
+                                                <DropdownMenuItem>تعديل الدور والإدارة</DropdownMenuItem>
+                                                <DropdownMenuItem>تعيين كـ مشرف</DropdownMenuItem>
                                                 <DropdownMenuItem>إعادة تعيين كلمة المرور</DropdownMenuItem>
-                                                <DropdownMenuItem>عرض النشاط</DropdownMenuItem>
                                                 <DropdownMenuItem className="text-destructive">
                                                     تعطيل الحساب
                                                 </DropdownMenuItem>

@@ -2,44 +2,69 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSupervisorOfDept(deptId) {
-      return exists(/databases/$(database)/documents/departments/$(deptId)/supervisors/$(request.auth.uid));
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == "admin";
     }
 
+    function isSupervisorOfDept(deptId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/departments/$(deptId)/supervisors/$(request.auth.uid));
+    }
+
+    function userHomeDept(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.homeDepartmentId;
+    }
+
+    // users
+    match /users/{uid} {
+      allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+      allow write: if isAdmin(); // المدير فقط
+    }
+
+    // departments + supervisors subcollection
+    match /departments/{deptId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin(); // إدارة الأقسام من المدير فقط
+
+      match /supervisors/{uid} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin(); // التعيين/الإلغاء من المدير فقط
+      }
+    }
+
+    // reports
     match /reports/{reportId} {
-      allow read: if request.auth != null; // TODO: More specific rules, e.g., only reporter or supervisor can read.
-      
-      // Allow update only if:
-      // 1. User is authenticated.
-      // 2. Report is changing from "open" to "closed".
-      // 3. The user is a supervisor for the report's department.
+      // إنشاء بلاغ: الموظف ينشئ لغير إدارته فقط
+      allow create: if request.auth != null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == "open"
+        && request.resource.data.departmentId != userHomeDept(request.auth.uid);
+
+      // قراءة: المبلغ يقرأ بلاغاته؛ المشرف يقرأ ما يخص إداراته؛ المدير يقرأ الكل
+      allow read: if request.auth != null && (
+          isAdmin()
+          || resource.data.createdBy == request.auth.uid
+          || isSupervisorOfDept(resource.data.departmentId)
+      );
+
+      // إغلاق البلاغ: مشرف الإدارة فقط من open → closed
       allow update: if request.auth != null
         && resource.data.status == "open"
         && request.resource.data.status == "closed"
         && isSupervisorOfDept(resource.data.departmentId);
-        
-      allow create: if request.auth != null; // TODO: Add validation for create fields.
-      allow delete: if false; // Disallow deleting reports.
+
+      allow delete: if false;
     }
 
+    // devices & notifications كما سبق (قراءة ذاتية فقط / كتابة من Functions)
     match /devices/{token} {
-      // Users can read, create, update, and delete their own device tokens.
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
 
-    match /notifications/{notifId} {
-      // Users can only read notifications addressed to them.
+    match /notifications/{id} {
       allow read: if request.auth != null && request.auth.uid == resource.data.toUserId;
-      allow write: if false; // Writing is only done by Cloud Functions.
-    }
-
-    match /departments/{deptId}/supervisors/{uid} {
-      // This is managed administratively, not by users.
-      // You might allow reads for specific roles if needed.
-      allow read: if request.auth != null; 
-      allow write: if false; 
+      allow write: if false;
     }
   }
 }

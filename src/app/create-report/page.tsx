@@ -1,8 +1,10 @@
 
 "use client";
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { doc, getDoc } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 import { ArrowLeft, Paperclip, X, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +33,14 @@ function AppHeader() {
   );
 }
 
+// Mock departments data
+const allDepartments = [
+  { id: "it-support", name: "الدعم الفني" },
+  { id: "maintenance", name: "الصيانة" },
+  { id: "general-services", name: "الخدمات العامة" },
+  { id: "human-resources", name: "الموارد البشرية" },
+];
+
 
 export default function CreateReportPage() {
   const router = useRouter();
@@ -39,6 +49,33 @@ export default function CreateReportPage() {
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectableDepts, setSelectableDepts] = useState(allDepartments);
+
+  useEffect(() => {
+    const fetchUserHomeDepartment = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const homeDept = userDoc.data()?.homeDepartmentId;
+            if (homeDept) {
+              setSelectableDepts(allDepartments.filter(d => d.id !== homeDept));
+            }
+          }
+        } catch (error) {
+            console.error("Error fetching user department:", error);
+        }
+      }
+    };
+    // Fetch on component mount
+    fetchUserHomeDepartment();
+    // Also listen for auth state changes
+    const unsubscribe = auth.onAuthStateChanged(user => {
+        if (user) fetchUserHomeDepartment();
+    });
+    return () => unsubscribe();
+  }, []);
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
     loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,
@@ -57,7 +94,9 @@ export default function CreateReportPage() {
     }
     setIsSubmitting(true);
 
-    // Simulate API call
+    // TODO: Replace with actual Firestore create report logic
+    // This logic would be something like:
+    // await addDoc(collection(db, "reports"), { ... });
     setTimeout(() => {
       setIsSubmitting(false);
       toast({
@@ -121,9 +160,9 @@ export default function CreateReportPage() {
                     <SelectValue placeholder="اختر الإدارة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="it-support">الدعم الفني</SelectItem>
-                    <SelectItem value="maintenance">الصيانة</SelectItem>
-                    <SelectItem value="general-services">الخدمات العامة</SelectItem>
+                    {selectableDepts.map(dept => (
+                       <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

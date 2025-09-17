@@ -23,10 +23,10 @@ import {
 } from "@/components/ui/card";
 import { User as UserIcon } from "lucide-react";
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { initialUsers } from "@/lib/users";
@@ -50,6 +50,8 @@ export default function SupervisorLayout({
 }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [hasNotification, setHasNotification] = useState(true); // Mock state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
 
   useEffect(() => {
     // In a real app, you'd get the user from an auth context.
@@ -149,19 +151,19 @@ export default function SupervisorLayout({
       </div>
       <div className="flex flex-col">
          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-            <Sheet>
-            <SheetTrigger asChild>
-                <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-                >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
+            <Collapsible
+              open={isMobileMenuOpen}
+              onOpenChange={setIsMobileMenuOpen}
+              className="md:hidden"
+            >
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
                 </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="flex flex-col">
-                <nav className="grid gap-2 text-lg font-medium">
+              </CollapsibleTrigger>
+              <CollapsibleContent asChild>
+                <nav className="absolute right-4 left-4 mt-2 grid gap-2 text-lg font-medium bg-card p-4 border rounded-lg shadow-lg z-50">
                     <Link
                         href="#"
                         className="flex items-center gap-2 text-lg font-semibold mb-4"
@@ -171,6 +173,7 @@ export default function SupervisorLayout({
                     <Link
                         href="/supervisor"
                         className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                         onClick={() => setIsMobileMenuOpen(false)}
                     >
                         <Home className="h-5 w-5" />
                         لوحة المعلومات
@@ -179,6 +182,7 @@ export default function SupervisorLayout({
                     <Link
                         href="/supervisor/users"
                         className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                         onClick={() => setIsMobileMenuOpen(false)}
                     >
                         <Users className="h-5 w-5" />
                         إدارة المستخدمين
@@ -188,6 +192,7 @@ export default function SupervisorLayout({
                     <Link
                         href="/supervisor/gamification"
                         className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                         onClick={() => setIsMobileMenuOpen(false)}
                     >
                         <Trophy className="h-5 w-5" />
                         النقاط والمكافآت
@@ -197,29 +202,16 @@ export default function SupervisorLayout({
                     <Link
                         href="#"
                         className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                         onClick={() => setIsMobileMenuOpen(false)}
                     >
                         <Settings className="h-5 w-5" />
                         الإعدادات
                     </Link>
                     )}
                 </nav>
-                <div className="mt-auto">
-                <Card>
-                    <CardHeader>
-                    <CardTitle>تحتاج مساعدة؟</CardTitle>
-                    <CardDescription>
-                        تواصل مع الدعم الفني لأي استفسارات.
-                    </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <Button size="sm" className="w-full">
-                        تواصل معنا
-                    </Button>
-                    </CardContent>
-                </Card>
-                </div>
-            </SheetContent>
-            </Sheet>
+              </CollapsibleContent>
+            </Collapsible>
+
 
             <div className="w-full flex-1">
                  <div className="flex items-center gap-4">

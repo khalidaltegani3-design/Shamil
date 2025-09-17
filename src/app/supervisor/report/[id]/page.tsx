@@ -2,6 +2,8 @@
 "use client";
 
 import { useState } from 'react';
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,24 +75,55 @@ const timelineIcons: { [key: string]: React.ReactNode } = {
 
 export default function ReportDetailsPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report>(initialReportDetails);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleCloseReport = () => {
+  const markAsReceived = async (reportId: string) => {
+    const uid = auth.currentUser?.uid;
+    // if (!uid) {
+    //   toast({ variant: "destructive", title: "خطأ", description: "يجب تسجيل الدخول أولاً." });
+    //   return;
+    // }
+    
+    // Optimistic UI Update
     const now = new Date();
-    setReport(prev => ({
-        ...prev,
-        status: "closed",
-        receivedBy: "خالد الأحمد", // Mock supervisor ID
+    const originalReport = { ...report };
+    const updatedReport = {
+        ...report,
+        status: "closed" as "closed",
+        receivedBy: "خالد الأحمد (مؤقت)", // Mock supervisor name
         receivedAt: now.toLocaleString('ar-QA'),
         timeline: [
-            ...prev.timeline,
-            { action: "تم استلام البلاغ", user: "خالد الأحمد", date: now.toLocaleString('ar-QA', { dateStyle: 'short', timeStyle: 'short' }) }
+            ...report.timeline,
+            { action: "تم استلام البلاغ" as const, user: "خالد الأحمد (مؤقت)", date: now.toLocaleString('ar-QA', { dateStyle: 'short', timeStyle: 'short' }) }
         ]
-    }));
-    toast({
-        title: "تم استلام البلاغ بنجاح",
-        description: `تم إشعار الموظف ${report.submitter.name} بذلك.`,
-    });
+    };
+    setReport(updatedReport);
+    setIsSubmitting(true);
+
+    try {
+      const ref = doc(db, "reports", reportId);
+      await updateDoc(ref, {
+        status: "closed",
+        receivedBy: uid || "unknown_supervisor", // Use actual UID
+        receivedAt: serverTimestamp(),
+      });
+      toast({
+          title: "تم استلام البلاغ بنجاح",
+          description: `تم إشعار الموظف ${report.submitter.name} بذلك.`,
+      });
+    } catch (error) {
+      console.error("Error marking report as received:", error);
+      // Revert UI on failure
+      setReport(originalReport);
+      toast({
+        variant: "destructive",
+        title: "فشل تحديث البلاغ",
+        description: "حدث خطأ أثناء محاولة إغلاق البلاغ. يرجى المحاولة مرة أخرى.",
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   return (
@@ -171,7 +204,7 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
                     </div>
                   </div>
                 ))}
-                {report.status === 'open' && (
+                {report.status === 'open' && !isSubmitting && (
                  <div className="flex items-start gap-4">
                     <div className="z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-dashed">
                       <Gavel className="h-4 w-4 text-muted-foreground" />
@@ -194,14 +227,15 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
                 </CardHeader>
                 <CardContent className="grid gap-2">
                     {report.status === 'open' ? (
-                        <Button onClick={handleCloseReport}>
-                            <CheckCircle className="ml-2 h-4 w-4"/> إغلاق البلاغ وتأكيد الاستلام
+                        <Button onClick={() => markAsReceived(report.id)} disabled={isSubmitting}>
+                            <CheckCircle className="ml-2 h-4 w-4"/> 
+                            {isSubmitting ? 'جارٍ الإغلاق...' : 'تم الاستلام'}
                         </Button>
                     ) : (
                         <div className="text-sm text-center text-muted-foreground p-4 bg-muted rounded-md">
                             <p className="font-semibold">تم إغلاق هذا البلاغ</p>
-                            <p>بواسطة: {report.receivedBy}</p>
-                            <p>في: {report.receivedAt}</p>
+                            {report.receivedBy && <p>بواسطة: {report.receivedBy}</p>}
+                            {report.receivedAt && <p>في: {report.receivedAt}</p>}
                         </div>
                     )}
                 </CardContent>

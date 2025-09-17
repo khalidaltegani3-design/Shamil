@@ -1,4 +1,5 @@
 
+
 import Link from "next/link";
 import {
   File,
@@ -41,12 +42,12 @@ import {
 import { Button } from "@/components/ui/button";
 
 const reports = [
-    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24" },
-    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23" },
-    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22" },
-    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open", user: "سارة المطيري", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19" },
-    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21" },
-    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20" },
+    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open", user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24", departmentId: "it-support" },
+    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open", user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23", departmentId: "municipal-inspections" },
+    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open", user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22", departmentId: "public-works" },
+    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open", user: "سارة المطيري", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19", departmentId: "public-works" },
+    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed", user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21", departmentId: "maintenance" },
+    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed", user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20", departmentId: "municipal-inspections" },
 ];
 
 type Report = typeof reports[0];
@@ -161,11 +162,10 @@ export default function SupervisorDashboard() {
                 <DropdownMenuLabel>فلترة حسب</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem checked>
-                  الحالة
+                  التاريخ
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>التاريخ</DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem>
-                  الموقع
+                  الإدارة
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>

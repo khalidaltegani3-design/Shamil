@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSupervisorOfDept(deptId) {
+      return exists(/databases/$(database)/documents/departments/$(deptId)/supervisors/$(request.auth.uid));
+    }
+
+    match /reports/{reportId} {
+      allow read: if request.auth != null; // TODO: More specific rules, e.g., only reporter or supervisor can read.
+      
+      // Allow update only if:
+      // 1. User is authenticated.
+      // 2. Report is changing from "open" to "closed".
+      // 3. The user is a supervisor for the report's department.
+      allow update: if request.auth != null
+        && resource.data.status == "open"
+        && request.resource.data.status == "closed"
+        && isSupervisorOfDept(resource.data.departmentId);
+        
+      allow create: if request.auth != null; // TODO: Add validation for create fields.
+      allow delete: if false; // Disallow deleting reports.
+    }
+
+    match /devices/{token} {
+      // Users can read, create, update, and delete their own device tokens.
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    match /notifications/{notifId} {
+      // Users can only read notifications addressed to them.
+      allow read: if request.auth != null && request.auth.uid == resource.data.toUserId;
+      allow write: if false; // Writing is only done by Cloud Functions.
+    }
+
+    match /departments/{deptId}/supervisors/{uid} {
+      // This is managed administratively, not by users.
+      // You might allow reads for specific roles if needed.
+      allow read: if request.auth != null; 
+      allow write: if false; 
+    }
+  }
+}

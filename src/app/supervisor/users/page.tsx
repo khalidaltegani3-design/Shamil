@@ -16,12 +16,12 @@ import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 
-const users = [
-    { id: "E-1023", name: "خالد الأحمد", email: "k.ahmed@example.com", role: "admin" as const, status: "نشط", homeDepartmentId: "executive-management", supervisorOf: ["it-support", "maintenance"] },
-    { id: "E-1029", name: "نورة القحطاني", email: "n.qahtani@example.com", role: "supervisor" as const, status: "نشط", homeDepartmentId: "it-support", supervisorOf: ["it-support"] },
-    { id: "E-1035", name: "سلطان العتيبي", email: "s.otaibi@example.com", role: "employee" as const, status: "غير نشط", homeDepartmentId: "general-services", supervisorOf: [] },
-    { id: "E-1041", name: "أحمد الغامدي", email: "a.ghamdi@example.com", role: "supervisor" as const, status: "نشط", homeDepartmentId: "maintenance", supervisorOf: ["maintenance"] },
-    { id: "E-1048", name: "فاطمة الزهراني", email: "f.zahrani@example.com", role: "employee" as const, status: "نشط", homeDepartmentId: "human-resources", supervisorOf: [] },
+const initialUsers = [
+    { id: "E-1023", name: "خالد الأحمد", email: "k.ahmed@example.com", role: "admin" as const, status: "نشط" as "نشط" | "غير نشط", homeDepartmentId: "executive-management", supervisorOf: ["it-support", "maintenance"] },
+    { id: "E-1029", name: "نورة القحطاني", email: "n.qahtani@example.com", role: "supervisor" as const, status: "نشط" as "نشط" | "غير نشط", homeDepartmentId: "it-support", supervisorOf: ["it-support"] },
+    { id: "E-1035", name: "سلطان العتيبي", email: "s.otaibi@example.com", role: "employee" as const, status: "غير نشط" as "نشط" | "غير نشط", homeDepartmentId: "general-services", supervisorOf: [] },
+    { id: "E-1041", name: "أحمد الغامدي", email: "a.ghamdi@example.com", role: "supervisor" as const, status: "نشط" as "نشط" | "غير نشط", homeDepartmentId: "maintenance", supervisorOf: ["maintenance"] },
+    { id: "E-1048", name: "فاطمة الزهراني", email: "f.zahrani@example.com", role: "employee" as const, status: "نشط" as "نشط" | "غير نشط", homeDepartmentId: "human-resources", supervisorOf: [] },
 ];
 
 const allDepartments = [
@@ -33,7 +33,7 @@ const allDepartments = [
 ];
 
 
-type User = typeof users[0];
+type User = typeof initialUsers[0];
 
 function getStatusVariant(status: string) {
     return status === 'نشط' ? 'default' : 'secondary';
@@ -54,16 +54,23 @@ const roleNames: {[key: string]: string} = {
 
 export default function UserManagementPage() {
     const { toast } = useToast();
+    const [users, setUsers] = useState(initialUsers);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     
     // States for dialogs
     const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
     const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
+    const [isPasswordResetAlertOpen, setIsPasswordResetAlertOpen] = useState(false);
+    const [isDeactivateAlertOpen, setIsDeactivateAlertOpen] = useState(false);
+    const [isActivateAlertOpen, setIsActivateAlertOpen] = useState(false);
     
-    const handleActionClick = (user: User, action: "role" | "supervisor") => {
+    const handleActionClick = (user: User, action: "role" | "supervisor" | "password" | "deactivate" | "activate") => {
         setSelectedUser(user);
         if (action === "role") setIsRoleDialogOpen(true);
         if (action === "supervisor") setIsSupervisorDialogOpen(true);
+        if (action === "password") setIsPasswordResetAlertOpen(true);
+        if (action === "deactivate") setIsDeactivateAlertOpen(true);
+        if (action === "activate") setIsActivateAlertOpen(true);
     };
 
     const handlePasswordReset = () => {
@@ -73,17 +80,31 @@ export default function UserManagementPage() {
             title: "تم إرسال الرابط",
             description: `تم إرسال رابط إعادة تعيين كلمة المرور إلى ${selectedUser.email}.`,
         });
+        setIsPasswordResetAlertOpen(false);
     }
     
     const handleDeactivateAccount = () => {
          if (!selectedUser) return;
         // TODO: Call actual cloud function `adminDeactivateUser(selectedUser.uid)`
+         setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: 'غير نشط' } : u));
          toast({
             title: "تم تعطيل الحساب",
             description: `تم تعطيل حساب المستخدم ${selectedUser.name} بنجاح.`,
             variant: "destructive"
         });
+        setIsDeactivateAlertOpen(false);
     }
+    
+    const handleActivateAccount = () => {
+        if (!selectedUser) return;
+        // TODO: Call actual cloud function `adminActivateUser(selectedUser.uid)`
+        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: 'نشط' } : u));
+        toast({
+            title: "تم تنشيط الحساب",
+            description: `تم تنشيط حساب المستخدم ${selectedUser.name} بنجاح.`,
+        });
+        setIsActivateAlertOpen(false);
+    };
 
     return (
         <>
@@ -135,129 +156,31 @@ export default function UserManagementPage() {
                                             <Badge variant={getStatusVariant(user.status)}>{user.status}</Badge>
                                         </TableCell>
                                         <TableCell>
-                                             <AlertDialog>
-                                                <Dialog>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button aria-haspopup="true" size="icon" variant="ghost" onClick={() => setSelectedUser(user)}>
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                                <span className="sr-only">Toggle menu</span>
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                                                            <DropdownMenuSeparator/>
-                                                            <DropdownMenuItem onSelect={() => handleActionClick(user, "role")}>تحديث الدور والإدارة</DropdownMenuItem>
-                                                            <DropdownMenuItem onSelect={() => handleActionClick(user, "supervisor")}>تعيين كـ مشرف</DropdownMenuItem>
-                                                            
-                                                            <AlertDialogTrigger asChild>
-                                                                 <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSelectedUser(user); }}>إعادة تعيين كلمة المرور</DropdownMenuItem>
-                                                            </AlertDialogTrigger>
-                                                            
-                                                            <DropdownMenuSeparator/>
-                                                            
-                                                            <AlertDialogTrigger asChild>
-                                                                <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); setSelectedUser(user); }}>
-                                                                    تعطيل الحساب
-                                                                </DropdownMenuItem>
-                                                            </AlertDialogTrigger>
-
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                    {/* Role Dialog */}
-                                                    <DialogContent onOpenChange={setIsRoleDialogOpen} open={isRoleDialogOpen && selectedUser?.id === user.id}>
-                                                        <DialogHeader>
-                                                            <DialogTitle>تحديث الدور والإدارة لـ "{selectedUser?.name}"</DialogTitle>
-                                                            <DialogDescription>
-                                                                اختر الدور الجديد والإدارة الأساسية التي يتبع لها المستخدم.
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <div className="grid gap-4 py-4">
-                                                            <div className="grid grid-cols-4 items-center gap-4">
-                                                                <Label htmlFor="role" className="text-right">الدور</Label>
-                                                                <Select dir="rtl" defaultValue={selectedUser?.role}>
-                                                                    <SelectTrigger id="role" className="col-span-3">
-                                                                        <SelectValue placeholder="اختر الدور" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="employee">موظف</SelectItem>
-                                                                        <SelectItem value="supervisor">مشرف</SelectItem>
-                                                                        <SelectItem value="admin">مدير نظام</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                            <div className="grid grid-cols-4 items-center gap-4">
-                                                                <Label htmlFor="department" className="text-right">الإدارة</Label>
-                                                                 <Select dir="rtl" defaultValue={selectedUser?.homeDepartmentId}>
-                                                                    <SelectTrigger id="department" className="col-span-3">
-                                                                        <SelectValue placeholder="اختر الإدارة" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {allDepartments.map(dept => (
-                                                                            <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </div>
-                                                        <DialogFooter>
-                                                            <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>إلغاء</Button>
-                                                            <Button type="submit" onClick={() => { setIsRoleDialogOpen(false); toast({ title: "تم التحديث بنجاح" })}}>حفظ التغييرات</Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                    {/* Supervisor Dialog */}
-                                                     <DialogContent onOpenChange={setIsSupervisorDialogOpen} open={isSupervisorDialogOpen && selectedUser?.id === user.id}>
-                                                        <DialogHeader>
-                                                            <DialogTitle>تعيين كـ مشرف لـ "{selectedUser?.name}"</DialogTitle>
-                                                            <DialogDescription>
-                                                                حدد الإدارات التي سيشرف عليها هذا المستخدم.
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <div className="grid gap-4 py-4">
-                                                            <div className="space-y-2">
-                                                                {allDepartments.map(dept => (
-                                                                     <div key={dept.id} className="flex items-center space-x-2 space-x-reverse">
-                                                                        <Checkbox id={`dept-${dept.id}`} defaultChecked={selectedUser?.supervisorOf.includes(dept.id)} />
-                                                                        <Label htmlFor={`dept-${dept.id}`} className="flex-1">{dept.name}</Label>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        <DialogFooter>
-                                                            <Button variant="outline" onClick={() => setIsSupervisorDialogOpen(false)}>إلغاء</Button>
-                                                            <Button type="submit" onClick={() => {setIsSupervisorDialogOpen(false); toast({ title: "تم تحديث صلاحيات الإشراف" })}}>حفظ</Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-
-                                                </Dialog>
-                                                {/* Password Reset Alert */}
-                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            سيتم إرسال بريد إلكتروني لإعادة تعيين كلمة المرور إلى {selectedUser?.email}. لا يمكن التراجع عن هذا الإجراء.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={handlePasswordReset}>متابعة وإرسال</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-
-                                                {/* Deactivate Account Alert */}
-                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>تأكيد تعطيل الحساب</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                           هل أنت متأكد من رغبتك في تعطيل حساب {selectedUser?.name}؟ سيتم منع المستخدم من تسجيل الدخول.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={handleDeactivateAccount} className="bg-destructive hover:bg-destructive/90">نعم، قم بالتعطيل</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button aria-haspopup="true" size="icon" variant="ghost" onClick={() => setSelectedUser(user)}>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Toggle menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator/>
+                                                    <DropdownMenuItem onSelect={() => handleActionClick(user, "role")}>تحديث الدور والإدارة</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleActionClick(user, "supervisor")}>تعيين كـ مشرف</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleActionClick(user, "password")}>إعادة تعيين كلمة المرور</DropdownMenuItem>
+                                                    <DropdownMenuSeparator/>
+                                                    {user.status === 'نشط' ? (
+                                                        <DropdownMenuItem className="text-destructive" onSelect={() => handleActionClick(user, "deactivate")}>
+                                                            تعطيل الحساب
+                                                        </DropdownMenuItem>
+                                                    ) : (
+                                                        <DropdownMenuItem onSelect={() => handleActionClick(user, "activate")}>
+                                                            تنشيط الحساب
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -266,8 +189,113 @@ export default function UserManagementPage() {
                     </CardContent>
                 </Card>
             </div>
+            
+            {/* Dialogs and Alerts */}
+            {selectedUser && (
+                <>
+                    {/* Role Dialog */}
+                    <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>تحديث الدور والإدارة لـ "{selectedUser.name}"</DialogTitle>
+                                <DialogDescription>اختر الدور الجديد والإدارة الأساسية التي يتبع لها المستخدم.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="role" className="text-right">الدور</Label>
+                                    <Select dir="rtl" defaultValue={selectedUser.role}>
+                                        <SelectTrigger id="role" className="col-span-3"><SelectValue placeholder="اختر الدور" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="employee">موظف</SelectItem>
+                                            <SelectItem value="supervisor">مشرف</SelectItem>
+                                            <SelectItem value="admin">مدير نظام</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="department" className="text-right">الإدارة</Label>
+                                    <Select dir="rtl" defaultValue={selectedUser.homeDepartmentId}>
+                                        <SelectTrigger id="department" className="col-span-3"><SelectValue placeholder="اختر الإدارة" /></SelectTrigger>
+                                        <SelectContent>
+                                            {allDepartments.map(dept => (<SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>إلغاء</Button>
+                                <Button type="submit" onClick={() => { setIsRoleDialogOpen(false); toast({ title: "تم التحديث بنجاح" })}}>حفظ التغييرات</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Supervisor Dialog */}
+                    <Dialog open={isSupervisorDialogOpen} onOpenChange={setIsSupervisorDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>تعيين كـ مشرف لـ "{selectedUser.name}"</DialogTitle>
+                                <DialogDescription>حدد الإدارات التي سيشرف عليها هذا المستخدم.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="space-y-2">
+                                    {allDepartments.map(dept => (
+                                        <div key={dept.id} className="flex items-center space-x-2 space-x-reverse">
+                                            <Checkbox id={`dept-${dept.id}`} defaultChecked={selectedUser.supervisorOf.includes(dept.id)} />
+                                            <Label htmlFor={`dept-${dept.id}`} className="flex-1">{dept.name}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsSupervisorDialogOpen(false)}>إلغاء</Button>
+                                <Button type="submit" onClick={() => {setIsSupervisorDialogOpen(false); toast({ title: "تم تحديث صلاحيات الإشراف" })}}>حفظ</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Password Reset Alert */}
+                    <AlertDialog open={isPasswordResetAlertOpen} onOpenChange={setIsPasswordResetAlertOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                <AlertDialogDescription>سيتم إرسال بريد إلكتروني لإعادة تعيين كلمة المرور إلى {selectedUser.email}. لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={handlePasswordReset}>متابعة وإرسال</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
+                    {/* Deactivate Account Alert */}
+                    <AlertDialog open={isDeactivateAlertOpen} onOpenChange={setIsDeactivateAlertOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد تعطيل الحساب</AlertDialogTitle>
+                                <AlertDialogDescription>هل أنت متأكد من رغبتك في تعطيل حساب {selectedUser.name}؟ سيتم منع المستخدم من تسجيل الدخول.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeactivateAccount} className="bg-destructive hover:bg-destructive/90">نعم، قم بالتعطيل</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    
+                    {/* Activate Account Alert */}
+                    <AlertDialog open={isActivateAlertOpen} onOpenChange={setIsActivateAlertOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد تنشيط الحساب</AlertDialogTitle>
+                                <AlertDialogDescription>هل أنت متأكد من رغبتك في تنشيط حساب {selectedUser.name}؟ سيتمكن المستخدم من تسجيل الدخول مرة أخرى.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleActivateAccount}>نعم، قم بالتنشيط</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </>
+            )}
         </>
     )
 }
-
-    

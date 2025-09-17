@@ -8,6 +8,7 @@ import {
   Settings,
   Menu,
   Search,
+  Trophy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,10 +46,10 @@ export default function SupervisorLayout({
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="/supervisor"
-                className="group flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+                className="group flex h-10 shrink-0 items-center justify-center gap-2 rounded-full text-lg font-semibold text-primary-foreground md:text-base"
               >
-                 <div className="flex h-8 w-auto px-4 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-                    بلدية الريان
+                 <div className="flex h-8 w-auto px-4 items-center justify-center rounded text-sm font-semibold">
+                    <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
                  </div>
               </Link>
               <Link
@@ -64,6 +65,13 @@ export default function SupervisorLayout({
               >
                 <Users className="h-5 w-5" />
                 إدارة المستخدمين
+              </Link>
+               <Link
+                href="/supervisor/gamification"
+                className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <Trophy className="h-5 w-5" />
+                النقاط والمكافآت
               </Link>
               <Link
                 href="#"
@@ -126,3 +134,4 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+

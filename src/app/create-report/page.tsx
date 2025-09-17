@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Paperclip, MapPin, X, File as FileIcon } from 'lucide-react';
+import { ArrowLeft, Paperclip, X, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,13 +19,13 @@ function AppHeader() {
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowRight className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5" />
           <span className="sr-only">رجوع</span>
         </Button>
         <h1 className="text-lg font-semibold">إنشاء بلاغ جديد</h1>
       </div>
-       <div className="flex h-8 w-auto px-4 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-          بلدية الريان
+       <div className="flex items-center justify-center rounded text-sm font-semibold">
+          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
         </div>
     </header>
   );

@@ -48,13 +48,14 @@ import {
 import { Button } from "@/components/ui/button";
 
 const initialReports = [
-    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open" as const, user: "علي حمد", location: "مبنى 1، الطابق 2", date: "2023-06-24", departmentId: "it-support" },
-    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open" as const, user: "نورة القحطاني", location: "الوكرة، شارع 320", date: "2023-06-23", departmentId: "municipal-inspections" },
-    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open" as const, user: "أحمد الغامدي", location: "بن محمود، قرب محطة المترو", date: "2023-06-22", departmentId: "public-works" },
-    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open" as const, user: "سارة المطيري", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19", departmentId: "public-works" },
-    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed" as const, user: "فاطمة الزهراني", location: "الريان الجديد", date: "2023-06-21", departmentId: "maintenance" },
-    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed" as const, user: "سلطان العتيبي", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20", departmentId: "municipal-inspections" },
+    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open" as const, user: "علي حمد", submitterDepartment: "الموارد البشرية", location: "مبنى 1، الطابق 2", date: "2023-06-24", departmentId: "it-support" },
+    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open" as const, user: "نورة القحطاني", submitterDepartment: "الخدمات العامة", location: "الوكرة، شارع 320", date: "2023-06-23", departmentId: "municipal-inspections" },
+    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open" as const, user: "أحمد الغامدي", submitterDepartment: "الصيانة", location: "بن محمود، قرب محطة المترو", date: "2023-06-22", departmentId: "public-works" },
+    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open" as const, user: "سارة المطيري", submitterDepartment: "الدعم الفني", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19", departmentId: "public-works" },
+    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed" as const, user: "فاطمة الزهراني", submitterDepartment: "الموارد البشرية", location: "الريان الجديد", date: "2023-06-21", departmentId: "maintenance" },
+    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed" as const, user: "سلطان العتيبي", submitterDepartment: "الخدمات العامة", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20", departmentId: "municipal-inspections" },
 ];
+
 
 type Report = typeof initialReports[0];
 
@@ -81,9 +82,7 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
   const markAsReceived = async () => {
     if (loading || report.status !== "open") return;
     const uid = auth.currentUser?.uid;
-    // In a real app, you'd have the UID from auth state.
-    // We'll use a placeholder for now as we're not fully authenticated.
-    if (!uid && process.env.NODE_ENV !== "development") {
+    if (!uid) {
         toast({
             variant: "destructive",
             title: "خطأ",
@@ -98,7 +97,7 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
       const reportRef = doc(db, "reports", report.id);
       await updateDoc(reportRef, {
         status: "closed",
-        receivedBy: uid || "mock_supervisor_uid", // Use actual UID in production
+        receivedBy: uid, 
         receivedAt: serverTimestamp(),
       });
        // Optimistic update in parent component
@@ -162,7 +161,8 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                     <TableHead>عنوان البلاغ</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead>مقدم البلاغ</TableHead>
-                    <TableHead>الموقع/الإدارة</TableHead>
+                    <TableHead>إدارة مقدم البلاغ</TableHead>
+                    <TableHead>الموقع</TableHead>
                     <TableHead>تاريخ التقديم</TableHead>
                     <TableHead>
                       <span className="sr-only">إجراءات</span>
@@ -178,6 +178,7 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                         <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
                       </TableCell>
                       <TableCell>{report.user}</TableCell>
+                      <TableCell>{report.submitterDepartment}</TableCell>
                       <TableCell>{report.location}</TableCell>
                       <TableCell>{report.date}</TableCell>
                       <TableCell>

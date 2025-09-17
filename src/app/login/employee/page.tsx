@@ -21,9 +21,7 @@ export default function EmployeeLoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1 text-center">
            <div className="flex justify-center mb-4">
-              <div className="flex h-12 w-auto px-6 items-center justify-center rounded bg-secondary text-sm font-semibold text-secondary-foreground">
-                بلدية الريان
-              </div>
+              <h1 className="text-2xl font-bold">بلدية الريان</h1>
           </div>
           <CardTitle className="text-2xl">دخول الموظفين</CardTitle>
           <CardDescription>

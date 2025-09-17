@@ -17,11 +17,11 @@ export default function RoleSelectionPage() {
               <h1 className="text-2xl font-bold">بلدية الريان</h1>
           </div>
           <CardTitle className="text-4xl font-amiri">شامل</CardTitle>
-          <CardDescription>
-            يرجى تحديد الواجهة التي تريد الدخول إليها
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 pt-4">
+            <CardDescription className="text-center pb-2">
+                يرجى تحديد الواجهة التي تريد الدخول إليها
+            </CardDescription>
             <Button size="lg" onClick={() => router.push('/login/supervisor')}>
                 <Shield className="ml-2 h-5 w-5" />
                 واجهة المشرف

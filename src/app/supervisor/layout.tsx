@@ -107,8 +107,13 @@ export default function SupervisorLayout({
             </nav>
           </SheetContent>
         </Sheet>
-        <div className="flex w-full flex-1 items-center justify-center">
-          <div className="relative w-full max-w-md">
+        <div className="flex w-full flex-1 items-center justify-between">
+           <div className="flex items-center gap-4">
+               <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+               <Separator orientation="vertical" className="h-8" />
+               <h2 className="text-xl font-semibold">صندوق البلاغات</h2>
+           </div>
+          <div className="relative w-full max-w-md hidden md:block">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -170,4 +175,5 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Separator } from "@/components/ui/separator";
 

@@ -211,10 +211,7 @@ export default function SupervisorDashboard() {
   const closedReports = reports.filter(r => r.status === 'closed');
 
   return (
-    <>
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">صندوق البلاغات</h1>
-      </div>
+    <div className="py-8">
       <Tabs defaultValue="all">
         <div className="flex items-center">
           <TabsList>
@@ -255,6 +252,6 @@ export default function SupervisorDashboard() {
              <ReportTable reports={closedReports} onUpdate={handleUpdateReport} />
         </TabsContent>
       </Tabs>
-    </>
+    </div>
   );
 }

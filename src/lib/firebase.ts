@@ -4,6 +4,7 @@ import { getFirestore } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,8 +20,9 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app);
+const storage = getStorage(app);
 
-export { app, auth, db, functions, getAuth };
+export { app, auth, db, functions, storage, getAuth };
 
 // FCM Token Management
 export async function registerWebFcmToken(userId: string) {

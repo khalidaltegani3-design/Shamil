@@ -4,7 +4,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
+import { db, auth, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ArrowLeft, Paperclip, X, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +57,13 @@ export default function CreateReportPage() {
     ssr: false 
   }), []);
 
+  const uploadFile = async (file: File, reportId: string): Promise<string> => {
+    const storageRef = ref(storage, `reports/${reportId}/${file.name}`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -89,10 +97,16 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      // In a real app, upload files to Firebase Storage first
-      // and get their URLs. For now, we'll just store names.
-      const attachmentNames = files.map(f => f.name);
+      // Create a temporary report document to get an ID
+      const newReportRef = doc(collection(db, "reports"));
+      const reportId = newReportRef.id;
 
+      // Upload files to Firebase Storage
+      const attachmentUrls = await Promise.all(
+        files.map(file => uploadFile(file, reportId))
+      );
+
+      // Now create the actual report document in Firestore with attachment URLs
       await addDoc(collection(db, "reports"), {
         submitterId: user.uid,
         submitterName: user.displayName || user.email,
@@ -103,7 +117,7 @@ export default function CreateReportPage() {
           latitude: position[0],
           longitude: position[1],
         },
-        attachments: attachmentNames,
+        attachments: attachmentUrls,
         status: "open",
         createdAt: serverTimestamp(),
       });
@@ -252,5 +266,3 @@ export default function CreateReportPage() {
     </div>
   );
 }
-
-    

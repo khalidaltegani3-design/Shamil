@@ -79,10 +79,9 @@ export default function CreateReportPage() {
         toast({ variant: "destructive", title: "خطأ", description: "يرجى إدخال أرقام المنطقة والشارع والمبنى." });
         return;
     }
-    // Mock geocoding: In a real app, you would call a geocoding API.
-    // For this demonstration, we'll set a fixed location in Al Dafna, Doha.
-    const lat = 25.3210;
-    const lng = 51.5283;
+    // Mock geocoding: For this demonstration, we'll set a fixed location for Souq Waqif.
+    const lat = 25.287383;
+    const lng = 51.533206;
     setPosition([lat, lng]);
     toast({ title: "تم تحديد الموقع", description: `تم تحديد الموقع بنجاح للعنوان: ${zone}/${street}/${building}` });
   };
@@ -118,8 +117,10 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      const newReportRef = doc(collection(db, 'reports'));
-      const reportId = newReportRef.id;
+      // Create a unique ID for the report first.
+      const reportId = doc(collection(db, 'reports')).id;
+      // Then create a document reference with that ID.
+      const newReportRef = doc(db, 'reports', reportId);
 
       const attachmentUrls = await Promise.all(
         files.map(file => uploadFile(file, reportId))
@@ -330,7 +331,5 @@ export default function CreateReportPage() {
     </div>
   );
 }
-
-    
 
     

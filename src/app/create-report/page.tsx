@@ -97,9 +97,9 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      // Create a document reference with a unique ID
-      const newReportRef = doc(collection(db, "reports"));
-      const reportId = newReportRef.id;
+      // Create a new document reference with an auto-generated ID
+      const reportId = doc(collection(db, 'reports')).id;
+      const newReportRef = doc(db, "reports", reportId);
 
       // Upload files to Firebase Storage
       const attachmentUrls = await Promise.all(

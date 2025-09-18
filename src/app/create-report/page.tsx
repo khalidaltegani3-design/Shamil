@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth, storage } from "@/lib/firebase";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { allDepartments } from '@/lib/departments';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { geocodeAddress } from '@/ai/flows/geocode-flow';
 
 function AppHeader() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function CreateReportPage() {
   const { toast } = useToast();
   const [user, loading] = useAuthState(auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   
   // Location state
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
@@ -74,8 +76,8 @@ export default function CreateReportPage() {
     return downloadURL;
   };
   
-  const handleFindQAddress = () => {
-    console.log('--- Geocoding Simulation ---');
+  const handleFindQAddress = async () => {
+    console.log('--- Starting Geocoding ---');
     console.log(`Inputs: Zone=${zone}, Street=${street}, Building=${building}`);
 
     if (!zone || !street || !building) {
@@ -84,29 +86,33 @@ export default function CreateReportPage() {
         return;
     }
     
-    // This is a mock geocoding service. It returns a fixed location (Souq Waqif) for demonstration.
-    // In a real implementation, this would be an API call to a geocoding service.
-    const lat = 25.287383; // Souq Waqif Latitude
-    const lng = 51.533206; // Souq Waqif Longitude
-
-    console.log(`Mock Service Response (Success): Lat=${lat}, Lng=${lng}`);
-    console.log('Coordinate Order for Map: [lat, lng]');
-    console.log('Coordinate System (CRS): WGS84 (EPSG:4326)');
-    
-    // Simple bounds check for Qatar
-    if (lat < 24 || lat > 27 || lng < 50 || lng > 52) {
-      console.warn('Geocoding Warning: Coordinates are outside the expected range for Qatar.');
-      toast({ variant: "destructive", title: "خطأ", description: "العنوان المحدد خارج نطاق دولة قطر."});
-      return;
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeAddress({ zone, street, building });
+      console.log('[Geocoding Result] Received from flow:', result);
+      
+      if (result && result.lat && result.lng) {
+        setPosition([result.lat, result.lng]);
+        toast({ title: "تم تحديد الموقع", description: `تم تحديد الموقع بنجاح للعنوان: ${zone}/${street}/${building}` });
+        console.log(`[Map Update] Setting position to [${result.lat}, ${result.lng}]`);
+      } else {
+        throw new Error("Invalid response from geocoding service.");
+      }
+    } catch (error: any) {
+        console.error('Geocoding Error:', error);
+        toast({
+            variant: "destructive",
+            title: "فشل تحديد الموقع",
+            description: error.message || "لم نتمكن من العثور على العنوان. يرجى التحقق من الأرقام أو تحديده يدويًا.",
+        });
+    } finally {
+        setIsGeocoding(false);
+        console.log('--- End Geocoding ---');
     }
-
-    setPosition([lat, lng]);
-    toast({ title: "تم تحديد الموقع", description: `تم تحديد الموقع بنجاح للعنوان: ${zone}/${street}/${building}` });
-    console.log('--- End Geocoding Simulation ---');
   };
   
   const handleOpenUnwani = () => {
-      window.open('https://www.unwani.qa/', '_blank', 'noopener,noreferrer');
+      window.open('https://maps.moi.gov.qa/', '_blank', 'noopener,noreferrer');
   };
 
 
@@ -136,8 +142,8 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      const reportId = doc(collection(db, 'reports')).id;
-      const newReportRef = doc(db, "reports", reportId);
+      const newReportRef = doc(collection(db, 'reports'));
+      const reportId = newReportRef.id;
 
       const attachmentUrls = await Promise.all(
         files.map(file => uploadFile(file, reportId))
@@ -147,8 +153,11 @@ export default function CreateReportPage() {
         latitude: position[0],
         longitude: position[1],
         source: locationSource,
-        description: locationDescription,
       };
+
+      if (locationDescription) {
+        locationData.description = locationDescription;
+      }
 
       if (locationSource === 'q-address') {
           locationData.zone = zone;
@@ -247,9 +256,9 @@ export default function CreateReportPage() {
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <Button type="button" className="flex-1" onClick={handleFindQAddress}>
+                            <Button type="button" className="flex-1" onClick={handleFindQAddress} disabled={isGeocoding}>
                                 <Search className="ml-2 h-4 w-4" />
-                                اعثر على الموقع
+                                {isGeocoding ? 'جارٍ البحث...' : 'اعثر على الموقع'}
                             </Button>
                             <Button type="button" variant="outline" className="flex-1" onClick={handleOpenUnwani}>
                                 <ExternalLink className="ml-2 h-4 w-4" />
@@ -348,5 +357,3 @@ export default function CreateReportPage() {
     </div>
   );
 }
-
-    

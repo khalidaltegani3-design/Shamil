@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 
 export default function EmployeeLoginPage() {
@@ -64,7 +65,7 @@ export default function EmployeeLoginPage() {
               <Input id="password" type="password" placeholder="أدخل كلمة المرور" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col">
+          <CardFooter className="flex flex-col gap-2">
             <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول'}
             </Button>
@@ -72,9 +73,11 @@ export default function EmployeeLoginPage() {
                 <Button variant="link" size="sm" className="px-0" onClick={() => router.back()}>
                     الرجوع
                 </Button>
-                <Button variant="link" size="sm" className="px-0">
-                    تواجه مشكلة؟
-                </Button>
+                 <Link href="/signup" passHref>
+                    <Button variant="link" size="sm" className="px-0">
+                        إنشاء حساب جديد
+                    </Button>
+                </Link>
             </div>
           </CardFooter>
         </form>
@@ -82,5 +85,3 @@ export default function EmployeeLoginPage() {
     </main>
   );
 }
-
-    

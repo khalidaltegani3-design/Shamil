@@ -34,7 +34,7 @@ export async function registerWebFcmToken(userId: string) {
     const messaging = getMessaging(app);
     const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
-    if (!vapidKey || vapidKey === "YOUR_VAPID_KEY_HERE") {
+    if (!vapidKey) {
         console.warn("VAPID key for FCM is not set. Skipping token registration.");
         return;
     }

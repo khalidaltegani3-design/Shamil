@@ -118,8 +118,8 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      const reportId = doc(collection(db, 'reports')).id;
-      const newReportRef = doc(db, "reports", reportId);
+      const newReportRef = doc(collection(db, 'reports'));
+      const reportId = newReportRef.id;
 
       const attachmentUrls = await Promise.all(
         files.map(file => uploadFile(file, reportId))
@@ -330,5 +330,7 @@ export default function CreateReportPage() {
     </div>
   );
 }
+
+    
 
     

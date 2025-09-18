@@ -136,21 +136,18 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Create a unique ID for the report.
       const reportId = doc(collection(db, 'reports')).id;
-      // 2. Create a document reference with that ID.
       const newReportRef = doc(db, "reports", reportId);
 
-      // 3. Upload attachments and get their URLs
       const attachmentUrls = await Promise.all(
         files.map(file => uploadFile(file, reportId))
       );
 
-      // 4. Prepare location data
-      let locationData: any = {
+      const locationData: any = {
         latitude: position[0],
         longitude: position[1],
         source: locationSource,
+        description: locationDescription,
       };
 
       if (locationSource === 'q-address') {
@@ -159,12 +156,10 @@ export default function CreateReportPage() {
           locationData.building = building;
       }
       
-      // 5. Save the report document to Firestore
       await setDoc(newReportRef, {
         submitterId: user.uid,
         submitterName: user.displayName || user.email,
         description,
-        locationDescription,
         departmentId,
         location: locationData,
         attachments: attachmentUrls,
@@ -353,3 +348,5 @@ export default function CreateReportPage() {
     </div>
   );
 }
+
+    

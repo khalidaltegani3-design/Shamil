@@ -43,17 +43,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { allDepartments } from "@/lib/departments";
 
+type ReportLocation = {
+  latitude: number;
+  longitude: number;
+  source: "manual" | "q-address";
+  description?: string;
+  zone?: string;
+  street?: string;
+  building?: string;
+};
+
 type Report = {
     id: string;
-    title?: string;
     description: string;
     status: "open" | "closed";
-    user?: string; // submitter name (optional)
     submitterId: string;
-    submitterDepartment?: string;
-    location: string;
     createdAt: any; // Firestore timestamp
     departmentId: string;
+    location: ReportLocation;
 };
 
 
@@ -72,6 +79,17 @@ function getStatusText(status: string) {
         default: return "غير معروف";
     }
 }
+
+function formatLocation(location: ReportLocation): string {
+    if (location.source === 'q-address' && location.zone && location.street && location.building) {
+      return `عنواني: ${location.zone}/${location.street}/${location.building}`;
+    }
+    if (location.description) {
+      return location.description;
+    }
+    return `Lat: ${location.latitude.toFixed(4)}, Lng: ${location.longitude.toFixed(4)}`;
+}
+
 
 function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (reportId: string, newStatus: "closed") => void }) {
   const [loading, setLoading] = useState(false);
@@ -185,7 +203,7 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                         <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
                       </TableCell>
                        <TableCell>{allDepartments.find(d => d.id === report.departmentId)?.name || 'غير محدد'}</TableCell>
-                      <TableCell>{report.location}</TableCell>
+                      <TableCell>{formatLocation(report.location)}</TableCell>
                       <TableCell>{report.createdAt?.toDate().toLocaleDateString('ar-QA')}</TableCell>
                       <TableCell>
                         <ReportActions report={report} onUpdate={onUpdate} />
@@ -219,6 +237,13 @@ export default function SupervisorDashboard() {
             ...doc.data()
         })) as Report[];
         setReports(reportsData);
+    }, (error) => {
+      console.error("Error fetching reports: ", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في جلب البيانات",
+        description: "لم نتمكن من تحميل قائمة البلاغات. يرجى تحديث الصفحة.",
+      });
     });
 
     return () => unsubscribe();

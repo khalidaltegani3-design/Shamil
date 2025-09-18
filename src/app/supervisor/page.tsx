@@ -2,24 +2,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthState } from 'react-firebase-hooks/auth';
 import {
-  File,
   ListFilter,
   MoreHorizontal,
-  PlusCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -45,18 +41,21 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { allDepartments } from "@/lib/departments";
 
-const initialReports = [
-    { id: "BL-1597", title: "مشكلة في الوصول للشبكة الداخلية", status: "open" as const, user: "علي حمد", submitterDepartment: "الموارد البشرية", location: "مبنى 1، الطابق 2", date: "2023-06-24", departmentId: "it-support" },
-    { id: "BL-8564", title: "مخالفة بناء في منطقة الوكرة", status: "open" as const, user: "نورة القحطاني", submitterDepartment: "الخدمات العامة", location: "الوكرة، شارع 320", date: "2023-06-23", departmentId: "municipal-inspections" },
-    { id: "BL-2651", title: "تجمع مياه أمطار في بن محمود", status: "open" as const, user: "أحمد الغامدي", submitterDepartment: "الصيانة", location: "بن محمود، قرب محطة المترو", date: "2023-06-22", departmentId: "public-works" },
-    { id: "BL-7531", title: "اقتراح لتحسين إشارات المرور", status: "open" as const, user: "سارة المطيري", submitterDepartment: "الدعم الفني", location: "الدحيل, تقاطع الجامعة", date: "2023-06-19", departmentId: "public-works" },
-    { id: "BL-3214", title: "طلب صيانة إنارة شارع", status: "closed" as const, user: "فاطمة الزهراني", submitterDepartment: "الموارد البشرية", location: "الريان الجديد", date: "2023-06-21", departmentId: "maintenance" },
-    { id: "BL-9574", title: "سيارة مهملة في اللؤلؤة", status: "closed" as const, user: "سلطان العتيبي", submitterDepartment: "الخدمات العامة", location: "اللؤلؤة، بورتو أرابيا", date: "2023-06-20", departmentId: "municipal-inspections" },
-];
+type Report = {
+    id: string;
+    title?: string;
+    description: string;
+    status: "open" | "closed";
+    user?: string; // submitter name (optional)
+    submitterId: string;
+    submitterDepartment?: string;
+    location: string;
+    createdAt: any; // Firestore timestamp
+    departmentId: string;
+};
 
-
-type Report = typeof initialReports[0];
 
 function getStatusVariant(status: string): "default" | "secondary" {
     switch (status) {
@@ -77,16 +76,17 @@ function getStatusText(status: string) {
 function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (reportId: string, newStatus: "closed") => void }) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
 
-  const markAsReceived = async () => {
-    if (loading || report.status !== "open") return;
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "يجب تسجيل الدخول أولاً."
-        });
+  const markAsClosed = async () => {
+    if (loading || report.status !== "open" || !user) {
+        if (!user) {
+             toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: "يجب تسجيل الدخول أولاً."
+            });
+        }
         return;
     }
     
@@ -96,16 +96,16 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
       const reportRef = doc(db, "reports", report.id);
       await updateDoc(reportRef, {
         status: "closed",
-        receivedBy: uid, 
-        receivedAt: serverTimestamp(),
+        closedBy: user.uid, 
+        closedAt: serverTimestamp(),
       });
       
-      onUpdate(report.id, "closed");
+      onUpdate(report.id, "closed"); // This updates the local state
       
       toast({
           variant: "default",
           title: "تم بنجاح",
-          description: `تم إغلاق البلاغ رقم ${report.id} وإشعار صاحبه.`,
+          description: `تم إغلاق البلاغ رقم ${report.id.slice(-6)}...`,
       });
     } catch (e) {
       console.error(e);
@@ -133,13 +133,13 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-         <Link href={`/supervisor/report/${report.id.replace('BL-','')}`} passHref>
+         <Link href={`/supervisor/report/${report.id}`} passHref>
             <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
          </Link>
          {report.status === 'open' && (
             <DropdownMenuItem
               disabled={loading}
-              onClick={markAsReceived}
+              onClick={markAsClosed}
             >
               {loading ? 'جارٍ الإغلاق...' : 'إغلاق البلاغ'}
             </DropdownMenuItem>
@@ -151,6 +151,14 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
 
 
 function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (reportId: string, newStatus: "closed") => void }) {
+    if (reports.length === 0) {
+        return (
+             <div className="flex h-48 items-center justify-center rounded-md border border-dashed mt-4">
+                <p className="text-muted-foreground">لا توجد بلاغات في هذا القسم.</p>
+            </div>
+        )
+    }
+
     return (
         <Card>
             <CardContent className="pt-6">
@@ -158,10 +166,9 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                 <TableHeader>
                   <TableRow>
                     <TableHead>رقم البلاغ</TableHead>
-                    <TableHead>عنوان البلاغ</TableHead>
+                    <TableHead>الوصف</TableHead>
                     <TableHead>الحالة</TableHead>
-                    <TableHead>مقدم البلاغ</TableHead>
-                    <TableHead>إدارة مقدم البلاغ</TableHead>
+                    <TableHead>الإدارة المعنية</TableHead>
                     <TableHead>الموقع</TableHead>
                     <TableHead>تاريخ التقديم</TableHead>
                     <TableHead>
@@ -172,15 +179,14 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                 <TableBody>
                   {reports.map((report) => (
                     <TableRow key={report.id}>
-                      <TableCell className="font-medium">{report.id}</TableCell>
-                      <TableCell>{report.title}</TableCell>
+                      <TableCell className="font-medium">...{report.id.slice(-6)}</TableCell>
+                      <TableCell>{report.description.substring(0, 50)}...</TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
                       </TableCell>
-                      <TableCell>{report.user}</TableCell>
-                      <TableCell>{report.submitterDepartment}</TableCell>
+                       <TableCell>{allDepartments.find(d => d.id === report.departmentId)?.name || 'غير محدد'}</TableCell>
                       <TableCell>{report.location}</TableCell>
-                      <TableCell>{report.date}</TableCell>
+                      <TableCell>{report.createdAt?.toDate().toLocaleDateString('ar-QA')}</TableCell>
                       <TableCell>
                         <ReportActions report={report} onUpdate={onUpdate} />
                       </TableCell>
@@ -200,7 +206,23 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
 
 
 export default function SupervisorDashboard() {
-  const [reports, setReports] = useState<Report[]>(initialReports);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [user, loading] = useAuthState(auth);
+
+  useEffect(() => {
+    // In a real app, you would also filter by the supervisor's departments
+    const q = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const reportsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as Report[];
+        setReports(reportsData);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleUpdateReport = (reportId: string, newStatus: "closed") => {
     setReports(prevReports => 
@@ -216,9 +238,9 @@ export default function SupervisorDashboard() {
       <Tabs defaultValue="all">
         <div className="flex items-center">
           <TabsList>
-            <TabsTrigger value="all">الكل</TabsTrigger>
-            <TabsTrigger value="open">مفتوح</TabsTrigger>
-            <TabsTrigger value="closed">مغلق</TabsTrigger>
+            <TabsTrigger value="all">الكل ({reports.length})</TabsTrigger>
+            <TabsTrigger value="open">مفتوح ({openReports.length})</TabsTrigger>
+            <TabsTrigger value="closed">مغلق ({closedReports.length})</TabsTrigger>
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
@@ -236,7 +258,7 @@ export default function SupervisorDashboard() {
                 <DropdownMenuCheckboxItem checked>
                   التاريخ
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>
+                 <DropdownMenuCheckboxItem>
                   الإدارة
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
@@ -256,3 +278,5 @@ export default function SupervisorDashboard() {
     </div>
   );
 }
+
+    

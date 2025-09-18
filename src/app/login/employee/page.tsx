@@ -1,19 +1,44 @@
 
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function EmployeeLoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual employee authentication
-    router.push('/');
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({
+        title: "تم تسجيل الدخول بنجاح.",
+      });
+      router.push('/');
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "فشل تسجيل الدخول",
+        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -31,16 +56,18 @@ export default function EmployeeLoginPage() {
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="employeeId">رقم الموظف</Label>
-              <Input id="employeeId" type="text" placeholder="أدخل الرقم الوظيفي" required />
+              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Input id="email" type="email" placeholder="أدخل البريد الإلكتروني" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" placeholder="أدخل كلمة المرور" required />
+              <Input id="password" type="password" placeholder="أدخل كلمة المرور" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button className="w-full" type="submit">تسجيل الدخول</Button>
+            <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول'}
+            </Button>
             <div className="flex justify-between w-full">
                 <Button variant="link" size="sm" className="px-0" onClick={() => router.back()}>
                     الرجوع
@@ -55,3 +82,5 @@ export default function EmployeeLoginPage() {
     </main>
   );
 }
+
+    

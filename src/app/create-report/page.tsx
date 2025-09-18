@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { ArrowLeft, Paperclip, X, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { allDepartments } from '@/lib/departments';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 function AppHeader() {
   const router = useRouter();
@@ -38,45 +39,35 @@ function AppHeader() {
 export default function CreateReportPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [user, loading] = useAuthState(auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectableDepts, setSelectableDepts] = useState(allDepartments);
+  
+  // Form state
+  const [departmentId, setDepartmentId] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [locationDescription, setLocationDescription] = useState<string>('');
 
-  useEffect(() => {
-    const fetchUserHomeDepartment = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            const homeDept = userDoc.data()?.homeDepartmentId;
-            if (homeDept) {
-              setSelectableDepts(allDepartments.filter(d => d.id !== homeDept));
-            }
-          }
-        } catch (error) {
-            console.error("Error fetching user department:", error);
-        }
-      }
-    };
-    // Fetch on component mount
-    fetchUserHomeDepartment();
-    // Also listen for auth state changes
-    const unsubscribe = auth.onAuthStateChanged(user => {
-        if (user) fetchUserHomeDepartment();
-    });
-    return () => unsubscribe();
-  }, []);
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
     loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,
     ssr: false 
   }), []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+       toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يجب تسجيل الدخول لإنشاء بلاغ.",
+      });
+      return;
+    }
+
      if (!position) {
       toast({
         variant: "destructive",
@@ -85,19 +76,54 @@ export default function CreateReportPage() {
       });
       return;
     }
+
+    if (!departmentId || !description) {
+         toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "يرجى ملء جميع الحقول المطلوبة.",
+        });
+        return;
+    }
+
     setIsSubmitting(true);
 
-    // TODO: Replace with actual Firestore create report logic
-    // This logic would be something like:
-    // await addDoc(collection(db, "reports"), { ... });
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // In a real app, upload files to Firebase Storage first
+      // and get their URLs. For now, we'll just store names.
+      const attachmentNames = files.map(f => f.name);
+
+      await addDoc(collection(db, "reports"), {
+        submitterId: user.uid,
+        submitterName: user.displayName || user.email,
+        description,
+        locationDescription,
+        departmentId,
+        location: {
+          latitude: position[0],
+          longitude: position[1],
+        },
+        attachments: attachmentNames,
+        status: "open",
+        createdAt: serverTimestamp(),
+      });
+      
       toast({
         title: "تم إرسال البلاغ بنجاح.",
         description: "سيتم مراجعته من قبل القسم المختص.",
       });
       router.push('/');
-    }, 1500);
+
+    } catch (error) {
+      console.error("Error creating report:", error);
+       toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حدث خطأ أثناء إرسال البلاغ. يرجى المحاولة مرة أخرى.",
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,17 +169,22 @@ export default function CreateReportPage() {
               
               <div className="space-y-2">
                   <Label htmlFor="location-description">وصف الموقع (اختياري)</Label>
-                  <Input id="location-description" placeholder="مثال: مبنى 5، بالقرب من المدخل الرئيسي" />
+                  <Input 
+                    id="location-description"
+                    placeholder="مثال: مبنى 5، بالقرب من المدخل الرئيسي"
+                    value={locationDescription}
+                    onChange={(e) => setLocationDescription(e.target.value)}
+                  />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="report-department">الإدارة المعنية</Label>
-                <Select dir="rtl">
+                 <Select dir="rtl" onValueChange={setDepartmentId} value={departmentId} required>
                   <SelectTrigger id="report-department">
                     <SelectValue placeholder="اختر الإدارة" />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectableDepts.map(dept => (
+                    {allDepartments.map(dept => (
                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -167,6 +198,8 @@ export default function CreateReportPage() {
                   placeholder="قدّم وصفًا تفصيليًا للمشكلة"
                   className="min-h-[120px]"
                   required 
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
 
@@ -209,7 +242,7 @@ export default function CreateReportPage() {
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               <Button variant="outline" type="button" onClick={() => router.back()}>إلغاء</Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || loading}>
                 {isSubmitting ? 'جارٍ الإرسال...' : 'إرسال البلاغ'}
               </Button>
             </CardFooter>
@@ -219,3 +252,5 @@ export default function CreateReportPage() {
     </div>
   );
 }
+
+    

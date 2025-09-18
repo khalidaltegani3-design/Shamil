@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { ArrowLeft, Paperclip, X, File as FileIcon } from 'lucide-react';
+import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { allDepartments } from '@/lib/departments';
@@ -42,7 +43,16 @@ export default function CreateReportPage() {
   const { toast } = useToast();
   const [user, loading] = useAuthState(auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Location state
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
+  const [locationSource, setLocationSource] = useState<"manual" | "q-address">("manual");
+  
+  // Qatari Address state
+  const [zone, setZone] = useState('');
+  const [street, setStreet] = useState('');
+  const [building, setBuilding] = useState('');
+
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -63,60 +73,77 @@ export default function CreateReportPage() {
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
   };
+  
+  const handleFindQAddress = () => {
+    if (!zone || !street || !building) {
+        toast({ variant: "destructive", title: "خطأ", description: "يرجى إدخال أرقام المنطقة والشارع والمبنى." });
+        return;
+    }
+    // Mock geocoding: In a real app, you would call a geocoding API.
+    // Here we'll generate a semi-random location based on the inputs for demonstration.
+    const lat = 25.2854 + (parseInt(zone, 10) % 100) * 0.001 - (parseInt(street, 10) % 100) * 0.0005;
+    const lng = 51.5310 + (parseInt(building, 10) % 100) * 0.001;
+    setPosition([lat, lng]);
+    toast({ title: "تم تحديد الموقع", description: `تم العثور على إحداثيات للعنوان: ${zone}/${street}/${building}` });
+  };
+  
+  const handleOpenUnwani = () => {
+      window.open('https://www.unwani.qa/', '_blank', 'noopener,noreferrer');
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
-       toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "يجب تسجيل الدخول لإنشاء بلاغ.",
-      });
+       toast({ variant: "destructive", title: "خطأ", description: "يجب تسجيل الدخول لإنشاء بلاغ." });
       return;
     }
 
      if (!position) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "يرجى تحديد الموقع على الخريطة.",
-      });
+      toast({ variant: "destructive", title: "خطأ", description: "يرجى تحديد الموقع على الخريطة." });
       return;
+    }
+    
+    if (locationSource === 'q-address' && (!zone || !street || !building)) {
+        toast({ variant: "destructive", title: "خطأ", description: "عند استخدام العنوان القطري، يجب ملء حقول المنطقة والشارع والمبنى."});
+        return;
     }
 
     if (!departmentId || !description) {
-         toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "يرجى ملء جميع الحقول المطلوبة.",
-        });
+         toast({ variant: "destructive", title: "خطأ", description: "يرجى ملء جميع الحقول المطلوبة (الإدارة والوصف)." });
         return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Create a new document reference with an auto-generated ID
       const reportId = doc(collection(db, 'reports')).id;
       const newReportRef = doc(db, "reports", reportId);
 
-      // Upload files to Firebase Storage
       const attachmentUrls = await Promise.all(
         files.map(file => uploadFile(file, reportId))
       );
 
-      // Use setDoc to create the document with the specific ID
+      let locationData: any = {
+        latitude: position[0],
+        longitude: position[1],
+        source: locationSource,
+      };
+
+      if (locationSource === 'q-address') {
+          locationData.zone = zone;
+          locationData.street = street;
+          locationData.building = building;
+      }
+      
       await setDoc(newReportRef, {
         submitterId: user.uid,
         submitterName: user.displayName || user.email,
         description,
         locationDescription,
         departmentId,
-        location: {
-          latitude: position[0],
-          longitude: position[1],
-        },
+        location: locationData,
         attachments: attachmentUrls,
         status: "open",
         createdAt: serverTimestamp(),
@@ -169,20 +196,57 @@ export default function CreateReportPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-               <div className="space-y-4">
-                <Label htmlFor="report-location">تحديد الموقع على الخريطة</Label>
-                <div className="relative w-full h-64 rounded-lg overflow-hidden border">
-                    <Map position={position} setPosition={setPosition} />
+                <div className="space-y-4">
+                  <Label>تحديد موقع البلاغ</Label>
+                   <Tabs defaultValue="manual" className="w-full" onValueChange={(value) => setLocationSource(value as "manual" | "q-address")}>
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="manual">تحديد يدوي على الخريطة</TabsTrigger>
+                        <TabsTrigger value="q-address">العنوان القطري (عنواني)</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="manual" className="mt-4 space-y-4">
+                         <div className="relative w-full h-64 rounded-lg overflow-hidden border">
+                            <Map position={position} setPosition={setPosition} />
+                         </div>
+                         {position && (
+                            <p className="text-sm text-muted-foreground pt-1 text-center dir-ltr">
+                                Lat: {position[0].toFixed(6)}, Lng: {position[1].toFixed(6)}
+                            </p>
+                        )}
+                      </TabsContent>
+                      <TabsContent value="q-address" className="mt-4 space-y-4">
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="zone">رقم المنطقة</Label>
+                                <Input id="zone" placeholder="_ _" value={zone} onChange={(e) => setZone(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="street">رقم الشارع</Label>
+                                <Input id="street" placeholder="_ _ _" value={street} onChange={(e) => setStreet(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="building">رقم المبنى</Label>
+                                <Input id="building" placeholder="_ _" value={building} onChange={(e) => setBuilding(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Button type="button" className="flex-1" onClick={handleFindQAddress}>
+                                <Search className="ml-2 h-4 w-4" />
+                                اعثر على الموقع
+                            </Button>
+                            <Button type="button" variant="outline" className="flex-1" onClick={handleOpenUnwani}>
+                                <ExternalLink className="ml-2 h-4 w-4" />
+                                فتح "عنواني" للتحقق
+                            </Button>
+                        </div>
+                         <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                            <Map position={position} setPosition={setPosition} />
+                         </div>
+                      </TabsContent>
+                    </Tabs>
                 </div>
-                 {position && (
-                    <p className="text-sm text-muted-foreground pt-1 text-center dir-ltr">
-                        Lat: {position[0].toFixed(6)}, Lng: {position[1].toFixed(6)}
-                    </p>
-                )}
-              </div>
-              
+
               <div className="space-y-2">
-                  <Label htmlFor="location-description">وصف الموقع (اختياري)</Label>
+                  <Label htmlFor="location-description">وصف إضافي للموقع (اختياري)</Label>
                   <Input 
                     id="location-description"
                     placeholder="مثال: مبنى 5، بالقرب من المدخل الرئيسي"
@@ -266,3 +330,6 @@ export default function CreateReportPage() {
     </div>
   );
 }
+
+
+    

@@ -75,15 +75,34 @@ export default function CreateReportPage() {
   };
   
   const handleFindQAddress = () => {
+    console.log('--- Geocoding Simulation ---');
+    console.log(`Inputs: Zone=${zone}, Street=${street}, Building=${building}`);
+
     if (!zone || !street || !building) {
         toast({ variant: "destructive", title: "خطأ", description: "يرجى إدخال أرقام المنطقة والشارع والمبنى." });
+        console.error('Geocoding Error: Missing required address fields.');
         return;
     }
-    // Mock geocoding: For this demonstration, we'll set a fixed location for Souq Waqif.
-    const lat = 25.287383;
-    const lng = 51.533206;
+    
+    // This is a mock geocoding service. It returns a fixed location (Souq Waqif) for demonstration.
+    // In a real implementation, this would be an API call to a geocoding service.
+    const lat = 25.287383; // Souq Waqif Latitude
+    const lng = 51.533206; // Souq Waqif Longitude
+
+    console.log(`Mock Service Response (Success): Lat=${lat}, Lng=${lng}`);
+    console.log('Coordinate Order for Map: [lat, lng]');
+    console.log('Coordinate System (CRS): WGS84 (EPSG:4326)');
+    
+    // Simple bounds check for Qatar
+    if (lat < 24 || lat > 27 || lng < 50 || lng > 52) {
+      console.warn('Geocoding Warning: Coordinates are outside the expected range for Qatar.');
+      toast({ variant: "destructive", title: "خطأ", description: "العنوان المحدد خارج نطاق دولة قطر."});
+      return;
+    }
+
     setPosition([lat, lng]);
     toast({ title: "تم تحديد الموقع", description: `تم تحديد الموقع بنجاح للعنوان: ${zone}/${street}/${building}` });
+    console.log('--- End Geocoding Simulation ---');
   };
   
   const handleOpenUnwani = () => {
@@ -117,15 +136,17 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      // Create a unique ID for the report first.
+      // 1. Create a unique ID for the report.
       const reportId = doc(collection(db, 'reports')).id;
-      // Then create a document reference with that ID.
-      const newReportRef = doc(db, 'reports', reportId);
+      // 2. Create a document reference with that ID.
+      const newReportRef = doc(db, "reports", reportId);
 
+      // 3. Upload attachments and get their URLs
       const attachmentUrls = await Promise.all(
         files.map(file => uploadFile(file, reportId))
       );
 
+      // 4. Prepare location data
       let locationData: any = {
         latitude: position[0],
         longitude: position[1],
@@ -138,6 +159,7 @@ export default function CreateReportPage() {
           locationData.building = building;
       }
       
+      // 5. Save the report document to Firestore
       await setDoc(newReportRef, {
         submitterId: user.uid,
         submitterName: user.displayName || user.email,
@@ -331,5 +353,3 @@ export default function CreateReportPage() {
     </div>
   );
 }
-
-    

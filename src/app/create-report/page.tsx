@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ArrowLeft, Paperclip, X, File as FileIcon } from 'lucide-react';
@@ -97,7 +97,7 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
-      // Create a temporary report document to get an ID
+      // Create a document reference with a unique ID
       const newReportRef = doc(collection(db, "reports"));
       const reportId = newReportRef.id;
 
@@ -106,8 +106,8 @@ export default function CreateReportPage() {
         files.map(file => uploadFile(file, reportId))
       );
 
-      // Now create the actual report document in Firestore with attachment URLs
-      await addDoc(collection(db, "reports"), {
+      // Use setDoc to create the document with the specific ID
+      await setDoc(newReportRef, {
         submitterId: user.uid,
         submitterName: user.displayName || user.email,
         description,

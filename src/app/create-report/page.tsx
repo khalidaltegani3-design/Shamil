@@ -80,11 +80,11 @@ export default function CreateReportPage() {
         return;
     }
     // Mock geocoding: In a real app, you would call a geocoding API.
-    // Here we'll generate a semi-random location based on the inputs for demonstration.
-    const lat = 25.2854 + (parseInt(zone, 10) % 100) * 0.001 - (parseInt(street, 10) % 100) * 0.0005;
-    const lng = 51.5310 + (parseInt(building, 10) % 100) * 0.001;
+    // For this demonstration, we'll set a fixed location in Al Dafna, Doha.
+    const lat = 25.3210;
+    const lng = 51.5283;
     setPosition([lat, lng]);
-    toast({ title: "تم تحديد الموقع", description: `تم العثور على إحداثيات للعنوان: ${zone}/${street}/${building}` });
+    toast({ title: "تم تحديد الموقع", description: `تم تحديد الموقع بنجاح للعنوان: ${zone}/${street}/${building}` });
   };
   
   const handleOpenUnwani = () => {
@@ -330,6 +330,5 @@ export default function CreateReportPage() {
     </div>
   );
 }
-
 
     

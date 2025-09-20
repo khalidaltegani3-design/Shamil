@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator";
+import Footer from "@/components/footer";
 
 
 interface UserData {
@@ -199,7 +200,7 @@ export default function SupervisorLayout({
           </div>
         </div>
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col min-h-screen">
          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
             <Collapsible
               open={isMobileMenuOpen}
@@ -251,7 +252,7 @@ export default function SupervisorLayout({
                     {isAdmin && (
                     <Link
                         href="/supervisor/gamification"
-                        className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                        className="mx-[-0.65den] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                          onClick={() => setIsMobileMenuOpen(false)}
                     >
                         <Trophy className="h-5 w-5" />
@@ -318,9 +319,10 @@ export default function SupervisorLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+        <main className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-6">
             {children}
         </main>
+        <Footer />
       </div>
     </div>
     </SupervisorAuth>

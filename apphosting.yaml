@@ -6,6 +6,35 @@
 location: me-west1
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
+  cpu: 1
+  memoryMiB: 512
+  maxInstances: 100
+
+env:
+  # Public Firebase Configuration (Build Variables)
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyDKtxqu6YRoZQCeD9EoFmxAvc9JLi_d5R8
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: zoliapp-lite.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: zoliapp-lite
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: zoliapp-lite.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "476068628948"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:476068628948:web:55c0eaf993de1cc553ee41
+
+  # Public QNAS Configuration (Build Variables)
+  - variable: NEXT_PUBLIC_QNAS_API_BASE_URL
+    value: https://qnas.qa
+  - variable: QNAS_API_TOKEN
+    secret: qnas-api-token
+  - variable: QNAS_API_DOMAIN
+    secret: qnas-api-domain
+  - variable: GOOGLE_MAPS_API_KEY
+    secret: google-maps-api-key
+  - variable: GEMINI_API_KEY
+    secret: gemini-api-key
+  - variable: GOOGLE_API_KEY
+    secret: google-api-key

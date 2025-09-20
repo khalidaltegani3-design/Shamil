@@ -35,6 +35,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { SupervisorAuth, checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
+import AppFooter from "@/components/app-footer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,7 +113,7 @@ export default function SupervisorLayout({
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/supervisor" className="flex items-center gap-2 font-semibold">
-              <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+              <h1 className="text-2xl md:text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
             </Link>
              <div className="mr-auto flex items-center gap-2">
                 <DropdownMenu>
@@ -219,7 +220,7 @@ export default function SupervisorLayout({
                         href="#"
                         className="flex items-center gap-2 text-lg font-semibold mb-4"
                     >
-                      <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+                      <h1 className="text-2xl md:text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
                     </Link>
                     <Link
                         href="/supervisor"
@@ -322,7 +323,7 @@ export default function SupervisorLayout({
         <main className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-6">
             {children}
         </main>
-        <Footer />
+        <AppFooter />
       </div>
     </div>
     </SupervisorAuth>

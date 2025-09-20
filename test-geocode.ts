@@ -13,7 +13,7 @@ async function testGeocoding() {
         console.log("الإحداثيات المستلمة:", result);
         
         // التحقق من صحة الإحداثيات
-        if (result.lat >= 24.5 && result.lat <= 26.2 && 
+        if (result && result.lat >= 24.5 && result.lat <= 26.2 && 
             result.lng >= 50.7 && result.lng <= 51.7) {
             console.log("الإحداثيات تقع ضمن نطاق دولة قطر");
             console.log(`الموقع: ${result.lat}, ${result.lng}`);

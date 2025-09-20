@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { allDepartments } from '@/lib/departments';
+import AppFooter from "@/components/app-footer";
 
 type Report = {
   id: string;
@@ -228,6 +229,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </main>
+      <AppFooter />
     </div>
   );
 }

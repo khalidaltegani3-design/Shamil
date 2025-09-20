@@ -35,6 +35,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { SupervisorAuth, checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
+import AppFooter from "@/components/app-footer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -321,6 +322,7 @@ export default function SupervisorLayout({
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
             {children}
         </main>
+        <AppFooter />
       </div>
     </div>
     </SupervisorAuth>

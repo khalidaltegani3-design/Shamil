@@ -3,13 +3,16 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import {
   ListFilter,
   MoreHorizontal,
+  Crown,
+  Users,
+  Settings,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -226,6 +229,37 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
 export default function SupervisorDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
   const [user, loading] = useAuthState(auth);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function checkSystemAdminStatus() {
+      if (!user) return;
+      
+      const cleanEmail = (user.email || '').toLowerCase().trim();
+      const systemAdminEmail = "sweetdream711711@gmail.com";
+      
+      if (cleanEmail === systemAdminEmail) {
+        setIsSystemAdmin(true);
+        return;
+      }
+
+      // تحقق من قاعدة البيانات
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
+            setIsSystemAdmin(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking system admin status:', error);
+      }
+    }
+
+    checkSystemAdminStatus();
+  }, [user]);
 
   useEffect(() => {
     // In a real app, you would also filter by the supervisor's departments
@@ -260,6 +294,39 @@ export default function SupervisorDashboard() {
 
   return (
     <div className="py-8">
+      {/* بطاقة خاصة لمدير النظام */}
+      {isSystemAdmin && (
+        <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-full">
+                  <Crown className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">مرحباً مدير النظام</h3>
+                  <p className="text-sm text-muted-foreground">
+                    لديك صلاحيات كاملة لإدارة النظام والمستخدمين
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Link href="/admin/users">
+                  <Button className="gap-2">
+                    <Users className="h-4 w-4" />
+                    إدارة المستخدمين
+                  </Button>
+                </Link>
+                <Button variant="outline" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  إعدادات النظام
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Tabs defaultValue="all">
         <div className="flex items-center">
           <TabsList>

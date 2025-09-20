@@ -11,7 +11,9 @@ import {
   Menu,
   Search,
   Trophy,
-  KeyRound
+  KeyRound,
+  Crown,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +31,10 @@ import {
 } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { initialUsers } from "@/lib/users";
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { SupervisorAuth, checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,31 +46,67 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 
-type User = typeof initialUsers[0];
+interface UserData {
+  role?: string;
+  email?: string;
+  displayName?: string;
+  homeDepartmentId?: string;
+}
 
 export default function SupervisorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [hasNotification, setHasNotification] = useState(true); // Mock state
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
+  const [user] = useAuthState(auth);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [hasNotification, setHasNotification] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userPermissions, setUserPermissions] = useState({
+    isSystemAdmin: false,
+    isAdmin: false,
+    supervisedDepartments: [] as string[]
+  });
 
   useEffect(() => {
-    // In a real app, you'd get the user from an auth context.
-    // Here, we simulate it by finding the admin user from our mock data.
-    const user = initialUsers.find(u => u.id === "E-1023"); // Assuming E-1023 is the logged-in admin
-    if (user) {
-      setCurrentUser(user);
-    }
-  }, []);
+    async function loadUserData() {
+      if (!user) return;
 
-  const isAdmin = currentUser?.role === 'admin';
+      try {
+        // تحقق من الصلاحيات
+        const permissions = await checkUserSupervisorPermissions(user.uid);
+        setUserPermissions(permissions);
+
+        // جلب بيانات المستخدم
+        if (permissions.isSystemAdmin) {
+          setUserData({
+            role: 'system_admin',
+            email: user.email || '',
+            displayName: user.displayName || 'مدير النظام'
+          });
+        } else {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            setUserData(userDoc.data() as UserData);
+          }
+        }
+      } catch (error) {
+        console.error('خطأ في تحميل بيانات المستخدم:', error);
+      }
+    }
+
+    loadUserData();
+  }, [user]);
+
+  const isAdmin = userPermissions.isSystemAdmin || userPermissions.isAdmin;
+  const displayName = userData?.displayName || user?.displayName || 'المستخدم';
+  const userEmail = userData?.email || user?.email || 'غير محدد';
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]" dir="rtl">
+    <SupervisorAuth>
+      <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]" dir="rtl">
       <div className="hidden border-l bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -103,7 +144,16 @@ export default function SupervisorLayout({
                 <Home className="h-4 w-4" />
                 لوحة المعلومات
               </Link>
-              {isAdmin && (
+              {userPermissions.isSystemAdmin && (
+                <Link
+                  href="/admin/users"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <Crown className="h-4 w-4" />
+                  إدارة المستخدمين (مدير النظام)
+                </Link>
+              )}
+              {isAdmin && !userPermissions.isSystemAdmin && (
                  <Link
                   href="/supervisor/users"
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -178,7 +228,17 @@ export default function SupervisorLayout({
                         <Home className="h-5 w-5" />
                         لوحة المعلومات
                     </Link>
-                    {isAdmin && (
+                    {userPermissions.isSystemAdmin && (
+                    <Link
+                        href="/admin/users"
+                        className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                         onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                        <Crown className="h-5 w-5" />
+                        إدارة المستخدمين (مدير النظام)
+                    </Link>
+                    )}
+                    {isAdmin && !userPermissions.isSystemAdmin && (
                     <Link
                         href="/supervisor/users"
                         className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
@@ -230,10 +290,19 @@ export default function SupervisorLayout({
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">خالد الأحمد</p>
+                    <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                    E-1023
+                    {userEmail}
                     </p>
+                    {userPermissions.isSystemAdmin && (
+                      <p className="text-xs text-primary font-medium">مدير النظام</p>
+                    )}
+                    {userPermissions.isAdmin && !userPermissions.isSystemAdmin && (
+                      <p className="text-xs text-primary font-medium">مدير عام</p>
+                    )}
+                    {userPermissions.supervisedDepartments.length > 0 && !userPermissions.isAdmin && (
+                      <p className="text-xs text-primary font-medium">مشرف</p>
+                    )}
                 </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -242,12 +311,10 @@ export default function SupervisorLayout({
                     إعادة ضبط كلمة السر
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <Link href="/login" passHref>
-                    <DropdownMenuItem>
-                        <LogOut className="ml-2 h-4 w-4" />
-                        تسجيل الخروج
-                    </DropdownMenuItem>
-                </Link>
+                <DropdownMenuItem onClick={() => auth.signOut()}>
+                    <LogOut className="ml-2 h-4 w-4" />
+                    تسجيل الخروج
+                </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
@@ -256,6 +323,7 @@ export default function SupervisorLayout({
         </main>
       </div>
     </div>
+    </SupervisorAuth>
   );
 }
 

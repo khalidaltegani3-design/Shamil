@@ -1,9 +1,9 @@
-
+﻿
 "use client";
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink } from 'lucide-react';
@@ -18,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { allDepartments } from '@/lib/departments';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { geocodeAddress } from '@/ai/flows/geocode-flow';
 
 function AppHeader() {
   const router = useRouter();
@@ -45,6 +44,46 @@ export default function CreateReportPage() {
   const [user, loading] = useAuthState(auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [userHomeDepartmentId, setUserHomeDepartmentId] = useState<string | null>(null);
+
+  // التحقق من صلاحيات المستخدم عند تحميل الصفحة
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (!user) {
+        router.push('/login/employee');
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists() || userDoc.data().role !== 'employee') {
+          toast({ 
+            variant: "destructive", 
+            title: "غير مصرح", 
+            description: "ليس لديك صلاحية لإنشاء بلاغ. هذه الخدمة متاحة للموظفين فقط." 
+          });
+          router.push('/');
+          return;
+        }
+        
+        // تحميل إدارة المستخدم
+        const userData = userDoc.data();
+        setUserHomeDepartmentId(userData.homeDepartmentId || null);
+      } catch (error) {
+        console.error('Error checking user role:', error);
+        toast({ 
+          variant: "destructive", 
+          title: "خطأ", 
+          description: "حدث خطأ أثناء التحقق من الصلاحيات" 
+        });
+        router.push('/');
+      }
+    };
+
+    if (!loading) {
+      checkUserRole();
+    }
+  }, [user, loading, router, toast]);
   
   // Location state
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
@@ -62,6 +101,11 @@ export default function CreateReportPage() {
   const [departmentId, setDepartmentId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [locationDescription, setLocationDescription] = useState<string>('');
+
+  // إنشاء قائمة الإدارات المتاحة (استثناء إدارة المستخدم)
+  const availableDepartments = allDepartments.filter(dept => 
+    userHomeDepartmentId ? dept.id !== userHomeDepartmentId : true
+  );
 
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
@@ -81,33 +125,82 @@ export default function CreateReportPage() {
     console.log(`Inputs: Zone=${zone}, Street=${street}, Building=${building}`);
 
     if (!zone || !street || !building) {
-        toast({ variant: "destructive", title: "خطأ", description: "يرجى إدخال أرقام المنطقة والشارع والمبنى." });
-        console.error('Geocoding Error: Missing required address fields.');
+        toast({ 
+          variant: "destructive", 
+          title: "بيانات غير مكتملة", 
+          description: "يرجى إدخال أرقام المنطقة والشارع والمبنى." 
+        });
+        return;
+    }
+
+    // التحقق من صحة الأرقام
+    const numbersOnly = /^\d+$/;
+    if (!numbersOnly.test(zone) && !/^[٠-٩]+$/.test(zone)) {
+        toast({ 
+          variant: "destructive", 
+          title: "رقم المنطقة غير صالح", 
+          description: "يرجى إدخال أرقام صحيحة للمنطقة" 
+        });
+        return;
+    }
+
+    if (!numbersOnly.test(street) && !/^[٠-٩]+$/.test(street)) {
+        toast({ 
+          variant: "destructive", 
+          title: "رقم الشارع غير صالح", 
+          description: "يرجى إدخال أرقام صحيحة للشارع" 
+        });
+        return;
+    }
+
+    if (!numbersOnly.test(building) && !/^[٠-٩]+$/.test(building)) {
+        toast({ 
+          variant: "destructive", 
+          title: "رقم المبنى غير صالح", 
+          description: "يرجى إدخال أرقام صحيحة للمبنى" 
+        });
         return;
     }
     
     setIsGeocoding(true);
     try {
-      const result = await geocodeAddress({ zone, street, building });
-      console.log('[Geocoding Result] Received from flow:', result);
+      console.log('[handleFindQAddress] Calling geocode API with:', { zone, street, building });
       
-      if (result && result.lat && result.lng) {
+      const response = await fetch('/api/geocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zone, street, building })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to geocode address');
+      }
+      
+      const result = await response.json();
+      console.log('[handleFindQAddress] API result:', result);
+      
+      if (result && typeof result.lat === 'number' && typeof result.lng === 'number') {
+        console.log('[handleFindQAddress] Valid coordinates received:', result.lat, result.lng);
         setPosition([result.lat, result.lng]);
-        toast({ title: "تم تحديد الموقع", description: `تم تحديد الموقع بنجاح للعنوان: ${zone}/${street}/${building}` });
-        console.log(`[Map Update] Setting position to [${result.lat}, ${result.lng}]`);
+        toast({ 
+          title: "تم تحديد الموقع", 
+          description: `تم تحديد موقع العنوان: منطقة ${zone}، شارع ${street}، مبنى ${building}` 
+        });
+        console.log(`[Map Update] Position set to [${result.lat}, ${result.lng}]`);
       } else {
-        throw new Error("Invalid response from geocoding service.");
+        console.error('[handleFindQAddress] Invalid result received:', result);
+        throw new Error(`لم نتمكن من الحصول على إحداثيات صحيحة من الخدمة. النتيجة: ${JSON.stringify(result)}`);
       }
     } catch (error: any) {
         console.error('Geocoding Error:', error);
         toast({
             variant: "destructive",
-            title: "فشل تحديد الموقع",
-            description: error.message || "لم نتمكن من العثور على العنوان. يرجى التحقق من الأرقام أو تحديده يدويًا.",
+            title: "تعذر تحديد الموقع",
+            description: error.message || "يرجى التأكد من صحة الأرقام المدخلة أو تحديد الموقع يدوياً على الخريطة"
         });
     } finally {
         setIsGeocoding(false);
-        console.log('--- End Geocoding ---');
     }
   };
   
@@ -124,6 +217,13 @@ export default function CreateReportPage() {
       return;
     }
 
+    // التحقق من نوع المستخدم
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (!userDoc.exists() || userDoc.data().role !== 'employee') {
+      toast({ variant: "destructive", title: "خطأ", description: "ليس لديك صلاحية لإنشاء بلاغ." });
+      return;
+    }
+
      if (!position) {
       toast({ variant: "destructive", title: "خطأ", description: "يرجى تحديد الموقع على الخريطة." });
       return;
@@ -136,6 +236,12 @@ export default function CreateReportPage() {
 
     if (!departmentId || !description) {
          toast({ variant: "destructive", title: "خطأ", description: "يرجى ملء جميع الحقول المطلوبة (الإدارة والوصف)." });
+        return;
+    }
+
+    // التحقق من أن الإدارة المختارة ليست إدارة المستخدم
+    if (userHomeDepartmentId && departmentId === userHomeDepartmentId) {
+        toast({ variant: "destructive", title: "خطأ", description: "لا يمكنك تقديم بلاغ لإدارتك الخاصة." });
         return;
     }
 
@@ -166,7 +272,7 @@ export default function CreateReportPage() {
       }
       
       await setDoc(newReportRef, {
-        submitterId: user.uid,
+        createdBy: user.uid,
         submitterName: user.displayName || user.email,
         description,
         departmentId,
@@ -225,7 +331,7 @@ export default function CreateReportPage() {
             <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <Label>تحديد موقع البلاغ</Label>
-                   <Tabs defaultValue="manual" className="w-full" onValueChange={(value) => setLocationSource(value as "manual" | "q-address")}>
+                   <Tabs defaultValue="manual" className="w-full" onValueChange={(value: string) => setLocationSource(value as "manual" | "q-address")}>
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="manual">تحديد يدوي على الخريطة</TabsTrigger>
                         <TabsTrigger value="q-address">العنوان القطري (عنواني)</TabsTrigger>
@@ -289,11 +395,20 @@ export default function CreateReportPage() {
                     <SelectValue placeholder="اختر الإدارة" />
                   </SelectTrigger>
                   <SelectContent>
-                    {allDepartments.map(dept => (
-                       <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                    ))}
+                    {availableDepartments.length > 0 ? (
+                      availableDepartments.map(dept => (
+                         <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>لا توجد إدارات متاحة</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {userHomeDepartmentId && (
+                  <p className="text-sm text-muted-foreground">
+                    ملاحظة: لا يمكنك تقديم بلاغ لإدارتك الخاصة.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -357,3 +472,4 @@ export default function CreateReportPage() {
     </div>
   );
 }
+

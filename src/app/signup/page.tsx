@@ -1,24 +1,35 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { doc, setDoc } from "firebase/firestore";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { allDepartments } from '@/lib/departments';
+import { generateEmployeeId } from '@/lib/employee-utils';
+
+import { checkAuthState } from '@/lib/auth-check';
 
 export default function SignupPage() {
+  useEffect(() => {
+    checkAuthState()
+      .then(() => console.log('Auth check completed'))
+      .catch(error => console.error('Auth check failed:', error));
+  }, []);
   const router = useRouter();
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [homeDepartmentId, setHomeDepartmentId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -35,6 +46,16 @@ export default function SignupPage() {
         return;
     }
 
+    if (!homeDepartmentId) {
+        toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "يرجى اختيار إدارتك.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -42,29 +63,58 @@ export default function SignupPage() {
       // Update user profile with display name
       await updateProfile(user, { displayName: name });
 
-      // Create a user document in Firestore (optional, but good practice)
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        displayName: name,
-        email: user.email,
-        role: "employee", // Default role
-        createdAt: new Date(),
-      });
+      try {
+        // إنشاء وثيقة المستخدم في Firestore مع الرقم الوظيفي
+        const employeeId = generateEmployeeId();
+        
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          displayName: name,
+          email: user.email,
+          employeeId: employeeId,
+          role: "employee",
+          homeDepartmentId: homeDepartmentId,
+          createdAt: new Date(),
+          status: "active",
+        });
+        
+        console.log(`تم إنشاء المستخدم بالرقم الوظيفي: ${employeeId}`);
+      } catch (firestoreError) {
+        // حذف المستخدم من Authentication إذا فشل إنشاء الوثيقة في Firestore
+        await user.delete();
+        throw new Error("فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.");
+      }
+      
+      // تسجيل الخروج بعد إنشاء الحساب بنجاح
+      await signOut(auth);
       
       toast({
-        title: "تم إنشاء الحساب بنجاح!",
-        description: "يمكنك الآن تسجيل الدخول.",
+        title: "تم إنشاء الحساب بنجاح! ✅",
+        description: "سيتم توجيهك إلى صفحة تسجيل الدخول...",
+        duration: 3000,
       });
-      router.push('/login/employee');
+
+      // إضافة تأخير قبل التوجيه
+      setTimeout(() => {
+        router.push('/login/employee');
+      }, 2000);
 
     } catch (error: any) {
       console.error("Signup error:", error);
       let description = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
-      if (error.code === 'auth/email-already-in-use') {
-          description = "هذا البريد الإلكتروني مستخدم بالفعل."
+      
+      if (error.message === "فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.") {
+        description = error.message;
+      } else if (error.code === 'auth/email-already-in-use') {
+        description = "هذا البريد الإلكتروني مستخدم بالفعل.";
       } else if (error.code === 'auth/invalid-email') {
-          description = "البريد الإلكتروني الذي أدخلته غير صالح."
+        description = "البريد الإلكتروني الذي أدخلته غير صالح.";
+      } else if (error.code === 'auth/weak-password') {
+        description = "كلمة المرور ضعيفة جداً. يرجى اختيار كلمة مرور أقوى.";
+      } else if (error.code === 'auth/network-request-failed') {
+        description = "فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.";
       }
+      
       toast({
         variant: "destructive",
         title: "فشل إنشاء الحساب",
@@ -100,6 +150,19 @@ export default function SignupPage() {
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
               <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department">الإدارة التي تعمل بها</Label>
+              <Select dir="rtl" onValueChange={setHomeDepartmentId} value={homeDepartmentId} required>
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="اختر إدارتك" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allDepartments.map(dept => (
+                     <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">

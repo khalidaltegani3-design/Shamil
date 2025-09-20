@@ -1,14 +1,15 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
@@ -19,26 +20,201 @@ export default function EmployeeLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOffline, setIsOffline] = useState(false); // تهيئة افتراضية
+
+  // تحديث حالة الاتصال عند تحميل المكون في المتصفح
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+    }
+  }, []);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null);
+
+  // مراقبة حالة الاتصال والتحقق من وقت القفل
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // التحقق من وقت القفل المخزن
+    const storedLockoutEnd = localStorage.getItem('loginLockoutEnd');
+    if (storedLockoutEnd) {
+      const lockoutEnd = parseInt(storedLockoutEnd);
+      if (lockoutEnd > Date.now()) {
+        setLockoutEndTime(lockoutEnd);
+      } else {
+        localStorage.removeItem('loginLockoutEnd');
+        localStorage.removeItem('loginAttempts');
+      }
+    }
+
+    // استرجاع عدد المحاولات المخزن
+    const storedAttempts = localStorage.getItem('loginAttempts');
+    if (storedAttempts) {
+      setLoginAttempts(parseInt(storedAttempts));
+    }
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
+    
+    // التحقق من وقت القفل
+    if (lockoutEndTime && Date.now() < lockoutEndTime) {
+      const remainingTime = Math.ceil((lockoutEndTime - Date.now()) / 1000);
       toast({
-        title: "تم تسجيل الدخول بنجاح.",
+        variant: "destructive",
+        title: "الحساب مقفل مؤقتاً",
+        description: `يرجى الانتظار ${remainingTime} ثانية قبل المحاولة مرة أخرى`,
       });
-      router.push('/');
+      return;
+    }
+
+    setIsLoading(true);
+    let userDoc;
+
+    try {
+      // التحقق من الاتصال بالإنترنت
+      if (!navigator.onLine) {
+        throw new Error("لا يوجد اتصال بالإنترنت. يرجى التحقق من اتصالك والمحاولة مرة أخرى.");
+      }
+
+      // محاولة تسجيل الدخول
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // محاولة الوصول إلى Firestore مع استراتيجية إعادة المحاولة متقدمة
+      const maxRetries = 5; // زيادة عدد المحاولات
+      let retryCount = 0;
+      let lastError: any;
+
+      const retryStrategy = (attempt: number) => {
+        // استراتيجية انتظار تصاعدية مع عنصر عشوائي
+        const baseDelay = 1000; // تأخير أساسي 1 ثانية
+        const maxDelay = 10000; // الحد الأقصى للتأخير 10 ثواني
+        const jitter = Math.random() * 1000; // عنصر عشوائي لتجنب تزامن الطلبات
+        return Math.min(Math.pow(2, attempt) * baseDelay + jitter, maxDelay);
+      };
+
+      while (retryCount < maxRetries) {
+        try {
+          if (retryCount > 0) {
+            // إظهار رسالة للمستخدم عن إعادة المحاولة
+            toast({
+              title: "جاري إعادة المحاولة",
+              description: `محاولة الاتصال بقاعدة البيانات (${retryCount + 1}/${maxRetries})`,
+              duration: 3000,
+            });
+          }
+
+          userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+          break; // إذا نجحت العملية، نخرج من الحلقة
+
+        } catch (firestoreError: any) {
+          lastError = firestoreError;
+          retryCount++;
+
+          // التحقق من نوع الخطأ
+          const errorCode = firestoreError?.code;
+          if (errorCode === 'permission-denied' || errorCode === 'unauthenticated') {
+            // لا داعي لإعادة المحاولة في حالة أخطاء الصلاحيات
+            throw new Error("ليس لديك صلاحية الوصول إلى هذه البيانات");
+          }
+
+          if (retryCount === maxRetries) {
+            console.error("Firestore connection attempts failed:", lastError);
+            throw new Error("فشل الاتصال بقاعدة البيانات. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.");
+          }
+
+          // حساب وقت الانتظار قبل المحاولة التالية
+          const delay = retryStrategy(retryCount);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      
+      if (!userDoc || !userDoc.exists()) {
+        await signOut(auth);
+        throw new Error("لم يتم العثور على بيانات المستخدم");
+      }
+
+      const userData = userDoc.data();
+      
+      if (userData.role !== 'employee') {
+        await signOut(auth);
+        throw new Error("هذا الحساب غير مصرح له كموظف");
+      }
+
+      // نجاح تسجيل الدخول
+      console.log('✅ نجح تسجيل الدخول للموظف:', userData.displayName || userData.email);
+      
+      // مسح عدد المحاولات الفاشلة عند النجاح
+      setLoginAttempts(0);
+      localStorage.removeItem('loginAttempts');
+      localStorage.removeItem('loginLockoutEnd');
+      
+      toast({
+        title: "تم تسجيل الدخول بنجاح ✅",
+        description: `مرحباً بك ${userData.displayName || 'في منصة شامل'}`,
+        duration: 2000,
+      });
+
+      // إضافة تأخير أطول قبل التوجيه للتأكد من اكتمال العملية
+      setTimeout(() => {
+        console.log('🔄 توجيه إلى لوحة تحكم الموظف...');
+        router.push('/employee/dashboard');
+      }, 1500);
+
     } catch (error: any) {
-      console.error(error);
+      console.error("Login error:", error);
+      
+      let errorMessage = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
+      let isCredentialsError = false;
+      
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "البريد الإلكتروني أو كلمة المرور غير صحيحة";
+        isCredentialsError = true;
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "تم تجاوز عدد المحاولات المسموح بها. يرجى المحاولة لاحقاً";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "البريد الإلكتروني غير صالح";
+        isCredentialsError = true;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      // تحديث عدد المحاولات الفاشلة إذا كان الخطأ متعلقاً بالبيانات
+      if (isCredentialsError) {
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+        localStorage.setItem('loginAttempts', newAttempts.toString());
+
+        // تفعيل القفل المؤقت بعد 3 محاولات فاشلة
+        if (newAttempts >= 3) {
+          const lockoutDuration = Math.min(Math.pow(2, newAttempts - 3) * 30, 1800); // تزايد تصاعدي مع حد أقصى 30 دقيقة
+          const lockoutEnd = Date.now() + (lockoutDuration * 1000);
+          setLockoutEndTime(lockoutEnd);
+          localStorage.setItem('loginLockoutEnd', lockoutEnd.toString());
+          
+          errorMessage = `تم قفل تسجيل الدخول مؤقتاً لمدة ${Math.floor(lockoutDuration / 60)} دقيقة و ${lockoutDuration % 60} ثانية`;
+        } else {
+          errorMessage += `. المحاولات المتبقية: ${3 - newAttempts}`;
+        }
+      }
+
       toast({
         variant: "destructive",
         title: "فشل تسجيل الدخول",
-        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+        description: errorMessage,
       });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 

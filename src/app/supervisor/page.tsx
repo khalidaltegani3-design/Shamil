@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { allDepartments } from "@/lib/departments";
+import { formatReportNumber } from '@/lib/report-utils';
 
 type ReportLocation = {
   latitude: number;
@@ -58,6 +59,7 @@ type ReportLocation = {
 
 type Report = {
     id: string;
+    reportNumber?: number; // رقم البلاغ الرقمي
     description: string;
     status: "open" | "closed";
     submitterId: string;
@@ -126,7 +128,7 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
       toast({
           variant: "default",
           title: "تم بنجاح",
-          description: `تم إغلاق البلاغ رقم ${report.id.slice(-6)}...`,
+          description: `تم إغلاق البلاغ رقم ${report.reportNumber ? formatReportNumber(report.reportNumber) : `...${report.id.slice(-6)}`}`,
       });
     } catch (e) {
       console.error(e);
@@ -200,8 +202,26 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                 <TableBody>
                   {reports.map((report) => (
                     <TableRow key={report.id}>
-                      <TableCell className="font-medium">...{report.id.slice(-6)}</TableCell>
-                      <TableCell>{report.description.substring(0, 50)}...</TableCell>
+                      <TableCell className="font-medium font-mono" style={{direction: 'ltr'}}>
+                        {report.reportNumber ? formatReportNumber(report.reportNumber) : `...${report.id.slice(-6)}`}
+                      </TableCell>
+                      <TableCell className="max-w-[300px]">
+                        <div 
+                          className="cursor-pointer transition-all duration-200 hover:bg-gray-50 p-2 rounded"
+                          title="انقر لعرض النص كاملاً"
+                          onClick={(e) => {
+                            const element = e.currentTarget.querySelector('.description-text');
+                            if (element) {
+                              element.classList.toggle('line-clamp-2');
+                              element.classList.toggle('whitespace-normal');
+                            }
+                          }}
+                        >
+                          <div className="description-text line-clamp-2 text-sm leading-relaxed">
+                            {report.description}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
                       </TableCell>

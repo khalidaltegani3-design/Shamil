@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Clock } from "lucide-react";
+import { formatReportNumber } from '@/lib/report-utils';
 
 interface Report {
   id: string;
+  reportNumber?: number; // رقم البلاغ الرقمي
   description: string;
   status: string;
   createdAt: any;
@@ -145,8 +147,27 @@ export default function EmployeeReports() {
                   <TableBody>
                     {reports.map((report) => (
                       <TableRow key={report.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/reports/${report.id}`)}>
-                        <TableCell className="font-medium">{report.id.slice(0, 8)}</TableCell>
-                        <TableCell className="max-w-[300px] truncate">{report.description}</TableCell>
+                        <TableCell className="font-medium font-mono" style={{direction: 'ltr'}}>
+                          {report.reportNumber ? formatReportNumber(report.reportNumber) : report.id.slice(0, 8)}
+                        </TableCell>
+                        <TableCell className="max-w-[300px]">
+                          <div 
+                            className="cursor-pointer transition-all duration-200 hover:bg-gray-50 p-2 rounded"
+                            title="انقر لعرض النص كاملاً"
+                            onClick={(e) => {
+                              e.stopPropagation(); // منع تشغيل النقر على الصف
+                              const element = e.currentTarget.querySelector('.description-text');
+                              if (element) {
+                                element.classList.toggle('line-clamp-2');
+                                element.classList.toggle('whitespace-normal');
+                              }
+                            }}
+                          >
+                            <div className="description-text line-clamp-2 text-sm leading-relaxed">
+                              {report.description}
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(report.status)}`}>
                             {getStatusText(report.status)}

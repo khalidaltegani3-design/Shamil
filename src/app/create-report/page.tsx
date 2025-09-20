@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { doc, setDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { generateReportNumber, formatReportNumber } from '@/lib/report-utils';
 import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -248,6 +249,9 @@ export default function CreateReportPage() {
     setIsSubmitting(true);
 
     try {
+      // توليد رقم البلاغ الرقمي
+      const reportNumber = await generateReportNumber();
+      
       const newReportRef = doc(collection(db, 'reports'));
       const reportId = newReportRef.id;
 
@@ -272,6 +276,7 @@ export default function CreateReportPage() {
       }
       
       await setDoc(newReportRef, {
+        reportNumber, // إضافة رقم البلاغ الرقمي
         createdBy: user.uid,
         submitterName: user.displayName || user.email,
         description,
@@ -284,7 +289,7 @@ export default function CreateReportPage() {
       
       toast({
         title: "تم إرسال البلاغ بنجاح.",
-        description: "سيتم مراجعته من قبل القسم المختص.",
+        description: `رقم البلاغ: ${formatReportNumber(reportNumber)}`,
       });
       router.push('/');
 

@@ -12,10 +12,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { allDepartments } from '@/lib/departments';
-import Footer from '@/components/footer';
+import { formatReportNumber } from '@/lib/report-utils';
+import AppFooter from "@/components/app-footer";
 
 type Report = {
   id: string;
+  reportNumber?: number; // رقم البلاغ الرقمي
   description: string;
   status: 'open' | 'closed';
   departmentId: string;
@@ -171,13 +173,13 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
           <StatCard 
             title="إجمالي البلاغات" 
-            value={totalReportsCount.toString()} 
+            value={totalReportsCount.toLocaleString('en-US')} 
             description="جميع البلاغات المقدمة من قبلك"
             icon={FileText} 
           />
           <StatCard 
             title="البلاغات المفتوحة" 
-            value={openReportsCount.toString()} 
+            value={openReportsCount.toLocaleString('en-US')} 
             description="بلاغات قيد المراجعة أو التنفيذ"
             icon={Clock}
           />
@@ -195,32 +197,52 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {reports.length > 0 ? (
-               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>رقم البلاغ</TableHead>
-                    <TableHead>وصف مختصر</TableHead>
-                    <TableHead>الإدارة المعنية</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>تاريخ الإنشاء</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.slice(0, 5).map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">...{report.id.slice(-6)}</TableCell>
-                      <TableCell>{report.description.substring(0, 50)}...</TableCell>
-                      <TableCell>{allDepartments.find(d => d.id === report.departmentId)?.name || 'غير محدد'}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
-                      </TableCell>
-                       <TableCell>
-                        {report.createdAt?.toDate().toLocaleDateString('ar-QA') || 'غير محدد'}
-                      </TableCell>
+               <div className="overflow-x-auto">
+                 <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[100px]">رقم البلاغ</TableHead>
+                      <TableHead className="min-w-[200px]">وصف مختصر</TableHead>
+                      <TableHead className="min-w-[120px]">الإدارة المعنية</TableHead>
+                      <TableHead className="min-w-[80px]">الحالة</TableHead>
+                      <TableHead className="min-w-[100px]">تاريخ الإنشاء</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {reports.slice(0, 5).map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium font-mono" style={{direction: 'ltr'}}>
+                          {report.reportNumber ? formatReportNumber(report.reportNumber) : `...${report.id.slice(-6)}`}
+                        </TableCell>
+                        <TableCell className="max-w-[250px]">
+                          <div 
+                            className="cursor-pointer transition-all duration-200 hover:bg-gray-50 p-2 rounded"
+                            title="انقر لعرض النص كاملاً"
+                            onClick={(e) => {
+                              const element = e.currentTarget.querySelector('.description-text');
+                              if (element) {
+                                element.classList.toggle('line-clamp-2');
+                                element.classList.toggle('whitespace-normal');
+                              }
+                            }}
+                          >
+                            <div className="description-text line-clamp-2 text-sm leading-relaxed">
+                              {report.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{allDepartments.find(d => d.id === report.departmentId)?.name || 'غير محدد'}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
+                        </TableCell>
+                         <TableCell style={{direction: 'ltr'}}>
+                          {report.createdAt?.toDate().toLocaleDateString('en-US') || 'غير محدد'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+               </div>
             ) : (
                <div className="flex h-48 items-center justify-center rounded-md border border-dashed">
                 <p className="text-muted-foreground">لم تقم بتقديم أي بلاغات حتى الآن.</p>
@@ -229,7 +251,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </main>
-      <Footer />
+      <AppFooter />
     </div>
   );
 }

@@ -21,8 +21,6 @@ import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
 import { generateEmployeeId, validateEmployeeId, isEmployeeIdUnique } from '@/lib/employee-utils';
-import { checkCurrentUserPermissions, refreshUserToken } from '@/lib/update-auth-claims';
-import { recreateSystemData } from '@/lib/recreate-system-data';
 
 interface UserData {
   uid: string;
@@ -598,103 +596,6 @@ function SystemAdminDashboard() {
     }
   };
 
-  // دالة اختبار شامل للصلاحيات والاتصال
-  const testPermissionsAndConnection = async () => {
-    setLoading(true);
-    try {
-      console.log('🧪 بدء الاختبار الشامل...');
-      
-      // 1. فحص الصلاحيات
-      console.log('1️⃣ فحص صلاحيات المستخدم...');
-      const permissions = await checkCurrentUserPermissions();
-      console.log('📊 نتائج فحص الصلاحيات:', permissions);
-      
-      // 2. تحديث Token
-      console.log('2️⃣ تحديث Auth Token...');
-      await refreshUserToken();
-      
-      // 3. اختبار قراءة المستخدمين
-      console.log('3️⃣ اختبار قراءة المستخدمين...');
-      const usersQuery = query(collection(db, 'users'));
-      const usersSnapshot = await getDocs(usersQuery);
-      console.log(`📄 تم جلب ${usersSnapshot.size} مستخدم`);
-      
-      // 4. اختبار إنشاء وثيقة تجريبية
-      console.log('4️⃣ اختبار الكتابة...');
-      const testDocRef = doc(db, 'test', 'permission-test');
-      await setDoc(testDocRef, {
-        testMessage: 'Test write permission',
-        timestamp: new Date(),
-        testedBy: auth.currentUser?.email
-      });
-      console.log('✅ نجح اختبار الكتابة');
-      
-      // حذف الوثيقة التجريبية
-      await deleteDoc(testDocRef);
-      console.log('🗑️ تم حذف الوثيقة التجريبية');
-      
-      toast({
-        title: "نجح الاختبار الشامل ✅",
-        description: `الصلاحيات: ${permissions?.isSystemAdmin ? 'مدير نظام' : permissions?.databaseRole || 'غير محدد'}`,
-        duration: 5000
-      });
-      
-    } catch (error) {
-      console.error('❌ فشل الاختبار:', error);
-      
-      let errorMessage = "فشل في الاختبار الشامل";
-      if (error instanceof Error) {
-        errorMessage += `: ${error.message}`;
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "فشل الاختبار ❌",
-        description: errorMessage,
-        duration: 7000
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // دالة إعادة إنشاء بيانات النظام والمستخدمين
-  const recreateAllSystemData = async () => {
-    setLoading(true);
-    try {
-      console.log('🔄 بدء إعادة إنشاء بيانات النظام...');
-      
-      await recreateSystemData();
-      
-      // إعادة تحميل البيانات
-      console.log('🔄 إعادة تحميل المستخدمين...');
-      // البيانات ستُحدث تلقائياً عبر onSnapshot listener
-      
-      toast({
-        title: "تم إنشاء البيانات بنجاح ✅",
-        description: "تم إعادة إنشاء مدير النظام والمستخدمين التجريبيين",
-        duration: 5000
-      });
-      
-    } catch (error) {
-      console.error('❌ فشل في إعادة إنشاء البيانات:', error);
-      
-      let errorMessage = "فشل في إعادة إنشاء بيانات النظام";
-      if (error instanceof Error) {
-        errorMessage += `: ${error.message}`;
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "فشل في إنشاء البيانات ❌",
-        description: errorMessage,
-        duration: 7000
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getRoleDisplayName = (role: string) => {
     switch (role) {
       case 'admin': return 'مدير عام';
@@ -914,45 +815,24 @@ function SystemAdminDashboard() {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   إضافة أرقام وظيفية
                 </Button>
-                
-                {/* زر اختبار الصلاحيات والاتصال */}
-                <Button
-                  onClick={testPermissionsAndConnection}
-                  disabled={loading}
-                  variant="outline"
-                  className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  🧪 اختبار شامل
-                </Button>
-                
-                {/* زر إعادة إنشاء بيانات النظام */}
-                <Button
-                  onClick={recreateAllSystemData}
-                  disabled={loading}
-                  variant="outline"
-                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  🔄 إعادة إنشاء البيانات
-                </Button>
               </div>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>الاسم</TableHead>
-                  <TableHead>الرقم الوظيفي</TableHead>
-                  <TableHead>البريد الإلكتروني</TableHead>
-                  <TableHead>الدور الحالي</TableHead>
-                  <TableHead>القسم</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ التسجيل</TableHead>
-                  <TableHead>إجراءات سريعة</TableHead>
-                  <TableHead>صلاحيات الإشراف</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[120px]">الاسم</TableHead>
+                    <TableHead className="min-w-[100px]">الرقم الوظيفي</TableHead>
+                    <TableHead className="min-w-[200px]">البريد الإلكتروني</TableHead>
+                    <TableHead className="min-w-[100px]">الدور الحالي</TableHead>
+                    <TableHead className="min-w-[120px]">القسم</TableHead>
+                    <TableHead className="min-w-[80px]">الحالة</TableHead>
+                    <TableHead className="min-w-[100px] hidden md:table-cell">تاريخ التسجيل</TableHead>
+                    <TableHead className="min-w-[150px]">إجراءات سريعة</TableHead>
+                    <TableHead className="min-w-[120px] hidden lg:table-cell">صلاحيات الإشراف</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.uid}>
@@ -981,13 +861,13 @@ function SystemAdminDashboard() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-w-[200px] truncate">
                       <div className="flex items-center gap-2">
-                        {user.email}
+                        <span className="truncate">{user.email}</span>
                         {((user.email?.toLowerCase().trim() === "sweetdream711711@gmail.com") || 
                           user.role === 'system_admin' || 
                           user.isSystemAdmin) && (
-                          <Badge variant="destructive" className="text-xs">
+                          <Badge variant="destructive" className="text-xs flex-shrink-0">
                             مدير النظام
                           </Badge>
                         )}
@@ -1042,7 +922,7 @@ function SystemAdminDashboard() {
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {user.createdAt?.toDate()?.toLocaleDateString('ar-SA') || 'غير محدد'}
                     </TableCell>
                     <TableCell>
@@ -1051,7 +931,7 @@ function SystemAdminDashboard() {
                         user.isSystemAdmin) ? (
                         <span className="text-xs text-muted-foreground">مدير النظام</span>
                       ) : (
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-1">
                           {user.role === 'employee' && (
                             <Button
                               variant="outline"
@@ -1061,7 +941,8 @@ function SystemAdminDashboard() {
                               className="text-xs"
                             >
                               <TrendingUp className="h-3 w-3 ml-1" />
-                              ترقية لمشرف
+                              <span className="hidden sm:inline">ترقية لمشرف</span>
+                              <span className="sm:hidden">مشرف</span>
                             </Button>
                           )}
                           
@@ -1075,7 +956,8 @@ function SystemAdminDashboard() {
                                 className="text-xs"
                               >
                                 <TrendingUp className="h-3 w-3 ml-1" />
-                                ترقية لمدير
+                                <span className="hidden sm:inline">ترقية لمدير</span>
+                                <span className="sm:hidden">مدير</span>
                               </Button>
                               <Button
                                 variant="destructive"
@@ -1085,7 +967,8 @@ function SystemAdminDashboard() {
                                 className="text-xs"
                               >
                                 <TrendingDown className="h-3 w-3 ml-1" />
-                                تنزيل لموظف
+                                <span className="hidden sm:inline">تنزيل لموظف</span>
+                                <span className="sm:hidden">موظف</span>
                               </Button>
                             </>
                           )}
@@ -1100,7 +983,8 @@ function SystemAdminDashboard() {
                                 className="text-xs bg-red-50 hover:bg-red-100 border-red-200"
                               >
                                 <Crown className="h-3 w-3 ml-1" />
-                                ترقية لمدير نظام
+                                <span className="hidden sm:inline">ترقية لمدير نظام</span>
+                                <span className="sm:hidden">نظام</span>
                               </Button>
                               <Button
                                 variant="destructive"
@@ -1110,14 +994,15 @@ function SystemAdminDashboard() {
                                 className="text-xs"
                               >
                                 <TrendingDown className="h-3 w-3 ml-1" />
-                                تنزيل لموظف
+                                <span className="hidden sm:inline">تنزيل لموظف</span>
+                                <span className="sm:hidden">موظف</span>
                               </Button>
                             </>
                           )}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {((user.email?.toLowerCase().trim() === "sweetdream711711@gmail.com") || 
                         user.role === 'system_admin' || 
                         user.isSystemAdmin) ? (
@@ -1130,16 +1015,16 @@ function SystemAdminDashboard() {
                           className="text-xs"
                         >
                           <Shield className="h-3 w-3 ml-1" />
-                          إدارة الصلاحيات
+                          <span className="hidden xl:inline">إدارة الصلاحيات</span>
+                          <span className="xl:hidden">صلاحيات</span>
                         </Button>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-            
-            {filteredUsers.length === 0 && (
+                </TableBody>
+              </Table>
+            </div>            {filteredUsers.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 {searchTerm || roleFilter !== 'all' || departmentFilter !== 'all' 
                   ? 'لا توجد نتائج تطابق معايير البحث'

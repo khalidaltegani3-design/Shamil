@@ -8,12 +8,12 @@ import { getStorage } from "firebase/storage";
 
 // Allow overriding firebase config via environment variables (useful to switch projects without code changes)
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCH6FnlDC0RZSAxsRyYO4QFNAz1ZfZWfSs",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "shamil-a9322.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "shamil-a9322",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "shamil-a9322.appspot.com",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "229347947693",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:229347947693:web:357de234da4472c7666c2d"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDKtxqu6YRoZQCeD9EoFmxAvc9JLi_d5R8",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "zoliapp-lite.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "zoliapp-lite",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "zoliapp-lite.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "476068628948",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:476068628948:web:55c0eaf993de1cc553ee41"
 };
 
 // Initialize Firebase

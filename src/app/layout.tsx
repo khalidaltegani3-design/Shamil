@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { Inter, Amiri } from 'next/font/google'; 
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { ConnectionWrapper } from "@/components/connection-wrapper";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import { FixArabicEncoding } from "@/components/FixArabicEncoding";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const amiri = Amiri({
@@ -13,6 +16,10 @@ const amiri = Amiri({
 export const metadata: Metadata = {
   title: 'منصة البلاغات الداخلية - وزارة البلدية',
   description: 'نظام داخلي لإدارة ومتابعة البلاغات بين موظفي الوزارة.',
+  metadataBase: new URL('http://localhost:3000'),
+  other: {
+    'Content-Type': 'text/html; charset=utf-8',
+  },
 };
 
 export default function RootLayout({
@@ -22,9 +29,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body className={`${inter.variable} ${amiri.variable} font-sans antialiased`}>
-        {children}
-        <Toaster />
+        <FixArabicEncoding />
+        <LanguageProvider>
+          <ConnectionWrapper />
+          {children}
+          <Toaster />
+        </LanguageProvider>
       </body>
     </html>
   );

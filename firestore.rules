@@ -3,7 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      return request.auth != null && request.auth.token.role == "admin";
+      return request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
+    }
+
+    function isSystemAdmin() {
+      return request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
     }
 
     function isSupervisorOfDept(deptId) {
@@ -12,13 +16,30 @@ service cloud.firestore {
     }
 
     function userHomeDept(uid) {
-      return get(/databases/$(database)/documents/users/$(uid)).data.homeDepartmentId;
+      let userDoc = get(/databases/$(database)/documents/users/$(uid));
+      return userDoc.data.homeDepartmentId;
+    }
+
+    function hasHomeDepartment(uid) {
+      let userDoc = get(/databases/$(database)/documents/users/$(uid));
+      return userDoc.data.keys().hasAll(['homeDepartmentId']) && userDoc.data.homeDepartmentId != null;
     }
 
     // users
     match /users/{uid} {
-      allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
-      allow write: if isAdmin(); // المدير فقط
+      allow read: if request.auth != null && (
+        request.auth.token.email == "sweetdream711711@gmail.com"  // مدير النظام يقرأ الكل
+        || request.auth.uid == uid  // المستخدم يقرأ وثيقته الخاصة
+      );
+      allow create: if request.auth != null; // أي مستخدم مصادق يمكنه إنشاء وثيقته
+      allow update: if request.auth != null && (
+        request.auth.uid == uid  // المستخدم يحدث وثيقته الخاصة
+        || request.auth.token.email == "sweetdream711711@gmail.com"  // مدير النظام المحدد
+      );
+      allow delete: if request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com"; // مدير النظام فقط يمكنه الحذف
+      
+      // قاعدة خاصة للمدير لإنشاء أي وثيقة مستخدم
+      allow write: if request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
     }
 
     // departments + supervisors subcollection
@@ -34,11 +55,16 @@ service cloud.firestore {
 
     // reports
     match /reports/{reportId} {
-      // إنشاء بلاغ: الموظف ينشئ لغير إدارته فقط
+      // إنشاء بلاغ: الموظف ينشئ البلاغ
+      // إذا كان له homeDepartmentId، فيجب أن يكون مختلفًا عن إدارة البلاغ
+      // إذا لم يكن له homeDepartmentId، فيمكنه إنشاء بلاغ لأي إدارة
       allow create: if request.auth != null
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == "open"
-        && request.resource.data.departmentId != userHomeDept(request.auth.uid);
+        && (
+          !hasHomeDepartment(request.auth.uid) 
+          || request.resource.data.departmentId != userHomeDept(request.auth.uid)
+        );
 
       // قراءة: المبلغ يقرأ بلاغاته؛ المشرف يقرأ ما يخص إداراته؛ المدير يقرأ الكل
       allow read: if request.auth != null && (
@@ -65,6 +91,17 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.toUserId;
       allow write: if false;
+    }
+
+    // وثيقة حالة الاتصال - قراءة مسموحة للجميع للتحقق من الاتصال
+    match /_health/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // مجموعة اختبار للتحقق من الصلاحيات
+    match /test/{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
     }
   }
 }

@@ -17,6 +17,7 @@ import { allDepartments } from '@/lib/departments';
 import { generateEmployeeId } from '@/lib/employee-utils';
 
 import { checkAuthState } from '@/lib/auth-check';
+import Footer from '@/components/footer';
 
 export default function SignupPage() {
   useEffect(() => {
@@ -126,57 +127,60 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4" dir="rtl">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="space-y-2 text-center">
-          <div className="flex flex-col items-center justify-center mb-4">
-            <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
-          </div>
-          <CardTitle className="text-2xl">إنشاء حساب موظف جديد</CardTitle>
-          <CardDescription>
-            أدخل بياناتك لإنشاء حساب في منصة البلاغات.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSignup}>
-          <CardContent className="space-y-4 pt-4">
-             <div className="space-y-2">
-              <Label htmlFor="name">الاسم الكامل</Label>
-              <Input id="name" placeholder="أدخل اسمك" required value={name} onChange={(e) => setName(e.target.value)} />
+    <div className="min-h-screen flex flex-col" dir="rtl">
+      <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="space-y-2 text-center">
+            <div className="flex flex-col items-center justify-center mb-4">
+              <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input id="email" type="email" placeholder="user@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="department">الإدارة التي تعمل بها</Label>
-              <Select dir="rtl" onValueChange={setHomeDepartmentId} value={homeDepartmentId} required>
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="اختر إدارتك" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allDepartments.map(dept => (
-                     <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-2">
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? 'جارٍ الإنشاء...' : 'إنشاء الحساب'}
-            </Button>
-            <Link href="/login/employee" passHref>
-                <Button variant="link" size="sm" className="px-0">
-                    لديك حساب بالفعل؟ تسجيل الدخول
-                </Button>
-            </Link>
-          </CardFooter>
-        </form>
-      </Card>
-    </main>
+            <CardTitle className="text-2xl">إنشاء حساب موظف جديد</CardTitle>
+            <CardDescription>
+              أدخل بياناتك لإنشاء حساب في منصة البلاغات.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSignup}>
+            <CardContent className="space-y-4 pt-4">
+               <div className="space-y-2">
+                <Label htmlFor="name">الاسم الكامل</Label>
+                <Input id="name" placeholder="أدخل اسمك" required value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Input id="email" type="email" placeholder="user@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">كلمة المرور</Label>
+                <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">الإدارة التي تعمل بها</Label>
+                <Select dir="rtl" onValueChange={setHomeDepartmentId} value={homeDepartmentId} required>
+                  <SelectTrigger id="department">
+                    <SelectValue placeholder="اختر إدارتك" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allDepartments.map(dept => (
+                       <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2">
+              <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading ? 'جارٍ الإنشاء...' : 'إنشاء الحساب'}
+              </Button>
+              <Link href="/login/employee" passHref>
+                  <Button variant="link" size="sm" className="px-0">
+                      لديك حساب بالفعل؟ تسجيل الدخول
+                  </Button>
+              </Link>
+            </CardFooter>
+          </form>
+        </Card>
+      </main>
+      <Footer />
+    </div>
   );
 }

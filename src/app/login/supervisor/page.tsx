@@ -14,6 +14,7 @@ import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ensureSystemAdminExists } from '@/lib/ensure-system-admin';
+import Footer from '@/components/footer';
 
 export default function SupervisorLoginPage() {
   const [email, setEmail] = useState('');
@@ -147,104 +148,107 @@ export default function SupervisorLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Link href="/login">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</h1>
+    <div className="min-h-screen flex flex-col" dir="rtl">
+      <div className="flex-1 flex items-center justify-center bg-muted/50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Link href="/login">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2">
+                <Shield className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</h1>
+              </div>
             </div>
-          </div>
-          <div className="text-center">
-            <CardTitle className="text-2xl">تسجيل دخول المشرفين</CardTitle>
-            <CardDescription>
-              قم بتسجيل الدخول للوصول إلى لوحة الإشراف
-            </CardDescription>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-                className="text-left"
-                dir="ltr"
-              />
+            <div className="text-center">
+              <CardTitle className="text-2xl">تسجيل دخول المشرفين</CardTitle>
+              <CardDescription>
+                قم بتسجيل الدخول للوصول إلى لوحة الإشراف
+              </CardDescription>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
-              <div className="relative">
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">البريد الإلكتروني</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="أدخل كلمة المرور"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
-                  className="pl-10"
+                  className="text-left"
+                  dir="ltr"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
               </div>
-            </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-3">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
-              </Button>
               
-              <div className="text-center">
-                <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
-                  العودة لتسجيل دخول الموظفين
-                </Link>
+              <div className="space-y-2">
+                <Label htmlFor="password">كلمة المرور</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="أدخل كلمة المرور"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="pl-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </form>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <h4 className="font-semibold text-sm mb-2">للحصول على صلاحية الإشراف:</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• تواصل مع مدير النظام</li>
-              <li>• اطلب إضافتك كمشرف على إدارة معينة</li>
-              <li>• أو طلب ترقيتك لمدير عام</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-3">
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+                </Button>
+                
+                <div className="text-center">
+                  <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+                    العودة لتسجيل دخول الموظفين
+                  </Link>
+                </div>
+              </div>
+            </form>
+
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold text-sm mb-2">للحصول على صلاحية الإشراف:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• تواصل مع مدير النظام</li>
+                <li>• اطلب إضافتك كمشرف على إدارة معينة</li>
+                <li>• أو طلب ترقيتك لمدير عام</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <Footer />
     </div>
   );
 }

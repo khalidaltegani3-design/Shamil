@@ -9,3 +9,32 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  concurrency: 1000
+
+# Environment variables (public ones that can be seen in browser)
+env:
+  NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyDKtxqu6YRoZQCeD9EoFmxAvc9JLi_d5R8"
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "zoliapp-lite.firebaseapp.com"
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: "zoliapp-lite"
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "zoliapp-lite.firebasestorage.app"
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "476068628948"
+  NEXT_PUBLIC_FIREBASE_APP_ID: "1:476068628948:web:55c0eaf993de1cc553ee41"
+  NEXT_PUBLIC_QNAS_API_BASE_URL: "https://qnas.qa"
+
+# Sensitive variables stored as secrets (must be created separately)
+# To create secrets, use Firebase Console or CLI:
+# firebase apphosting:secrets:set SECRET_NAME --data "secret_value"
+secrets:
+  - variable: QNAS_API_TOKEN
+    secret: QNAS_API_TOKEN
+  - variable: QNAS_API_DOMAIN
+    secret: QNAS_API_DOMAIN
+  - variable: GOOGLE_MAPS_API_KEY
+    secret: GOOGLE_MAPS_API_KEY
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+  - variable: GOOGLE_API_KEY
+    secret: GOOGLE_API_KEY

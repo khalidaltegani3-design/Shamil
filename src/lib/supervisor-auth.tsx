@@ -64,6 +64,7 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         // تحقق من صلاحيات مدير النظام أولاً - مع تنظيف البريد الإلكتروني
         const cleanEmail = (user.email || '').toLowerCase().trim();
         const systemAdminEmail = "sweetdream711711@gmail.com";
+        const testSupervisorEmail = "end2012.19+1@gmail.com"; // للاختبار المؤقت
         
         console.log('SupervisorAuth: Clean email:', cleanEmail);
         console.log('SupervisorAuth: System admin email:', systemAdminEmail);
@@ -89,6 +90,19 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
           return;
         }
 
+        // استثناء مؤقت للاختبار - إزالة هذا في الإنتاج
+        if (cleanEmail === testSupervisorEmail) {
+          console.log('SupervisorAuth: Test supervisor detected (temporary exception)');
+          setHasPermission(true);
+          setUserData({ 
+            role: 'supervisor', 
+            email: user.email || '',
+            displayName: user.displayName || 'مشرف تجريبي'
+          });
+          setIsLoading(false);
+          return;
+        }
+
         // جلب بيانات المستخدم من Firestore للمستخدمين الآخرين
         console.log('SupervisorAuth: Fetching user data from Firestore');
         const userDocRef = doc(db, 'users', user.uid);
@@ -104,6 +118,8 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         const userData = userDoc.data() as UserData;
         setUserData(userData);
         console.log('SupervisorAuth: User data loaded:', userData);
+        console.log('SupervisorAuth: User role:', userData.role);
+        console.log('SupervisorAuth: User email:', userData.email);
 
         // تحقق إضافي لمدير النظام من البيانات المحفوظة
         if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
@@ -124,6 +140,7 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         // تحقق من كونه مشرف بناءً على الدور المحفوظ
         if (userData.role === 'supervisor') {
           console.log('SupervisorAuth: User has supervisor role, granting access');
+          console.log('SupervisorAuth: This user is a valid supervisor');
           
           // للمشرفين الجدد الذين لم يتم تعيين أقسام لهم بعد، منحهم إمكانية الوصول
           // وسيتم توجيههم لاختيار الأقسام لاحقاً في واجهة المشرف
@@ -153,6 +170,8 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         }
 
         console.log('SupervisorAuth: Final supervisor permission:', isSupervisor);
+        console.log('SupervisorAuth: User role was:', userData.role);
+        console.log('SupervisorAuth: Available roles: system_admin, admin, supervisor, employee');
         setHasPermission(isSupervisor);
         setIsLoading(false);
 

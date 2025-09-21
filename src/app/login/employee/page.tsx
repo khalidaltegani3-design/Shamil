@@ -247,6 +247,15 @@ export default function EmployeeLoginPage() {
               <Button className="w-full" type="submit" disabled={isLoading}>
                   {isLoading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول'}
               </Button>
+              
+              <div className="text-center">
+                <Link href="/forgot-password" passHref>
+                  <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary">
+                    نسيت كلمة المرور؟
+                  </Button>
+                </Link>
+              </div>
+              
               <div className="flex justify-between w-full">
                   <Button variant="link" size="sm" className="px-0" onClick={() => router.back()}>
                       الرجوع

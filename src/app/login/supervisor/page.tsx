@@ -230,6 +230,12 @@ export default function SupervisorLoginPage() {
                 </Button>
                 
                 <div className="text-center">
+                  <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary">
+                    نسيت كلمة المرور؟
+                  </Link>
+                </div>
+                
+                <div className="text-center">
                   <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
                     العودة لتسجيل دخول الموظفين
                   </Link>

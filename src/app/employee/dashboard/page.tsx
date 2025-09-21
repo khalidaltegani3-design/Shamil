@@ -69,6 +69,8 @@ export default function EmployeeDashboard() {
   };
 
   const handleViewReports = () => {
+    console.log('🔍 محاولة الانتقال إلى صفحة البلاغات...');
+    console.log('📍 المسار المطلوب: /employee/reports');
     router.push("/employee/reports");
   };
 

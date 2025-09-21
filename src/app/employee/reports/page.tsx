@@ -28,12 +28,23 @@ export default function EmployeeReports() {
 
   useEffect(() => {
     const fetchReports = async () => {
+      console.log('🔍 بداية فحص تقارير الموظف...');
+      console.log('📊 حالة التحميل:', loading);
+      console.log('👤 المستخدم:', user?.email);
+      
+      if (loading) {
+        console.log('⏳ ما زال يتم تحميل بيانات المصادقة...');
+        return;
+      }
+      
       if (!user) {
+        console.log('❌ لا يوجد مستخدم مسجل دخول، توجيه إلى صفحة تسجيل الدخول...');
         router.push("/login/employee");
         return;
       }
 
       try {
+        console.log('🔄 جاري جلب التقارير للمستخدم:', user.uid);
         const q = query(
           collection(db, "reports"),
           where("createdBy", "==", user.uid)
@@ -45,16 +56,17 @@ export default function EmployeeReports() {
           ...doc.data()
         })) as Report[];
 
+        console.log('✅ تم جلب التقارير بنجاح:', reportsData.length);
         setReports(reportsData);
       } catch (error) {
-        console.error("Error fetching reports:", error);
+        console.error("❌ خطأ في جلب التقارير:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchReports();
-  }, [user, router]);
+  }, [user, loading, router]);
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {

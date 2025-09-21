@@ -21,6 +21,9 @@ import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
 import { generateEmployeeId, validateEmployeeId, isEmployeeIdUnique } from '@/lib/employee-utils';
+import { getSupervisorData, getAllActiveSupervisors } from '@/lib/supervisor-management';
+import { promoteToSupervisor, promoteToAdmin, demoteToEmployee, demoteToSupervisor, getUserCurrentRole, updateSupervisorDepartments } from '@/lib/role-management';
+import { ExpandableCell } from '@/components/ui/expandable-cell';
 
 interface UserData {
   uid: string;
@@ -52,6 +55,7 @@ function SystemAdminDashboard() {
   const [supervisorDialogOpen, setSupervisorDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userSupervisorDepartments, setUserSupervisorDepartments] = useState<string[]>([]);
+  const [tempSelectedDepartments, setTempSelectedDepartments] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
@@ -314,68 +318,93 @@ function SystemAdminDashboard() {
   // جلب الأقسام التي يشرف عليها مستخدم معين
   const loadUserSupervisorDepartments = async (userId: string) => {
     try {
-      const supervisedDepts: string[] = [];
+      console.log('🔄 جلب أقسام المشرف:', userId);
       
-      for (const dept of allDepartments) {
-        const supervisorDoc = await getDocs(collection(db, 'departments', dept.id, 'supervisors'));
-        
-        supervisorDoc.forEach(doc => {
-          if (doc.id === userId) {
-            supervisedDepts.push(dept.id);
-          }
-        });
+      // استخدام النظام الجديد
+      const supervisorData = await getSupervisorData(userId);
+      
+      if (supervisorData && supervisorData.isActive) {
+        console.log('📋 أقسام المشرف:', supervisorData.assignedDepartments);
+        setUserSupervisorDepartments(supervisorData.assignedDepartments);
+        setTempSelectedDepartments(supervisorData.assignedDepartments);
+      } else {
+        console.log('📋 لا توجد أقسام مشرف');
+        setUserSupervisorDepartments([]);
+        setTempSelectedDepartments([]);
       }
-      
-      setUserSupervisorDepartments(supervisedDepts);
     } catch (error) {
       console.error('Error loading supervisor departments:', error);
+      setUserSupervisorDepartments([]);
+      setTempSelectedDepartments([]);
     }
   };
 
-  // إدارة صلاحيات الإشراف
+  // إدارة صلاحيات الإشراف (تحديد مؤقت)
   const manageSupervisorPermissions = async (userId: string, departmentId: string, isChecked: boolean) => {
+    // تحديث الحالة المؤقتة فقط، لا نحفظ في قاعدة البيانات بعد
+    if (isChecked) {
+      setTempSelectedDepartments(prev => [...prev.filter(id => id !== departmentId), departmentId]);
+    } else {
+      setTempSelectedDepartments(prev => prev.filter(id => id !== departmentId));
+    }
+  };
+
+  // حفظ تغييرات المشرف
+  const saveSupervisorChanges = async () => {
+    if (!selectedUser) return;
+    
     try {
-      console.log('🔄 إدارة صلاحيات الإشراف:', userId, departmentId, isChecked);
+      console.log('🔄 حفظ تغييرات المشرف:', selectedUser.displayName, tempSelectedDepartments);
       
-      const supervisorRef = doc(db, 'departments', departmentId, 'supervisors', userId);
+      let success = false;
       
-      if (isChecked) {
-        await setDoc(supervisorRef, {
-          assignedAt: new Date(),
-          assignedBy: 'system_admin'
-        });
+      if (tempSelectedDepartments.length > 0) {
+        // إضافة مشرف جديد أو تحديث أقسامه
+        if (selectedUser.role === 'employee') {
+          // ترقية الموظف إلى مشرف
+          success = await promoteToSupervisor(selectedUser.uid, tempSelectedDepartments);
+        } else {
+          // تحديث الأقسام للمشرف الموجود
+          success = await updateSupervisorDepartments(selectedUser.uid, tempSelectedDepartments);
+        }
         
-        console.log('✅ تم منح صلاحية الإشراف');
-        
-        toast({
-          title: "تم منح صلاحية الإشراف",
-          description: `تمت إضافة المستخدم كمشرف على ${allDepartments.find(d => d.id === departmentId)?.name}`
-        });
+        if (success) {
+          toast({
+            title: "تمت العملية بنجاح",
+            description: `تم ${selectedUser.role === 'employee' ? 'ترقية' : 'تحديث'} ${selectedUser.displayName} كمشرف على الأقسام المحددة`,
+          });
+        }
       } else {
-        await deleteDoc(supervisorRef);
+        // إزالة جميع صلاحيات الإشراف (تنزيل إلى موظف)
+        success = await demoteToEmployee(selectedUser.uid);
         
-        console.log('✅ تم إلغاء صلاحية الإشراف');
-        
+        if (success) {
+          toast({
+            title: "تم تنزيل المشرف",
+            description: `تم تنزيل ${selectedUser.displayName} إلى موظف`,
+          });
+        }
+      }
+      
+      if (success) {
+        setSupervisorDialogOpen(false);
+        setSelectedUser(null);
+        setTempSelectedDepartments([]);
+        // البيانات ستحدث تلقائياً عبر onSnapshot
+      } else {
         toast({
-          title: "تم إلغاء صلاحية الإشراف",
-          description: `تم إلغاء إشراف المستخدم على ${allDepartments.find(d => d.id === departmentId)?.name}`
+          title: "خطأ",
+          description: "فشل في حفظ التغييرات. حاول مرة أخرى.",
+          variant: "destructive",
         });
       }
       
-      // إعادة تحميل صلاحيات المستخدم
-      await loadUserSupervisorDepartments(userId);
     } catch (error) {
-      console.error('❌ خطأ في إدارة صلاحيات الإشراف:', error);
-      
-      let errorMessage = "حدث خطأ أثناء تحديث صلاحيات الإشراف";
-      if (error instanceof Error) {
-        errorMessage += `: ${error.message}`;
-      }
-      
+      console.error('❌ خطأ في حفظ تغييرات المشرف:', error);
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: errorMessage
+        description: "حدث خطأ أثناء حفظ التغييرات"
       });
     }
   };
@@ -392,19 +421,41 @@ function SystemAdminDashboard() {
     try {
       console.log('🔄 محاولة تحديث دور المستخدم:', uid, 'إلى:', newRole);
       
-      const userRef = doc(db, 'users', uid);
-      const updateData = {
-        role: newRole,
-        updatedAt: new Date()
-      };
-      
-      await updateDoc(userRef, updateData);
-      console.log('✅ تم تحديث دور المستخدم بنجاح');
+      const currentUserId = auth.currentUser?.uid || 'system';
+      let success = false;
 
-      toast({
-        title: "تم التحديث",
-        description: `تم تحديث دور المستخدم إلى ${getRoleDisplayName(newRole)}`
-      });
+      // الحصول على الدور الحالي
+      const currentRole = await getUserCurrentRole(uid);
+      const currentRoleType = currentRole?.role || 'employee';
+
+      console.log('🔍 الدور الحالي:', currentRoleType, 'الدور الجديد:', newRole);
+
+      // تطبيق التغيير حسب الدور الجديد
+      if (newRole === 'supervisor') {
+        if (currentRoleType === 'employee') {
+          success = await promoteToSupervisor(uid, ['general-monitoring'], currentUserId);
+        } else if (currentRoleType === 'admin') {
+          success = await demoteToSupervisor(uid, ['general-monitoring'], currentUserId);
+        }
+      } else if (newRole === 'admin') {
+        if (currentRoleType !== 'admin') {
+          success = await promoteToAdmin(uid, currentUserId);
+        }
+      } else if (newRole === 'employee') {
+        if (currentRoleType !== 'employee') {
+          success = await demoteToEmployee(uid, currentUserId);
+        }
+      }
+
+      if (success) {
+        console.log('✅ تم تحديث دور المستخدم بنجاح');
+        toast({
+          title: "تم التحديث",
+          description: `تم تحديث دور المستخدم إلى ${getRoleDisplayName(newRole)} فورياً`
+        });
+      } else {
+        throw new Error('فشل في تحديث الدور');
+      }
     } catch (error) {
       console.error('❌ خطأ في تحديث دور المستخدم:', error);
       
@@ -425,50 +476,71 @@ function SystemAdminDashboard() {
   };
 
   // ترقية المستخدم إلى مشرف
-  const promoteToSupervisor = async (user: UserData) => {
+  const handlePromoteToSupervisor = async (user: UserData) => {
     if (user.role === 'employee') {
       console.log('🔄 ترقية إلى مشرف:', user.displayName);
-      await updateUserRole(user.uid, 'supervisor');
-      toast({
-        title: "تمت الترقية",
-        description: `تم ترقية ${user.displayName} إلى مشرف`,
-      });
-    }
-  };
-
-  // تنزيل المشرف إلى موظف
-  const demoteToEmployee = async (user: UserData) => {
-    if (user.role === 'supervisor') {
-      console.log('🔄 تنزيل إلى موظف:', user.displayName);
       
-      // إزالة جميع صلاحيات الإشراف
-      try {
-        for (const dept of allDepartments) {
-          const supervisorRef = doc(db, 'departments', dept.id, 'supervisors', user.uid);
-          await deleteDoc(supervisorRef).catch(() => {}); // تجاهل الأخطاء إذا لم تكن موجودة
-        }
-        console.log('✅ تم إزالة صلاحيات الإشراف');
-      } catch (error) {
-        console.log('⚠️ خطأ في إزالة صلاحيات الإشراف:', error);
-      }
-      
-      await updateUserRole(user.uid, 'employee');
-      toast({
-        title: "تم التنزيل",
-        description: `تم تنزيل ${user.displayName} إلى موظف وإزالة جميع صلاحيات الإشراف`,
-      });
+      // فتح نافذة تحديد الأقسام
+      setSelectedUser(user);
+      await loadUserSupervisorDepartments(user.uid);
+      setSupervisorDialogOpen(true);
     }
   };
 
   // ترقية إلى مدير عام
-  const promoteToAdmin = async (user: UserData) => {
+  const handlePromoteToAdmin = async (user: UserData) => {
     if (user.role === 'supervisor' || user.role === 'employee') {
       console.log('🔄 ترقية إلى مدير عام:', user.displayName);
-      await updateUserRole(user.uid, 'admin');
+      
+      try {
+        const success = await promoteToAdmin(user.uid, auth.currentUser?.uid || 'system_admin');
+        
+        if (success) {
+          toast({
+            title: "تمت الترقية",
+            description: `تم ترقية ${user.displayName} إلى مدير عام فورياً`,
+          });
+        } else {
+          throw new Error('فشل في ترقية المستخدم');
+        }
+      } catch (error) {
+        console.error('خطأ في ترقية المستخدم:', error);
+        toast({
+          title: "خطأ",
+          description: "فشل في ترقية المستخدم إلى مدير عام",
+          variant: "destructive",
+        });
+      } finally {
+        setUpdating(null);
+      }
+    }
+  };
+
+  // تنزيل إلى موظف
+  const handleDemoteToEmployee = async (user: UserData) => {
+    setUpdating(user.uid);
+    try {
+      console.log('🔄 تنزيل إلى موظف:', user.displayName);
+      
+      const success = await demoteToEmployee(user.uid);
+      
+      if (success) {
+        toast({
+          title: "تم التنزيل",
+          description: `تم تنزيل ${user.displayName} إلى موظف`,
+        });
+      } else {
+        throw new Error('فشل في تنزيل المستخدم');
+      }
+    } catch (error) {
+      console.error('خطأ في تنزيل المستخدم:', error);
       toast({
-        title: "تمت الترقية",
-        description: `تم ترقية ${user.displayName} إلى مدير عام`,
+        title: "خطأ",
+        description: "فشل في تنزيل المستخدم إلى موظف",
+        variant: "destructive",
       });
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -836,8 +908,13 @@ function SystemAdminDashboard() {
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.uid}>
-                    <TableCell className="font-medium">
-                      {user.displayName || 'غير محدد'}
+                    <TableCell className="font-medium max-w-[180px]">
+                      <ExpandableCell 
+                        content={user.displayName || 'غير محدد'}
+                        maxWidth="160px"
+                        label="اسم المستخدم"
+                        showCopyButton={false}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -861,9 +938,14 @@ function SystemAdminDashboard() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
+                    <TableCell className="max-w-[200px]">
                       <div className="flex items-center gap-2">
-                        <span className="truncate">{user.email}</span>
+                        <ExpandableCell 
+                          content={user.email}
+                          maxWidth="150px"
+                          label="البريد الإلكتروني"
+                          showCopyButton={true}
+                        />
                         {((user.email?.toLowerCase().trim() === "sweetdream711711@gmail.com") || 
                           user.role === 'system_admin' || 
                           user.isSystemAdmin) && (
@@ -936,7 +1018,7 @@ function SystemAdminDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => promoteToSupervisor(user)}
+                              onClick={() => handlePromoteToSupervisor(user)}
                               disabled={updating === user.uid}
                               className="text-xs"
                             >
@@ -951,7 +1033,7 @@ function SystemAdminDashboard() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => promoteToAdmin(user)}
+                                onClick={() => handlePromoteToAdmin(user)}
                                 disabled={updating === user.uid}
                                 className="text-xs"
                               >
@@ -962,7 +1044,7 @@ function SystemAdminDashboard() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => demoteToEmployee(user)}
+                                onClick={() => handleDemoteToEmployee(user)}
                                 disabled={updating === user.uid}
                                 className="text-xs"
                               >
@@ -1054,7 +1136,7 @@ function SystemAdminDashboard() {
               <div key={department.id} className="flex items-center space-x-2 space-x-reverse">
                 <Checkbox
                   id={department.id}
-                  checked={userSupervisorDepartments.includes(department.id)}
+                  checked={tempSelectedDepartments.includes(department.id)}
                   onCheckedChange={(checked: boolean) => 
                     manageSupervisorPermissions(selectedUser?.uid || '', department.id, checked)
                   }
@@ -1069,9 +1151,27 @@ function SystemAdminDashboard() {
             ))}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSupervisorDialogOpen(false)}>
-              إغلاق
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">
+              ⚠️ ملاحظة: التغييرات لن تُحفظ حتى تضغط على "حفظ التغييرات"
+            </p>
+            <p className="text-sm">
+              الأقسام المحددة: {tempSelectedDepartments.length > 0 
+                ? tempSelectedDepartments.map(id => allDepartments.find(d => d.id === id)?.name).join(', ')
+                : 'لا توجد أقسام محددة'}
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setSupervisorDialogOpen(false);
+              setTempSelectedDepartments(userSupervisorDepartments); // إعادة تعيين التغييرات
+            }}>
+              إلغاء
+            </Button>
+            <Button onClick={saveSupervisorChanges} className="bg-green-600 hover:bg-green-700">
+              <Shield className="ml-2 h-4 w-4" />
+              حفظ التغييرات
             </Button>
           </DialogFooter>
         </DialogContent>

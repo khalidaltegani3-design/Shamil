@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, use } from 'react';
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +76,9 @@ const timelineIcons: { [key: string]: React.ReactNode } = {
 };
 
 
-export default function ReportDetailsPage({ params }: { params: { id: string } }) {
+export default function ReportDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  // فك تغليف params باستخدام React.use()
+  const resolvedParams = use(params);
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,11 +90,11 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
 
 
   useEffect(() => {
-    if (params.id) {
+    if (resolvedParams.id) {
       const fetchReport = async () => {
         setLoading(true);
         try {
-          const reportRef = doc(db, "reports", params.id);
+          const reportRef = doc(db, "reports", resolvedParams.id);
           const reportSnap = await getDoc(reportRef);
 
           if (reportSnap.exists()) {
@@ -110,7 +112,7 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
 
       fetchReport();
     }
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   if (loading) {
     return (
@@ -150,7 +152,7 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-2">
-      <h1 className="text-3xl font-semibold">تفاصيل البلاغ: ...{report.id.slice(-6)}</h1>
+      <h1 className="text-3xl font-semibold">تفاصيل البلاغ: ...{report.id?.slice(-6) || 'غير محدد'}</h1>
 
       <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-[1fr_300px] lg:gap-8">
         <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
@@ -254,7 +256,9 @@ export default function ReportDetailsPage({ params }: { params: { id: string } }
                         </div>
                         <div>
                             <p className="font-semibold">{report.submitterName}</p>
-                            <p className="text-sm text-muted-foreground">{report.submitterId.slice(0, 10)}...</p>
+                            <p className="text-sm text-muted-foreground">
+                                {report.submitterId ? `${report.submitterId.slice(0, 10)}...` : 'معرف غير متوفر'}
+                            </p>
                         </div>
                     </div>
                     <Separator />

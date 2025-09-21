@@ -4,7 +4,6 @@
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Shield, User } from "lucide-react";
-import Footer from "@/components/footer";
 
 export default function RoleSelectionPage() {
   const router = useRouter();
@@ -35,7 +34,6 @@ export default function RoleSelectionPage() {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

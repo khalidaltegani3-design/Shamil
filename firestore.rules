@@ -2,17 +2,51 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
+    // دالة للتحقق من دور المستخدم في قاعدة البيانات
+    function getUserRole(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
     }
 
+    // دالة للتحقق من كون المستخدم مدير نظام
     function isSystemAdmin() {
-      return request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
+      return request.auth != null && (
+        // التحقق بالبريد الإلكتروني أولاً (للمستخدمين الجدد)
+        request.auth.token.email == "sweetdream711711@gmail.com" ||
+        // التحقق من قاعدة البيانات (للمستخدمين الموجودين)
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserRole(request.auth.uid) in ['system_admin', 'admin'])
+      );
     }
 
+    // دالة للتحقق من كون المستخدم مديراً
+    function isAdmin() {
+      return request.auth != null && (
+        isSystemAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserRole(request.auth.uid) == 'admin')
+      );
+    }
+
+    // دالة للتحقق من كون المستخدم مشرفاً في قسم معين
     function isSupervisorOfDept(deptId) {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/departments/$(deptId)/supervisors/$(request.auth.uid));
+      return request.auth != null && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/departments/$(deptId)/supervisors/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/supervisors/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/supervisors/$(request.auth.uid)).data.isActive == true &&
+         deptId in get(/databases/$(database)/documents/supervisors/$(request.auth.uid)).data.assignedDepartments)
+      );
+    }
+
+    // دالة للتحقق من كون المستخدم مشرفاً عموماً
+    function isSupervisor() {
+      return request.auth != null && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserRole(request.auth.uid) == 'supervisor') ||
+        (exists(/databases/$(database)/documents/supervisors/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/supervisors/$(request.auth.uid)).data.isActive == true)
+      );
     }
 
     function userHomeDept(uid) {
@@ -25,39 +59,56 @@ service cloud.firestore {
       return userDoc.data.keys().hasAll(['homeDepartmentId']) && userDoc.data.homeDepartmentId != null;
     }
 
-    // users
+    // users - إدارة المستخدمين
     match /users/{uid} {
+      // قراءة: المدراء يقرؤون الكل، المستخدم يقرأ ملفه الشخصي، المشرفون يقرؤون بيانات موظفيهم، أو مديري النظام بالإيميل
       allow read: if request.auth != null && (
-        request.auth.token.email == "sweetdream711711@gmail.com"  // مدير النظام يقرأ الكل
-        || request.auth.uid == uid  // المستخدم يقرأ وثيقته الخاصة
+        isAdmin() ||
+        request.auth.uid == uid ||
+        isSupervisor() ||
+        request.auth.token.email == "sweetdream711711@gmail.com"
       );
-      allow create: if request.auth != null; // أي مستخدم مصادق يمكنه إنشاء وثيقته
-      allow update: if request.auth != null && (
-        request.auth.uid == uid  // المستخدم يحدث وثيقته الخاصة
-        || request.auth.token.email == "sweetdream711711@gmail.com"  // مدير النظام المحدد
-      );
-      allow delete: if request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com"; // مدير النظام فقط يمكنه الحذف
       
-      // قاعدة خاصة للمدير لإنشاء أي وثيقة مستخدم
-      allow write: if request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
+      // إنشاء: أي مستخدم مصادق يمكنه إنشاء ملفه الشخصي، أو المدراء، أو إذا كان مدير نظام بالإيميل
+      allow create: if request.auth != null && (
+        request.auth.uid == uid ||
+        isAdmin() ||
+        request.auth.token.email == "sweetdream711711@gmail.com"
+      );
+      
+      // تحديث: المستخدم يحدث ملفه أو المدراء يحدثون أي ملف
+      allow update: if request.auth != null && (
+        request.auth.uid == uid ||
+        isAdmin() ||
+        // المشرفون يمكنهم تحديث بيانات الموظفين (باستثناء الدور)
+        (isSupervisor() && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
+      );
+      
+      // حذف: المدراء فقط
+      allow delete: if isAdmin();
     }
 
-    // departments + supervisors subcollection
+    // departments - إدارة الأقسام
     match /departments/{deptId} {
       allow read: if request.auth != null;
-      allow write: if isAdmin(); // إدارة الأقسام من المدير فقط
+      allow write: if isAdmin();
 
+      // supervisors - المشرفون في كل قسم
       match /supervisors/{uid} {
         allow read: if request.auth != null;
-        allow write: if isAdmin(); // التعيين/الإلغاء من المدير فقط
+        allow write: if isAdmin();
       }
     }
 
-    // reports
+    // supervisors - مجموعة المشرفين المنفصلة
+    match /supervisors/{uid} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // reports - إدارة البلاغات
     match /reports/{reportId} {
-      // إنشاء بلاغ: الموظف ينشئ البلاغ
-      // إذا كان له homeDepartmentId، فيجب أن يكون مختلفًا عن إدارة البلاغ
-      // إذا لم يكن له homeDepartmentId، فيمكنه إنشاء بلاغ لأي إدارة
+      // إنشاء بلاغ
       allow create: if request.auth != null
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == "open"
@@ -66,42 +117,58 @@ service cloud.firestore {
           || request.resource.data.departmentId != userHomeDept(request.auth.uid)
         );
 
-      // قراءة: المبلغ يقرأ بلاغاته؛ المشرف يقرأ ما يخص إداراته؛ المدير يقرأ الكل
+      // قراءة البلاغات - السماح للمشرفين والمدراء بقراءة جميع البلاغات لتطبيق الفلترة محلياً
       allow read: if request.auth != null && (
-          isAdmin()
-          || resource.data.createdBy == request.auth.uid
-          || isSupervisorOfDept(resource.data.departmentId)
+          isAdmin() ||
+          isSupervisor() ||
+          resource.data.createdBy == request.auth.uid
       );
 
-      // إغلاق البلاغ: مشرف الإدارة فقط من open → closed
-      allow update: if request.auth != null
-        && resource.data.status == "open"
-        && request.resource.data.status == "closed"
-        && isSupervisorOfDept(resource.data.departmentId);
+      // تحديث البلاغات (إغلاق من المشرفين)
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        (resource.data.status == "open" &&
+         request.resource.data.status == "closed" &&
+         isSupervisorOfDept(resource.data.departmentId))
+      );
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
-    // devices & notifications كما سبق (قراءة ذاتية فقط / كتابة من Functions)
+    // devices & notifications
     match /devices/{token} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create, update, delete: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create, update, delete: if request.auth != null && (
+        isAdmin() ||
+        request.resource.data.userId == request.auth.uid
+      );
     }
 
     match /notifications/{notifId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.toUserId;
-      allow write: if false;
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        request.auth.uid == resource.data.toUserId
+      );
+      allow write: if isAdmin();
     }
 
-    // وثيقة حالة الاتصال - قراءة مسموحة للجميع للتحقق من الاتصال
+    // وثائق النظام والصحة
     match /_health/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
-    // مجموعة اختبار للتحقق من الصلاحيات
+    // مجموعة اختبار
     match /test/{document=**} {
-      allow read, write: if request.auth != null && request.auth.token.email == "sweetdream711711@gmail.com";
+      allow read, write: if request.auth != null;
+    }
+
+    // قواعد افتراضية للمجموعات الجديدة
+    match /{document=**} {
+      allow read, write: if isSystemAdmin();
     }
   }
 }

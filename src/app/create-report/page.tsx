@@ -343,7 +343,10 @@ export default function CreateReportPage() {
                       </TabsList>
                       <TabsContent value="manual" className="mt-4 space-y-4">
                          <div className="relative w-full h-64 rounded-lg overflow-hidden border">
-                            <Map position={position} setPosition={setPosition} />
+                            <Map 
+                              position={position} 
+                              setPosition={setPosition}
+                            />
                          </div>
                          {position && (
                             <p className="text-sm text-muted-foreground pt-1 text-center dir-ltr">
@@ -352,19 +355,31 @@ export default function CreateReportPage() {
                         )}
                       </TabsContent>
                       <TabsContent value="q-address" className="mt-4 space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="zone">رقم المنطقة</Label>
-                                <Input id="zone" placeholder="_ _" value={zone} onChange={(e) => setZone(e.target.value)} />
+                        {/* العنوان القطري (عنواني) */}
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">🏘️</span>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="street">رقم الشارع</Label>
-                                <Input id="street" placeholder="_ _ _" value={street} onChange={(e) => setStreet(e.target.value)} />
+                            <div>
+                              <h4 className="font-medium text-blue-900">اللوحة الزرقاء من "عنواني"</h4>
+                              <p className="text-xs text-blue-700">استخدم بيانات اللوحة الزرقاء الموجودة في الموقع</p>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="building">رقم المبنى</Label>
-                                <Input id="building" placeholder="_ _" value={building} onChange={(e) => setBuilding(e.target.value)} />
-                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                  <Label htmlFor="zone">رقم المنطقة</Label>
+                                  <Input id="zone" placeholder="_ _" value={zone} onChange={(e) => setZone(e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="street">رقم الشارع</Label>
+                                  <Input id="street" placeholder="_ _ _" value={street} onChange={(e) => setStreet(e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="building">رقم المبنى</Label>
+                                  <Input id="building" placeholder="_ _" value={building} onChange={(e) => setBuilding(e.target.value)} />
+                              </div>
+                          </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <Button type="button" className="flex-1" onClick={handleFindQAddress} disabled={isGeocoding}>
@@ -377,7 +392,10 @@ export default function CreateReportPage() {
                             </Button>
                         </div>
                          <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                            <Map position={position} setPosition={setPosition} />
+                            <Map 
+                              position={position} 
+                              setPosition={setPosition}
+                            />
                          </div>
                       </TabsContent>
                     </Tabs>

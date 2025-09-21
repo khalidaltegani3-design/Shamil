@@ -27,7 +27,8 @@ export default function SupervisorLoginPage() {
   const checkSupervisorPermissions = async (userId: string, userEmail: string) => {
     try {
       // تحقق من كونه مدير النظام أولاً - أولوية قصوى
-      if (userEmail === "Sweetdream711711@gmail.com") {
+      const cleanEmail = (userEmail || '').toLowerCase().trim();
+      if (cleanEmail === "sweetdream711711@gmail.com") {
         console.log('System admin detected:', userEmail);
         return true;
       }
@@ -44,9 +45,21 @@ export default function SupervisorLoginPage() {
       const userData = userDoc.data();
       console.log('User data from Firestore:', userData);
       
+      // تحقق من كونه مدير نظام
+      if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
+        console.log('User is system admin');
+        return true;
+      }
+      
       // تحقق من كونه مدير عام
       if (userData.role === 'admin') {
         console.log('User is admin');
+        return true;
+      }
+
+      // تحقق من كونه مشرف (من وثيقة المستخدم)
+      if (userData.role === 'supervisor') {
+        console.log('User is supervisor (from user document)');
         return true;
       }
 
@@ -69,7 +82,8 @@ export default function SupervisorLoginPage() {
     } catch (error) {
       console.error('Error checking permissions:', error);
       // في حالة الخطأ، السماح لمدير النظام بالدخول
-      if (userEmail === "Sweetdream711711@gmail.com") {
+      const cleanEmail = (userEmail || '').toLowerCase().trim();
+      if (cleanEmail === "sweetdream711711@gmail.com") {
         return true;
       }
       return false;
@@ -228,6 +242,12 @@ export default function SupervisorLoginPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
                 </Button>
+                
+                <div className="text-center">
+                  <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary">
+                    نسيت كلمة المرور؟
+                  </Link>
+                </div>
                 
                 <div className="text-center">
                   <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">

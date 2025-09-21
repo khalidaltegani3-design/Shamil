@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Shield, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { ensureSystemAdminExists } from '@/lib/ensure-system-admin';
+import { getSupervisorData } from '@/lib/supervisor-management';
 
 interface SupervisorAuthProps {
   children: React.ReactNode;
@@ -139,14 +140,19 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
           return;
         }
 
-        // تحقق من كونه مشرف بناءً على الدور المحفوظ
-        if (userData.role === 'supervisor') {
-          console.log('SupervisorAuth: User has supervisor role, granting access');
-          console.log('SupervisorAuth: This user is a valid supervisor');
-          
-          // للمشرفين الجدد الذين لم يتم تعيين أقسام لهم بعد، منحهم إمكانية الوصول
-          // وسيتم توجيههم لاختيار الأقسام لاحقاً في واجهة المشرف
+        // تحقق من كونه مشرف باستخدام النظام الجديد
+        console.log('SupervisorAuth: Checking supervisor status using new system');
+        const supervisorData = await getSupervisorData(user.uid);
+        
+        if (supervisorData && supervisorData.isActive) {
+          console.log('SupervisorAuth: User is active supervisor with new system:', supervisorData);
           setHasPermission(true);
+          setUserData({
+            role: 'supervisor',
+            email: user.email || '',
+            displayName: user.displayName || supervisorData.displayName,
+            homeDepartmentId: supervisorData.homeDepartmentId
+          });
           setIsLoading(false);
           return;
         }
@@ -320,51 +326,16 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
       };
     }
 
-    // جلب بيانات المستخدم
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
+    // تحقق من النظام الجديد للمشرفين
+    console.log('checkUserSupervisorPermissions: Checking with new supervisor system');
+    const supervisorData = await getSupervisorData(userId);
     
-    const userData = userDoc.exists() ? userDoc.data() : null;
-    
-    // تحقق إضافي من قاعدة البيانات
-    if (userData?.role === 'system_admin' || userData?.isSystemAdmin === true) {
-      console.log('checkUserSupervisorPermissions: System admin confirmed from database');
-      return {
-        isSystemAdmin: true,
-        isAdmin: true,
-        supervisedDepartments: []
-      };
-    }
-    
-    const isAdmin = userData?.role === 'admin';
-    const isSupervisor = userData?.role === 'supervisor';
-
-    if (isAdmin) {
-      return {
-        isSystemAdmin: false,
-        isAdmin: true,
-        supervisedDepartments: []
-      };
-    }
-
-    if (isSupervisor) {
-      // إذا كان مشرفاً، ابحث عن الأقسام التي يشرف عليها
-      const supervisedDepartments: string[] = [];
-      const departmentsSnapshot = await getDocs(collection(db, 'departments'));
-
-      for (const deptDoc of departmentsSnapshot.docs) {
-        const supervisorRef = doc(db, 'departments', deptDoc.id, 'supervisors', userId);
-        const supervisorDoc = await getDoc(supervisorRef);
-        
-        if (supervisorDoc.exists()) {
-          supervisedDepartments.push(deptDoc.id);
-        }
-      }
-
+    if (supervisorData && supervisorData.isActive) {
+      console.log('checkUserSupervisorPermissions: Active supervisor found:', supervisorData);
       return {
         isSystemAdmin: false,
         isAdmin: false,
-        supervisedDepartments
+        supervisedDepartments: supervisorData.assignedDepartments
       };
     }
 

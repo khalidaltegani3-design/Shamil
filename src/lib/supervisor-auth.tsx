@@ -27,7 +27,27 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const router = useRouter();
+
+  const retryPermissionCheck = async () => {
+    setIsRetrying(true);
+    setIsLoading(true);
+    setHasPermission(false);
+    
+    // إعادة تحديث الرمز المميز
+    if (user) {
+      try {
+        await user.getIdToken(true);
+        console.log('Token refreshed, rechecking permissions');
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+      }
+    }
+    
+    setIsRetrying(false);
+    // السماح لـ useEffect بإعادة التشغيل
+  };
 
   useEffect(() => {
     async function checkSupervisorPermission() {
@@ -55,11 +75,15 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
           // ضمان وجود وثيقة مدير النظام
           await ensureSystemAdminExists();
           
+          // إجبار تحديث claims إذا لزم الأمر
+          await user.getIdToken(true);
+          
           setHasPermission(true);
           setUserData({ 
             role: 'system_admin', 
             email: user.email || '',
-            displayName: user.displayName || 'مدير النظام'
+            displayName: user.displayName || 'مدير النظام',
+            isSystemAdmin: true
           });
           setIsLoading(false);
           return;
@@ -125,12 +149,13 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         console.error('خطأ في التحقق من صلاحيات الإشراف:', error);
         
         // في حالة الخطأ، السماح لمدير النظام بالدخول
-        if (user.email === "Sweetdream711711@gmail.com") {
+        const cleanEmailForError = (user.email || '').toLowerCase().trim();
+        if (cleanEmailForError === "sweetdream711711@gmail.com") {
           console.log('SupervisorAuth: Error occurred, but allowing system admin');
           setHasPermission(true);
           setUserData({ 
             role: 'system_admin', 
-            email: user.email,
+            email: user.email || '',
             displayName: user.displayName || 'مدير النظام'
           });
         } else {
@@ -141,7 +166,7 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
     }
 
     checkSupervisorPermission();
-  }, [user, loading, router]);
+  }, [user, loading, router, isRetrying]);
 
   if (loading || isLoading) {
     return (
@@ -183,7 +208,22 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
               </ul>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => router.push('/')} className="flex-1">
+              <Button onClick={retryPermissionCheck} className="flex-1" disabled={isRetrying}>
+                {isRetrying ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    جاري إعادة المحاولة...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="ml-2 h-4 w-4" />
+                    إعادة فحص الصلاحيات
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => router.push('/')} variant="outline" className="flex-1">
                 <ArrowLeft className="ml-2 h-4 w-4" />
                 العودة للصفحة الرئيسية
               </Button>

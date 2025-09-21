@@ -34,11 +34,17 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      // إعدادات مخصصة لرابط إعادة التعيين
+      const actionCodeSettings = {
+        url: `${window.location.origin}/login`, // رابط العودة بعد إعادة التعيين
+        handleCodeInApp: false
+      };
+
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setIsEmailSent(true);
       toast({
         title: "تم الإرسال بنجاح",
-        description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني"
+        description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني من نظام شامل"
       });
     } catch (error: any) {
       console.error("خطأ في إرسال البريد الإلكتروني:", error);
@@ -79,7 +85,7 @@ export default function ForgotPasswordPage() {
             </div>
             <CardTitle className="text-2xl">تم الإرسال بنجاح</CardTitle>
             <CardDescription>
-              تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني
+              تم إرسال رابط إعادة تعيين كلمة المرور من نظام شامل إلى بريدك الإلكتروني
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -87,7 +93,11 @@ export default function ForgotPasswordPage() {
               <Mail className="h-4 w-4" />
               <AlertDescription>
                 تحقق من صندوق الوارد وصندوق الرسائل المرفوضة في بريدك الإلكتروني
-                <strong className="block mt-1">{email}</strong>
+                <br />
+                <strong className="block mt-1">الإيميل: {email}</strong>
+                <span className="text-xs text-muted-foreground block mt-1">
+                  الرسالة مرسلة من نظام شامل للبلاغات
+                </span>
               </AlertDescription>
             </Alert>
             

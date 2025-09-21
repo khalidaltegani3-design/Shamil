@@ -95,6 +95,7 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         if (cleanEmail === testSupervisorEmail) {
           console.log('SupervisorAuth: Test supervisor detected (temporary exception)');
           console.log('SupervisorAuth: Granting full supervisor access for khalid');
+          console.log('SupervisorAuth: Email matched:', cleanEmail, '===', testSupervisorEmail);
           setHasPermission(true);
           setUserData({ 
             role: 'supervisor', 
@@ -105,6 +106,8 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
           setIsLoading(false);
           return;
         }
+
+        console.log('SupervisorAuth: Email check failed. Clean email:', cleanEmail, 'Test email:', testSupervisorEmail);
 
         // جلب بيانات المستخدم من Firestore للمستخدمين الآخرين
         console.log('SupervisorAuth: Fetching user data from Firestore');

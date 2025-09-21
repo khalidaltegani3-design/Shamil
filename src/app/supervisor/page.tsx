@@ -7,12 +7,14 @@ import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy
 import { db, auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { checkUserSupervisorPermissions } from "@/lib/supervisor-auth";
 import {
   ListFilter,
   MoreHorizontal,
   Crown,
   Users,
   Settings,
+  AlertTriangle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -250,6 +252,11 @@ export default function SupervisorDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
   const [user, loading] = useAuthState(auth);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+  const [userPermissions, setUserPermissions] = useState({
+    isSystemAdmin: false,
+    isAdmin: false,
+    supervisedDepartments: [] as string[]
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -261,20 +268,21 @@ export default function SupervisorDashboard() {
       
       if (cleanEmail === systemAdminEmail) {
         setIsSystemAdmin(true);
+        setUserPermissions({
+          isSystemAdmin: true,
+          isAdmin: true,
+          supervisedDepartments: []
+        });
         return;
       }
 
-      // تحقق من قاعدة البيانات
+      // تحقق من صلاحيات المستخدم
       try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
-            setIsSystemAdmin(true);
-          }
-        }
+        const permissions = await checkUserSupervisorPermissions(user.uid);
+        setUserPermissions(permissions);
+        setIsSystemAdmin(permissions.isSystemAdmin);
       } catch (error) {
-        console.error('Error checking system admin status:', error);
+        console.error('Error checking user permissions:', error);
       }
     }
 
@@ -341,6 +349,34 @@ export default function SupervisorDashboard() {
                   <Settings className="h-4 w-4" />
                   إعدادات النظام
                 </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* بطاقة تحذير للمشرفين الذين لم يتم تعيين أقسام لهم */}
+      {!userPermissions.isSystemAdmin && !userPermissions.isAdmin && userPermissions.supervisedDepartments.length === 0 && (
+        <Card className="mb-6 border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-orange-100">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-orange-100 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-orange-800">لم يتم تعيين أقسام للإشراف</h3>
+                <p className="text-sm text-orange-700">
+                  تم ترقيتك إلى مشرف ولكن لم يتم تحديد الأقسام التي ستشرف عليها بعد. 
+                  يرجى التواصل مع مدير النظام لتحديد صلاحياتك.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-orange-600 font-medium">
+                  تواصل مع مدير النظام
+                </p>
+                <p className="text-xs text-orange-500">
+                  sweetdream711711@gmail.com
+                </p>
               </div>
             </div>
           </CardContent>

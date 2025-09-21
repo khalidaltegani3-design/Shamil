@@ -121,8 +121,19 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
           return;
         }
 
-        // تحقق من كونه مشرف في أي إدارة
-        console.log('SupervisorAuth: Checking supervisor permissions');
+        // تحقق من كونه مشرف بناءً على الدور المحفوظ
+        if (userData.role === 'supervisor') {
+          console.log('SupervisorAuth: User has supervisor role, granting access');
+          
+          // للمشرفين الجدد الذين لم يتم تعيين أقسام لهم بعد، منحهم إمكانية الوصول
+          // وسيتم توجيههم لاختيار الأقسام لاحقاً في واجهة المشرف
+          setHasPermission(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // تحقق من كونه مشرف في أي إدارة (للتوافق مع النظام القديم)
+        console.log('SupervisorAuth: Checking supervisor permissions in departments');
         const supervisorsQuery = query(
           collection(db, 'departments'),
         );
@@ -285,12 +296,34 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
     }
     
     const isAdmin = userData?.role === 'admin';
+    const isSupervisor = userData?.role === 'supervisor';
 
     if (isAdmin) {
       return {
         isSystemAdmin: false,
         isAdmin: true,
         supervisedDepartments: []
+      };
+    }
+
+    if (isSupervisor) {
+      // إذا كان مشرفاً، ابحث عن الأقسام التي يشرف عليها
+      const supervisedDepartments: string[] = [];
+      const departmentsSnapshot = await getDocs(collection(db, 'departments'));
+
+      for (const deptDoc of departmentsSnapshot.docs) {
+        const supervisorRef = doc(db, 'departments', deptDoc.id, 'supervisors', userId);
+        const supervisorDoc = await getDoc(supervisorRef);
+        
+        if (supervisorDoc.exists()) {
+          supervisedDepartments.push(deptDoc.id);
+        }
+      }
+
+      return {
+        isSystemAdmin: false,
+        isAdmin: false,
+        supervisedDepartments
       };
     }
 

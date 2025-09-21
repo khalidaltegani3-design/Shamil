@@ -428,10 +428,18 @@ function SystemAdminDashboard() {
   const promoteToSupervisor = async (user: UserData) => {
     if (user.role === 'employee') {
       console.log('🔄 ترقية إلى مشرف:', user.displayName);
+      
+      // أولاً، ترقية الدور
       await updateUserRole(user.uid, 'supervisor');
+      
+      // ثم فتح نافذة تحديد الأقسام
+      setSelectedUser(user);
+      await loadUserSupervisorDepartments(user.uid);
+      setSupervisorDialogOpen(true);
+      
       toast({
         title: "تمت الترقية",
-        description: `تم ترقية ${user.displayName} إلى مشرف`,
+        description: `تم ترقية ${user.displayName} إلى مشرف. حدد الآن الأقسام التي سيشرف عليها.`,
       });
     }
   };

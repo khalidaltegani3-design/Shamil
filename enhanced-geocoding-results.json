@@ -1,0 +1,62 @@
+[
+  {
+    "zone": "7",
+    "street": "15",
+    "building": "8",
+    "zoneName": "السد",
+    "coordinates": {
+      "lat": 25.262600000000003,
+      "lng": 51.5667
+    },
+    "isValid": true,
+    "distance": "2543 متر"
+  },
+  {
+    "zone": "1",
+    "street": "10",
+    "building": "5",
+    "zoneName": "الدوحة - وسط المدينة",
+    "coordinates": {
+      "lat": 25.3009,
+      "lng": 51.5304
+    },
+    "isValid": true,
+    "distance": "1722 متر"
+  },
+  {
+    "zone": "2",
+    "street": "25",
+    "building": "12",
+    "zoneName": "الريان",
+    "coordinates": {
+      "lat": 25.3609,
+      "lng": 51.4354
+    },
+    "isValid": true,
+    "distance": "733 متر"
+  },
+  {
+    "zone": "5",
+    "street": "8",
+    "building": "3",
+    "zoneName": "العزيزية",
+    "coordinates": {
+      "lat": 25.3286,
+      "lng": 51.4827
+    },
+    "isValid": true,
+    "distance": "1322 متر"
+  },
+  {
+    "zone": "6",
+    "street": "30",
+    "building": "20",
+    "zoneName": "النصر",
+    "coordinates": {
+      "lat": 25.2782,
+      "lng": 51.559
+    },
+    "isValid": true,
+    "distance": "1587 متر"
+  }
+]

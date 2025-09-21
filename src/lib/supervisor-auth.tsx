@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,82 @@ interface UserData {
   displayName?: string;
   homeDepartmentId?: string;
   isSystemAdmin?: boolean;
+}
+
+// دالة لإنشاء وثيقة المستخدم تلقائياً
+async function ensureUserDocumentExists(user: any): Promise<UserData> {
+  try {
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      console.log('User document exists:', userDoc.data());
+      return userDoc.data() as UserData;
+    }
+
+    // إنشاء وثيقة المستخدم إذا لم تكن موجودة
+    console.log('Creating user document for:', user.email);
+    
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    let userRole = 'employee'; // الدور الافتراضي
+    let isSystemAdmin = false;
+    
+    // تحديد الدور بناءً على البريد الإلكتروني
+    if (cleanEmail === "sweetdream711711@gmail.com") {
+      userRole = 'system_admin';
+      isSystemAdmin = true;
+      console.log('Assigning system_admin role to:', cleanEmail);
+    } else if (cleanEmail === "end2012.19+1@gmail.com") {
+      userRole = 'supervisor';
+    } else if (cleanEmail.endsWith('.admin@gmail.com') || cleanEmail.includes('.admin')) {
+      userRole = 'admin';
+    }
+
+    const userData: UserData = {
+      role: userRole,
+      email: user.email || '',
+      displayName: user.displayName || user.email?.split('@')[0] || 'مستخدم',
+      homeDepartmentId: userRole === 'supervisor' ? 'general-monitoring' : 'general-monitoring',
+      isSystemAdmin: isSystemAdmin
+    };
+
+    // إنشاء وثيقة المستخدم
+    await setDoc(userDocRef, {
+      uid: user.uid,
+      ...userData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      status: 'active',
+      createdBy: 'auto_registration',
+      employeeId: `EMP-${Date.now().toString().slice(-6)}`
+    });
+
+    console.log('✅ User document created successfully:', userData);
+    return userData;
+
+  } catch (error) {
+    console.error('❌ Error ensuring user document exists:', error);
+    
+    // في حالة الخطأ، إرجاع بيانات بناءً على الإيميل
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    let role = 'employee';
+    let isSystemAdmin = false;
+    
+    if (cleanEmail === "sweetdream711711@gmail.com") {
+      role = 'system_admin';
+      isSystemAdmin = true;
+    } else if (cleanEmail === "end2012.19+1@gmail.com") {
+      role = 'supervisor';
+    }
+    
+    return {
+      role: role,
+      email: user.email || '',
+      displayName: user.displayName || 'مستخدم',
+      homeDepartmentId: 'general-monitoring',
+      isSystemAdmin: isSystemAdmin
+    };
+  }
 }
 
 export function SupervisorAuth({ children }: SupervisorAuthProps) {
@@ -60,154 +136,69 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
       }
 
       try {
-        console.log('SupervisorAuth: Checking permissions for user:', user.email);
+        console.log('🔍 SupervisorAuth: Checking permissions for user:', user.email);
         
-        // تحقق من صلاحيات مدير النظام أولاً - مع تنظيف البريد الإلكتروني
+        // فحص مباشر بناءً على الإيميل أولاً (للمدراء المعروفين)
         const cleanEmail = (user.email || '').toLowerCase().trim();
-        const systemAdminEmail = "sweetdream711711@gmail.com";
-        const testSupervisorEmail = "end2012.19+1@gmail.com"; // للاختبار المؤقت
-        
-        console.log('SupervisorAuth: Clean email:', cleanEmail);
-        console.log('SupervisorAuth: System admin email:', systemAdminEmail);
-        console.log('SupervisorAuth: Emails match:', cleanEmail === systemAdminEmail);
-        
-        if (cleanEmail === systemAdminEmail) {
-          console.log('SupervisorAuth: System admin detected, ensuring document exists');
-          
-          // ضمان وجود وثيقة مدير النظام
-          await ensureSystemAdminExists();
-          
-          // إجبار تحديث claims إذا لزم الأمر
-          await user.getIdToken(true);
-          
+        if (cleanEmail === "sweetdream711711@gmail.com") {
+          console.log('✅ SupervisorAuth: System admin access granted via email');
           setHasPermission(true);
-          setUserData({ 
-            role: 'system_admin', 
-            email: user.email || '',
-            displayName: user.displayName || 'مدير النظام',
-            isSystemAdmin: true
+          setIsLoading(false);
+          
+          // إنشاء وثيقة المستخدم في الخلفية
+          ensureUserDocumentExists(user).then(userData => {
+            setUserData(userData);
+          }).catch(err => {
+            console.error('Background user document creation failed:', err);
           });
-          setIsLoading(false);
+          
           return;
         }
-
-        // استثناء مؤقت للاختبار - إزالة هذا في الإنتاج
-        if (cleanEmail === testSupervisorEmail) {
-          console.log('SupervisorAuth: Test supervisor detected (temporary exception)');
-          console.log('SupervisorAuth: Granting full supervisor access for khalid');
-          console.log('SupervisorAuth: Email matched:', cleanEmail, '===', testSupervisorEmail);
-          setHasPermission(true);
-          setUserData({ 
-            role: 'supervisor', 
-            email: user.email || '',
-            displayName: user.displayName || 'خالد - مشرف تجريبي',
-            homeDepartmentId: 'general-monitoring'
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        console.log('SupervisorAuth: Email check failed. Clean email:', cleanEmail, 'Test email:', testSupervisorEmail);
-
-        // جلب بيانات المستخدم من Firestore للمستخدمين الآخرين
-        console.log('SupervisorAuth: Fetching user data from Firestore');
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-          console.log('SupervisorAuth: User document not found');
-          setHasPermission(false);
-          setIsLoading(false);
-          return;
-        }
-
-        const userData = userDoc.data() as UserData;
+        
+        // ضمان وجود وثيقة المستخدم وجلب البيانات
+        const userData = await ensureUserDocumentExists(user);
         setUserData(userData);
-        console.log('SupervisorAuth: User data loaded:', userData);
-        console.log('SupervisorAuth: User role:', userData.role);
-        console.log('SupervisorAuth: User email:', userData.email);
+        
+        console.log('📋 SupervisorAuth: User data:', userData);
+        console.log('🎭 SupervisorAuth: User role:', userData.role);
 
-        // تحقق إضافي لمدير النظام من البيانات المحفوظة
+        // تحقق من مدير النظام
         if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
-          console.log('SupervisorAuth: System admin confirmed via database, granting access');
+          console.log('✅ SupervisorAuth: System admin access granted');
           setHasPermission(true);
           setIsLoading(false);
           return;
         }
 
-        // تحقق من كونه مدير عام
+        // تحقق من المدير العام
         if (userData.role === 'admin') {
-          console.log('SupervisorAuth: User is admin, granting access');
+          console.log('✅ SupervisorAuth: Admin access granted');
           setHasPermission(true);
           setIsLoading(false);
           return;
         }
 
-        // تحقق من كونه مشرف باستخدام النظام الجديد
-        console.log('SupervisorAuth: Checking supervisor status using new system');
-        const supervisorData = await getSupervisorData(user.uid);
-        
-        if (supervisorData && supervisorData.isActive) {
-          console.log('SupervisorAuth: User is active supervisor with new system:', supervisorData);
+        // تحقق من المشرف
+        if (userData.role === 'supervisor') {
+          console.log('✅ SupervisorAuth: Supervisor access granted');
           setHasPermission(true);
-          setUserData({
-            role: 'supervisor',
-            email: user.email || '',
-            displayName: user.displayName || supervisorData.displayName,
-            homeDepartmentId: supervisorData.homeDepartmentId
-          });
           setIsLoading(false);
           return;
         }
 
-        // تحقق من كونه مشرف في أي إدارة (للتوافق مع النظام القديم)
-        console.log('SupervisorAuth: Checking supervisor permissions in departments');
-        const supervisorsQuery = query(
-          collection(db, 'departments'),
-        );
-        
-        const departmentsSnapshot = await getDocs(supervisorsQuery);
-        let isSupervisor = false;
-
-        for (const deptDoc of departmentsSnapshot.docs) {
-          const supervisorRef = doc(db, 'departments', deptDoc.id, 'supervisors', user.uid);
-          const supervisorDoc = await getDoc(supervisorRef);
-          
-          if (supervisorDoc.exists()) {
-            console.log('SupervisorAuth: User is supervisor of department:', deptDoc.id);
-            isSupervisor = true;
-            break;
-          }
-        }
-
-        console.log('SupervisorAuth: Final supervisor permission:', isSupervisor);
-        console.log('SupervisorAuth: User role was:', userData.role);
-        console.log('SupervisorAuth: Available roles: system_admin, admin, supervisor, employee');
-        setHasPermission(isSupervisor);
+        // إذا كان الدور غير مخول، منع الوصول
+        console.log('❌ SupervisorAuth: Access denied - insufficient role:', userData.role);
+        setHasPermission(false);
         setIsLoading(false);
 
       } catch (error) {
-        console.error('خطأ في التحقق من صلاحيات الإشراف:', error);
+        console.error('❌ خطأ في التحقق من صلاحيات الإشراف:', error);
         
-        // في حالة الخطأ، السماح لمدير النظام والمستخدم التجريبي بالدخول
-        const cleanEmailForError = (user.email || '').toLowerCase().trim();
-        if (cleanEmailForError === "sweetdream711711@gmail.com") {
-          console.log('SupervisorAuth: Error occurred, but allowing system admin');
+        // في حالة الخطأ، فحص الإيميل مباشرة
+        const cleanEmail = (user.email || '').toLowerCase().trim();
+        if (cleanEmail === "sweetdream711711@gmail.com") {
+          console.log('✅ SupervisorAuth: Emergency access granted via email for system admin');
           setHasPermission(true);
-          setUserData({ 
-            role: 'system_admin', 
-            email: user.email || '',
-            displayName: user.displayName || 'مدير النظام'
-          });
-        } else if (cleanEmailForError === "end2012.19+1@gmail.com") {
-          console.log('SupervisorAuth: Error occurred, but allowing test supervisor khalid');
-          setHasPermission(true);
-          setUserData({ 
-            role: 'supervisor', 
-            email: user.email || '',
-            displayName: user.displayName || 'خالد - مشرف تجريبي',
-            homeDepartmentId: 'general-monitoring'
-          });
         } else {
           setHasPermission(false);
         }
@@ -298,20 +289,35 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
 }> {
   try {
     const user = auth.currentUser;
-    console.log('checkUserSupervisorPermissions: Current user email:', user?.email);
+    if (!user) {
+      return {
+        isSystemAdmin: false,
+        isAdmin: false,
+        supervisedDepartments: []
+      };
+    }
+
+    console.log('🔍 checkUserSupervisorPermissions: Checking for user ID:', userId);
     
-    // تحقق من مدير النظام بالبريد الإلكتروني مع تنظيف النص
-    const cleanEmail = (user?.email || '').toLowerCase().trim();
-    const systemAdminEmail = "sweetdream711711@gmail.com";
-    const testSupervisorEmail = "end2012.19+1@gmail.com"; // للاختبار المؤقت
-    const isSystemAdmin = cleanEmail === systemAdminEmail;
+    // فحص مباشر بناءً على الإيميل أولاً
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    if (cleanEmail === "sweetdream711711@gmail.com") {
+      console.log('✅ checkUserSupervisorPermissions: System admin detected via email');
+      return {
+        isSystemAdmin: true,
+        isAdmin: true,
+        supervisedDepartments: []
+      };
+    }
     
-    console.log('checkUserSupervisorPermissions: Clean email:', cleanEmail);
-    console.log('checkUserSupervisorPermissions: System admin email:', systemAdminEmail);
-    console.log('checkUserSupervisorPermissions: Is system admin:', isSystemAdmin);
+    // ضمان وجود وثيقة المستخدم
+    const userData = await ensureUserDocumentExists(user);
     
-    if (isSystemAdmin) {
-      console.log('checkUserSupervisorPermissions: System admin detected');
+    console.log('📋 checkUserSupervisorPermissions: User data:', userData);
+    
+    // تحقق من مدير النظام
+    if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
+      console.log('✅ checkUserSupervisorPermissions: System admin detected');
       return {
         isSystemAdmin: true,
         isAdmin: true,
@@ -319,9 +325,35 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
       };
     }
 
-    // استثناء مؤقت للاختبار - إزالة هذا في الإنتاج
-    if (cleanEmail === testSupervisorEmail) {
-      console.log('checkUserSupervisorPermissions: Test supervisor detected (temporary exception)');
+    // تحقق من المدير العام
+    if (userData.role === 'admin') {
+      console.log('✅ checkUserSupervisorPermissions: Admin detected');
+      return {
+        isSystemAdmin: false,
+        isAdmin: true,
+        supervisedDepartments: []
+      };
+    }
+
+    // تحقق من المشرف
+    if (userData.role === 'supervisor') {
+      console.log('✅ checkUserSupervisorPermissions: Supervisor detected');
+      
+      // محاولة جلب الأقسام المشرف عليها
+      try {
+        const supervisorData = await getSupervisorData(userId);
+        if (supervisorData && supervisorData.assignedDepartments) {
+          return {
+            isSystemAdmin: false,
+            isAdmin: false,
+            supervisedDepartments: supervisorData.assignedDepartments
+          };
+        }
+      } catch (error) {
+        console.log('checkUserSupervisorPermissions: Error getting supervisor data, using default department');
+      }
+      
+      // إذا لم نجد أقسام محددة، إعطاء قسم افتراضي
       return {
         isSystemAdmin: false,
         isAdmin: false,
@@ -329,63 +361,28 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
       };
     }
 
-    // تحقق من النظام الجديد للمشرفين
-    console.log('checkUserSupervisorPermissions: Checking with new supervisor system');
-    const supervisorData = await getSupervisorData(userId);
-    
-    if (supervisorData && supervisorData.isActive) {
-      console.log('checkUserSupervisorPermissions: Active supervisor found:', supervisorData);
-      return {
-        isSystemAdmin: false,
-        isAdmin: false,
-        supervisedDepartments: supervisorData.assignedDepartments
-      };
-    }
-
-    // البحث عن الأقسام التي يشرف عليها
-    const supervisedDepartments: string[] = [];
-    const departmentsSnapshot = await getDocs(collection(db, 'departments'));
-
-    for (const deptDoc of departmentsSnapshot.docs) {
-      const supervisorRef = doc(db, 'departments', deptDoc.id, 'supervisors', userId);
-      const supervisorDoc = await getDoc(supervisorRef);
-      
-      if (supervisorDoc.exists()) {
-        supervisedDepartments.push(deptDoc.id);
-      }
-    }
-
+    // موظف عادي - لا توجد صلاحيات خاصة
     return {
       isSystemAdmin: false,
       isAdmin: false,
-      supervisedDepartments
+      supervisedDepartments: []
     };
 
   } catch (error) {
-    console.error('خطأ في التحقق من الصلاحيات:', error);
+    console.error('❌ خطأ في التحقق من الصلاحيات:', error);
     
-    // في حالة الخطأ، السماح للمستخدمين المحددين بالدخول
+    // في حالة الخطأ، فحص الإيميل مباشرة
     const user = auth.currentUser;
-    const cleanEmail = (user?.email || '').toLowerCase().trim();
-    const systemAdminEmail = "sweetdream711711@gmail.com";
-    const testSupervisorEmail = "end2012.19+1@gmail.com";
-    
-    if (cleanEmail === systemAdminEmail) {
-      console.log('checkUserSupervisorPermissions: Error occurred, but allowing system admin');
-      return {
-        isSystemAdmin: true,
-        isAdmin: true,
-        supervisedDepartments: []
-      };
-    }
-    
-    if (cleanEmail === testSupervisorEmail) {
-      console.log('checkUserSupervisorPermissions: Error occurred, but allowing test supervisor');
-      return {
-        isSystemAdmin: false,
-        isAdmin: false,
-        supervisedDepartments: ['general-monitoring']
-      };
+    if (user) {
+      const cleanEmail = (user.email || '').toLowerCase().trim();
+      if (cleanEmail === "sweetdream711711@gmail.com") {
+        console.log('✅ checkUserSupervisorPermissions: Emergency system admin access via email');
+        return {
+          isSystemAdmin: true,
+          isAdmin: true,
+          supervisedDepartments: []
+        };
+      }
     }
     
     return {

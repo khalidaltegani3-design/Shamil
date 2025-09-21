@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { 
   doc, 
   getDoc, 
@@ -38,7 +38,6 @@ export async function addSupervisor(
   try {
     console.log('🔄 بدء إضافة مشرف جديد:', userId);
     
-    // 1. التحقق من وجود المستخدم
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
@@ -50,17 +49,17 @@ export async function addSupervisor(
     const userData = userDoc.data();
     console.log('📋 بيانات المستخدم:', userData);
 
-    // 2. تحديث دور المستخدم إلى مشرف
+    // تحديث دور المستخدم إلى مشرف
     await updateDoc(userRef, {
       role: 'supervisor',
-      homeDepartmentId: departmentIds[0] || 'general-monitoring', // القسم الأول كقسم أساسي
+      homeDepartmentId: departmentIds[0] || 'general-monitoring',
       updatedAt: new Date(),
       updatedBy: assignedBy
     });
 
     console.log('✅ تم تحديث دور المستخدم إلى مشرف');
 
-    // 3. إضافة المستخدم كمشرف في كل قسم محدد
+    // إضافة المستخدم كمشرف في كل قسم محدد
     for (const deptId of departmentIds) {
       const supervisorRef = doc(db, 'departments', deptId, 'supervisors', userId);
       await setDoc(supervisorRef, {
@@ -73,7 +72,7 @@ export async function addSupervisor(
       console.log(`✅ تم إضافة صلاحيات الإشراف على قسم: ${deptId}`);
     }
 
-    // 4. إنشاء سجل في مجموعة المشرفين العامة (للمراجعة السريعة)
+    // إنشاء سجل في مجموعة المشرفين العامة
     const supervisorsRef = doc(db, 'supervisors', userId);
     await setDoc(supervisorsRef, {
       userId: userId,
@@ -88,7 +87,6 @@ export async function addSupervisor(
     });
 
     console.log('✅ تم إنشاء سجل في مجموعة المشرفين');
-
     return true;
 
   } catch (error) {
@@ -110,7 +108,6 @@ export async function removeSupervisor(
   try {
     console.log('🔄 بدء إزالة المشرف:', userId);
 
-    // 1. التحقق من وجود المستخدم
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
@@ -119,17 +116,17 @@ export async function removeSupervisor(
       return false;
     }
 
-    // 2. تحديث دور المستخدم إلى موظف
+    // تحديث دور المستخدم إلى موظف
     await updateDoc(userRef, {
       role: 'employee',
-      homeDepartmentId: 'general-monitoring', // إعادته للقسم العام
+      homeDepartmentId: 'general-monitoring',
       updatedAt: new Date(),
       updatedBy: removedBy
     });
 
     console.log('✅ تم تحديث دور المستخدم إلى موظف');
 
-    // 3. إزالة صلاحيات الإشراف من جميع الأقسام
+    // إزالة صلاحيات الإشراف من جميع الأقسام
     const departmentsSnapshot = await getDocs(collection(db, 'departments'));
     
     for (const deptDoc of departmentsSnapshot.docs) {
@@ -142,7 +139,7 @@ export async function removeSupervisor(
       }
     }
 
-    // 4. حذف السجل من مجموعة المشرفين أو تعطيله
+    // حذف أو تعطيل السجل من مجموعة المشرفين
     const supervisorsRef = doc(db, 'supervisors', userId);
     const supervisorDoc = await getDoc(supervisorsRef);
     
@@ -235,16 +232,25 @@ export async function updateSupervisorDepartments(
  */
 export async function getSupervisorData(userId: string): Promise<SupervisorData | null> {
   try {
+    console.log('getSupervisorData: Fetching supervisor data for:', userId);
+    
     const supervisorsRef = doc(db, 'supervisors', userId);
     const supervisorDoc = await getDoc(supervisorsRef);
     
-    if (!supervisorDoc.exists() || !supervisorDoc.data().isActive) {
+    if (!supervisorDoc.exists()) {
+      console.log('getSupervisorData: No supervisor document found for:', userId);
+      return null;
+    }
+    
+    const data = supervisorDoc.data();
+    if (!data.isActive) {
+      console.log('getSupervisorData: Supervisor is inactive:', userId);
       return null;
     }
 
     return {
       id: userId,
-      ...supervisorDoc.data()
+      ...data
     } as SupervisorData;
 
   } catch (error) {

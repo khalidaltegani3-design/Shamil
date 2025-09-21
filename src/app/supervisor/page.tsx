@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy, getDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy, getDoc, where } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -48,6 +48,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { allDepartments } from "@/lib/departments";
 import { formatReportNumber } from '@/lib/report-utils';
+import { ExpandableCell } from '@/components/ui/expandable-cell';
 
 type ReportLocation = {
   latitude: number;
@@ -208,21 +209,12 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                         {report.reportNumber ? formatReportNumber(report.reportNumber) : `...${report.id.slice(-6)}`}
                       </TableCell>
                       <TableCell className="max-w-[300px]">
-                        <div 
-                          className="cursor-pointer transition-all duration-200 hover:bg-gray-50 p-2 rounded"
-                          title="انقر لعرض النص كاملاً"
-                          onClick={(e) => {
-                            const element = e.currentTarget.querySelector('.description-text');
-                            if (element) {
-                              element.classList.toggle('line-clamp-2');
-                              element.classList.toggle('whitespace-normal');
-                            }
-                          }}
-                        >
-                          <div className="description-text line-clamp-2 text-sm leading-relaxed">
-                            {report.description}
-                          </div>
-                        </div>
+                        <ExpandableCell 
+                          content={report.description}
+                          maxWidth="280px"
+                          label="وصف البلاغ"
+                          showCopyButton={true}
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
@@ -252,16 +244,23 @@ export default function SupervisorDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
   const [user, loading] = useAuthState(auth);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
-  const [userPermissions, setUserPermissions] = useState({
-    isSystemAdmin: false,
-    isAdmin: false,
-    supervisedDepartments: [] as string[]
-  });
+  const [userPermissions, setUserPermissions] = useState<{
+    isSystemAdmin: boolean;
+    isAdmin: boolean;
+    isSupervisor: boolean;
+    supervisedDepartments: string[];
+  } | null>(null); // تغيير لـ null ليدل على عدم تحميل البيانات بعد
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     async function checkSystemAdminStatus() {
-      if (!user) return;
+      if (!user) {
+        setLoadingPermissions(false);
+        return;
+      }
+      
+      setLoadingPermissions(true);
       
       const cleanEmail = (user.email || '').toLowerCase().trim();
       const systemAdminEmail = "sweetdream711711@gmail.com";
@@ -271,18 +270,34 @@ export default function SupervisorDashboard() {
         setUserPermissions({
           isSystemAdmin: true,
           isAdmin: true,
+          isSupervisor: false,
           supervisedDepartments: []
         });
+        setLoadingPermissions(false);
         return;
       }
 
       // تحقق من صلاحيات المستخدم
       try {
         const permissions = await checkUserSupervisorPermissions(user.uid);
-        setUserPermissions(permissions);
+        setUserPermissions({
+          isSystemAdmin: permissions.isSystemAdmin,
+          isAdmin: permissions.isAdmin,
+          isSupervisor: permissions.supervisedDepartments.length > 0,
+          supervisedDepartments: permissions.supervisedDepartments || []
+        });
         setIsSystemAdmin(permissions.isSystemAdmin);
       } catch (error) {
         console.error('Error checking user permissions:', error);
+        // في حالة الخطأ، اعتبر المستخدم بدون صلاحيات
+        setUserPermissions({
+          isSystemAdmin: false,
+          isAdmin: false,
+          isSupervisor: false,
+          supervisedDepartments: []
+        });
+      } finally {
+        setLoadingPermissions(false);
       }
     }
 
@@ -290,26 +305,95 @@ export default function SupervisorDashboard() {
   }, [user]);
 
   useEffect(() => {
-    // In a real app, you would also filter by the supervisor's departments
-    const q = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+    if (!user || !userPermissions || loadingPermissions) {
+      console.log('🔍 Skip reports listener - missing data:', { 
+        hasUser: !!user, 
+        hasPermissions: !!userPermissions, 
+        loadingPermissions 
+      });
+      return;
+    }
     
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    console.log('🔍 Setting up reports listener for user permissions:', userPermissions);
+    console.log('🔍 User info:', { uid: user.uid, email: user.email });
+    
+    // إذا كان مدير نظام أو مدير عام، يرى جميع البلاغات
+    if (userPermissions.isSystemAdmin || userPermissions.isAdmin) {
+      console.log('👑 System admin or admin - showing all reports');
+      const q = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+      
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        console.log('📋 Raw snapshot size:', querySnapshot.size);
         const reportsData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Report[];
+        console.log('📋 Loaded all reports for admin:', reportsData.length);
+        setReports(reportsData);
+      }, (error) => {
+        console.error("❌ Error fetching reports: ", error);
+        console.error("❌ Error code:", error.code);
+        console.error("❌ Error message:", error.message);
+        toast({
+          variant: "destructive",
+          title: "خطأ في جلب البيانات",
+          description: "لم نتمكن من تحميل قائمة البلاغات. يرجى تحديث الصفحة.",
+        });
+        setReports([]);
+      });
+
+      return () => unsubscribe();
+    }
+    
+    // إذا كان مشرف، فلترة البلاغات حسب الإدارات المُعين عليها
+    if (userPermissions.isSupervisor && userPermissions.supervisedDepartments && userPermissions.supervisedDepartments.length > 0) {
+      console.log('👨‍💼 Supervisor - filtering reports for departments:', userPermissions.supervisedDepartments);
+      
+      // إنشاء listener واحد للبلاغات مع فلترة متقدمة
+      const q = query(
+        collection(db, "reports"), 
+        orderBy("createdAt", "desc")
+      );
+      
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        console.log('📋 Raw supervisor snapshot size:', querySnapshot.size);
+        // فلترة البلاغات للإدارات المُشرف عليها فقط
+        const filteredReports = querySnapshot.docs
+          .map(doc => ({
             id: doc.id,
             ...doc.data()
-        })) as Report[];
-        setReports(reportsData);
-    }, (error) => {
-      console.error("Error fetching reports: ", error);
-      toast({
-        variant: "destructive",
-        title: "خطأ في جلب البيانات",
-        description: "لم نتمكن من تحميل قائمة البلاغات. يرجى تحديث الصفحة.",
+          }) as Report)
+          .filter(report => {
+            const isIncluded = userPermissions.supervisedDepartments.includes(report.departmentId);
+            console.log(`📊 Report ${report.id} (${report.departmentId}): ${isIncluded ? 'INCLUDED' : 'EXCLUDED'}`);
+            return isIncluded;
+          });
+        
+        console.log(`📁 Filtered reports for supervised departments: ${filteredReports.length} reports`);
+        console.log('📋 Departments filter:', userPermissions.supervisedDepartments);
+        console.log('📊 Report department IDs:', filteredReports.map(r => r.departmentId));
+        
+        setReports(filteredReports);
+      }, (error) => {
+        console.error("❌ Error fetching filtered reports:", error);
+        console.error("❌ Error code:", error.code);
+        console.error("❌ Error message:", error.message);
+        toast({
+          variant: "destructive",
+          title: "خطأ في جلب البيانات",
+          description: "لم نتمكن من تحميل قائمة البلاغات. يرجى تحديث الصفحة.",
+        });
+        setReports([]); // تعيين قائمة فارغة في حالة الخطأ
       });
-    });
-
-    return () => unsubscribe();
-  }, [user]);
+      
+      return () => unsubscribe();
+    }
+    
+    // إذا لم يكن له أي صلاحيات، عرض قائمة فارغة
+    console.log('❌ No permissions found - showing empty list');
+    setReports([]);
+    
+  }, [user, userPermissions, loadingPermissions, toast]);
 
   const handleUpdateReport = (reportId: string, newStatus: "closed") => {
     setReports(prevReports => 
@@ -319,6 +403,33 @@ export default function SupervisorDashboard() {
   
   const openReports = reports.filter(r => r.status === 'open');
   const closedReports = reports.filter(r => r.status === 'closed');
+
+  // عرض حالة التحميل
+  if (loading || loadingPermissions) {
+    return (
+      <div className="py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">جارٍ تحميل البيانات...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // إذا لم يكن المستخدم مسجل دخول
+  if (!user) {
+    return (
+      <div className="py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-muted-foreground">يرجى تسجيل الدخول للوصول إلى هذه الصفحة</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-8">
@@ -356,7 +467,7 @@ export default function SupervisorDashboard() {
       )}
 
       {/* بطاقة تحذير للمشرفين الذين لم يتم تعيين أقسام لهم */}
-      {!userPermissions.isSystemAdmin && !userPermissions.isAdmin && userPermissions.supervisedDepartments.length === 0 && (
+      {userPermissions && !userPermissions.isSystemAdmin && !userPermissions.isAdmin && userPermissions.isSupervisor && userPermissions.supervisedDepartments.length === 0 && (
         <Card className="mb-6 border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-orange-100">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -376,6 +487,43 @@ export default function SupervisorDashboard() {
                 </p>
                 <p className="text-xs text-orange-500">
                   sweetdream711711@gmail.com
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* بطاقة معلومات للمشرفين مع الأقسام المُعينة */}
+      {userPermissions && !userPermissions.isSystemAdmin && !userPermissions.isAdmin && userPermissions.isSupervisor && userPermissions.supervisedDepartments.length > 0 && (
+        <Card className="mb-6 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-full">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-800">مشرف الأقسام</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  تم تعيينك للإشراف على الأقسام التالية وستظهر لك البلاغات الخاصة بها فقط:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {userPermissions.supervisedDepartments.map(deptId => {
+                    const department = allDepartments.find(d => d.id === deptId);
+                    return (
+                      <Badge key={deptId} variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                        {department?.name || deptId}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-blue-600">
+                  {reports.length}
+                </p>
+                <p className="text-xs text-blue-500">
+                  بلاغ في أقسامك
                 </p>
               </div>
             </div>

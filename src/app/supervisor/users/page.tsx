@@ -19,7 +19,9 @@ import { allDepartments } from "@/lib/departments";
 import { initialUsers } from "@/lib/users";
 
 
-type User = typeof initialUsers[0];
+type User = typeof initialUsers[0] & {
+    supervisorOf: string[];
+};
 
 function getStatusVariant(status: string) {
     return status === 'نشط' ? 'default' : 'secondary';
@@ -70,10 +72,10 @@ export default function UserManagementPage() {
             role: formData.get('role') as "admin" | "supervisor" | "employee",
             status: "نشط" as "نشط" | "غير نشط",
             homeDepartmentId: formData.get('department') as string,
-            supervisorOf: []
+            supervisorOf: [] as string[]
         };
         // TODO: Call actual cloud function `adminCreateUser(newUser)`
-        setUsers([newUser, ...users]);
+        setUsers([newUser as User, ...users]);
         toast({
             title: "تم إنشاء المستخدم بنجاح",
             description: `تم إرسال رابط تفعيل الحساب إلى ${newUser.email}.`,
@@ -300,7 +302,7 @@ export default function UserManagementPage() {
                                 <div className="space-y-2">
                                     {allDepartments.map(dept => (
                                         <div key={dept.id} className="flex items-center space-x-2 space-x-reverse">
-                                            <Checkbox id={`dept-${dept.id}`} defaultChecked={selectedUser.supervisorOf.includes(dept.id)} />
+                                            <Checkbox id={`dept-${dept.id}`} defaultChecked={selectedUser.supervisorOf && Array.isArray(selectedUser.supervisorOf) && selectedUser.supervisorOf.includes(dept.id)} />
                                             <Label htmlFor={`dept-${dept.id}`} className="flex-1">{dept.name}</Label>
                                         </div>
                                     ))}

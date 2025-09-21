@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom grid pattern for the fallback map */
+.bg-grid {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* RTL support */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Smooth transitions for map interactions */
+.map-marker-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+.map-marker-transition:hover {
+  transform: scale(1.1);
+}
+
+/* Loading animation for maps */
+.map-loading {
+  background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+              linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+              linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+              linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  animation: map-loading-animation 2s linear infinite;
+}
+
+@keyframes map-loading-animation {
+  0% {
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  }
+  100% {
+    background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px;
+  }
+}
+
 @layer base {
   :root {
     --background: 240 10% 99%; /* Very Light Gray */

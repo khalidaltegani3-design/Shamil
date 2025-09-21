@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
     const result = {
       lat,
       lng,
-      status: qnasResponse.status
+      status: qnasResponse.status,
+      qAddress: { zone, street, building }
     };
     
     console.log('[Geocode API] Final Result:', result);

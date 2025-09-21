@@ -93,11 +93,13 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
         // استثناء مؤقت للاختبار - إزالة هذا في الإنتاج
         if (cleanEmail === testSupervisorEmail) {
           console.log('SupervisorAuth: Test supervisor detected (temporary exception)');
+          console.log('SupervisorAuth: Granting full supervisor access for khalid');
           setHasPermission(true);
           setUserData({ 
             role: 'supervisor', 
             email: user.email || '',
-            displayName: user.displayName || 'مشرف تجريبي'
+            displayName: user.displayName || 'خالد - مشرف تجريبي',
+            homeDepartmentId: 'general-monitoring'
           });
           setIsLoading(false);
           return;
@@ -178,7 +180,7 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
       } catch (error) {
         console.error('خطأ في التحقق من صلاحيات الإشراف:', error);
         
-        // في حالة الخطأ، السماح لمدير النظام بالدخول
+        // في حالة الخطأ، السماح لمدير النظام والمستخدم التجريبي بالدخول
         const cleanEmailForError = (user.email || '').toLowerCase().trim();
         if (cleanEmailForError === "sweetdream711711@gmail.com") {
           console.log('SupervisorAuth: Error occurred, but allowing system admin');
@@ -187,6 +189,15 @@ export function SupervisorAuth({ children }: SupervisorAuthProps) {
             role: 'system_admin', 
             email: user.email || '',
             displayName: user.displayName || 'مدير النظام'
+          });
+        } else if (cleanEmailForError === "end2012.19+1@gmail.com") {
+          console.log('SupervisorAuth: Error occurred, but allowing test supervisor khalid');
+          setHasPermission(true);
+          setUserData({ 
+            role: 'supervisor', 
+            email: user.email || '',
+            displayName: user.displayName || 'خالد - مشرف تجريبي',
+            homeDepartmentId: 'general-monitoring'
           });
         } else {
           setHasPermission(false);
@@ -283,6 +294,7 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
     // تحقق من مدير النظام بالبريد الإلكتروني مع تنظيف النص
     const cleanEmail = (user?.email || '').toLowerCase().trim();
     const systemAdminEmail = "sweetdream711711@gmail.com";
+    const testSupervisorEmail = "end2012.19+1@gmail.com"; // للاختبار المؤقت
     const isSystemAdmin = cleanEmail === systemAdminEmail;
     
     console.log('checkUserSupervisorPermissions: Clean email:', cleanEmail);
@@ -295,6 +307,16 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
         isSystemAdmin: true,
         isAdmin: true,
         supervisedDepartments: []
+      };
+    }
+
+    // استثناء مؤقت للاختبار - إزالة هذا في الإنتاج
+    if (cleanEmail === testSupervisorEmail) {
+      console.log('checkUserSupervisorPermissions: Test supervisor detected (temporary exception)');
+      return {
+        isSystemAdmin: false,
+        isAdmin: false,
+        supervisedDepartments: ['general-monitoring']
       };
     }
 
@@ -367,6 +389,31 @@ export async function checkUserSupervisorPermissions(userId: string): Promise<{
 
   } catch (error) {
     console.error('خطأ في التحقق من الصلاحيات:', error);
+    
+    // في حالة الخطأ، السماح للمستخدمين المحددين بالدخول
+    const user = auth.currentUser;
+    const cleanEmail = (user?.email || '').toLowerCase().trim();
+    const systemAdminEmail = "sweetdream711711@gmail.com";
+    const testSupervisorEmail = "end2012.19+1@gmail.com";
+    
+    if (cleanEmail === systemAdminEmail) {
+      console.log('checkUserSupervisorPermissions: Error occurred, but allowing system admin');
+      return {
+        isSystemAdmin: true,
+        isAdmin: true,
+        supervisedDepartments: []
+      };
+    }
+    
+    if (cleanEmail === testSupervisorEmail) {
+      console.log('checkUserSupervisorPermissions: Error occurred, but allowing test supervisor');
+      return {
+        isSystemAdmin: false,
+        isAdmin: false,
+        supervisedDepartments: ['general-monitoring']
+      };
+    }
+    
     return {
       isSystemAdmin: false,
       isAdmin: false,

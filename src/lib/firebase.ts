@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore, Firestore } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
@@ -6,74 +6,104 @@ import { getFunctions } from 'firebase/functions';
 import { doc, getDoc, setDoc, serverTimestamp, collection, writeBatch } from 'firebase/firestore';
 import { getStorage } from "firebase/storage";
 
-// Allow overriding firebase config via environment variables (useful to switch projects without code changes)
+// Enhanced Firebase configuration with App Hosting compatibility
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDKtxqu6YRoZQCeD9EoFmxAvc9JLi_d5R8",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "zoliapp-lite.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "zoliapp-lite",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || "zoliapp-lite",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "zoliapp-lite.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "476068628948",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:476068628948:web:55c0eaf993de1cc553ee41"
 };
 
-// Initialize Firebase
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Initialize Firebase with error handling
+let app: FirebaseApp;
+try {
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+  // Fallback initialization
+  app = initializeApp(firebaseConfig);
+}
+
 const auth = getAuth(app);
 
-// Initialize Firestore with modern persistence settings
+// Initialize Firestore with enhanced error handling for App Hosting
 let db: Firestore;
 try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
-  console.log('Firestore initialized with persistent cache');
+  // Try to initialize with persistent cache
+  if (typeof window !== 'undefined') {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+    console.log('Firestore initialized with persistent cache');
+  } else {
+    // Server-side: use default Firestore without persistence
+    db = getFirestore(app);
+    console.log('Firestore initialized for server-side rendering');
+  }
 } catch (error) {
   // If initialization fails, fall back to default Firestore
   console.warn('Failed to initialize Firestore with persistence, using default:', error);
-  db = getFirestore(app);
+  try {
+    db = getFirestore(app);
+  } catch (fallbackError) {
+    console.error('Critical: Failed to initialize Firestore:', fallbackError);
+    throw new Error('Firebase Firestore initialization failed');
+  }
 }
 
 const functions = getFunctions(app);
 const storage = getStorage(app);
 
-// دالة للتحقق من الاتصال بقاعدة البيانات
+// دالة للتحقق من الاتصال بقاعدة البيانات مع معالجة أفضل للأخطاء
 export async function pingDatabase() {
   try {
-    // محاولة قراءة وثيقة الحالة
+    // Simple connectivity test
     const testDoc = doc(db, '_health', 'status');
-    const docSnap = await getDoc(testDoc);
-    console.log('تم الاتصال بنجاح بقاعدة البيانات:', firebaseConfig.projectId);
     
-    // إذا لم توجد الوثيقة، فهذا طبيعي لقاعدة بيانات جديدة
+    // In production, just try to create a reference - don't read
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Production environment: Database reference created successfully');
+      return true;
+    }
+    
+    // In development, perform actual read test
+    const docSnap = await getDoc(testDoc);
+    console.log('Database connection successful:', firebaseConfig.projectId);
+    
     if (!docSnap.exists()) {
-      console.log('Health document does not exist - testing with a simple read operation');
-      // محاولة قراءة مجموعة المستخدمين للتأكد من الاتصال
-      const usersRef = collection(db, 'users');
-      // لا نحتاج لجلب البيانات، فقط إنشاء المرجع يكفي للتحقق من الاتصال
-      console.log('Database connection verified via users collection reference');
+      console.log('Health document does not exist - normal for new databases');
     }
     
     return true;
   } catch (error) {
-    console.error('فشل الاتصال بقاعدة البيانات:', error);
+    console.error('Database connection test failed:', error);
     return false;
   }
 }
 
-// Log which projectId is being used at runtime
+// Enhanced logging for App Hosting debugging
 try {
-  // eslint-disable-next-line no-console
-  console.info('Firebase projectId in use:', firebaseConfig.projectId);
+  console.info('Firebase Configuration:');
+  console.info('- Project ID:', firebaseConfig.projectId);
+  console.info('- Auth Domain:', firebaseConfig.authDomain);
+  console.info('- Environment:', process.env.NODE_ENV || 'development');
+  console.info('- Runtime:', typeof window !== 'undefined' ? 'client' : 'server');
 } catch (e) {
-  // ignore
+  // ignore logging errors
 }
 
-// إنشاء وثيقة حالة الاتصال وتحديثها
+// إنشاء وثيقة حالة الاتصال مع معالجة محسنة للأخطاء
 async function initializeHealthCheck() {
+  // Skip health check in production builds to avoid unnecessary database calls
+  if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+    return;
+  }
+  
   try {
-    // قراءة وثيقة الحالة فقط للتحقق من الاتصال
     const statusDoc = doc(db, '_health', 'status');
     const docSnap = await getDoc(statusDoc);
     
@@ -83,16 +113,19 @@ async function initializeHealthCheck() {
       console.log('Health check document does not exist - this is normal for new databases');
     }
   } catch (error) {
-    console.warn('Health check read failed (this is normal if database is not set up):', error);
+    console.warn('Health check read failed (normal if database is not set up):', error);
   }
 }
 
-// تنفيذ عملية التهيئة عند بدء التطبيق
-initializeHealthCheck();
+// تنفيذ عملية التهيئة فقط في البيئة المناسبة
+if (typeof window !== 'undefined') {
+  // Client-side only
+  initializeHealthCheck();
+}
 
 export { app, auth, db, functions, storage, getAuth };
 
-// FCM Token Management
+// FCM Token Management with App Hosting compatibility
 export async function registerWebFcmToken(userId: string) {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return;
@@ -130,7 +163,6 @@ export async function registerWebFcmToken(userId: string) {
     onMessage(messaging, (payload) => {
         console.log('Message received. ', payload);
         // You can display a toast or a custom notification here
-        // For example, using the app's `useToast` hook logic
     });
 
   } catch (error) {

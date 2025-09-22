@@ -11,6 +11,7 @@ import {
   orderBy 
 } from 'firebase/firestore';
 import { allDepartments } from '@/lib/departments';
+import { isValidSystemAdmin } from '@/lib/auth-config';
 
 export interface UserData {
   uid: string;
@@ -204,8 +205,7 @@ export const filterUsers = (
  * خدمة التحقق من كون المستخدم مدير نظام
  */
 export const isSystemAdmin = (email: string): boolean => {
-  const cleanEmail = email.toLowerCase().trim();
-  return cleanEmail === "sweetdream711711@gmail.com";
+  return isValidSystemAdmin(email);
 };
 
 /**

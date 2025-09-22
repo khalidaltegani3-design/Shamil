@@ -1,10 +1,11 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator, onAuthStateChanged } from 'firebase/auth';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
 import { doc, getDoc, setDoc, serverTimestamp, collection, writeBatch } from 'firebase/firestore';
 import { getStorage } from "firebase/storage";
+import { validateAuthEnvironment } from '@/lib/auth-config';
 
 // Allow overriding firebase config via environment variables (useful to switch projects without code changes)
 const firebaseConfig = {
@@ -89,6 +90,26 @@ async function initializeHealthCheck() {
 
 // تنفيذ عملية التهيئة عند بدء التطبيق
 initializeHealthCheck();
+
+// إضافة مراقب للمصادقة لتسجيل الأحداث في البيئة الإنتاجية
+if (typeof window !== 'undefined') {
+  const authConfig = validateAuthEnvironment();
+  
+  if (authConfig.detailedLogging) {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('🔐 User authenticated:', {
+          uid: user.uid,
+          email: user.email,
+          emailVerified: user.emailVerified,
+          providerId: user.providerId
+        });
+      } else {
+        console.log('🚪 User signed out');
+      }
+    });
+  }
+}
 
 export { app, auth, db, functions, storage, getAuth };
 

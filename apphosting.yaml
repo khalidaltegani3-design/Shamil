@@ -21,6 +21,10 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: 1:476068628948:web:55c0eaf993de1cc553ee41
 
+  # Environment Configuration
+  - variable: NODE_ENV
+    value: production
+
   # Public QNAS Configuration (Build Variables)
   - variable: NEXT_PUBLIC_QNAS_API_BASE_URL
     value: https://qnas.qa

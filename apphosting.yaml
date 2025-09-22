@@ -1,13 +1,15 @@
-# Minimal Firebase App Hosting Configuration
-# This is a stripped-down version to resolve build issues
+# Enhanced Firebase App Hosting Configuration
+# Optimized for Next.js 15 with proper environment variables
 
 runConfig:
   cpu: 1
-  memoryMiB: 512
+  memoryMiB: 1024  # Increased memory for better performance
   maxInstances: 100
+  minInstances: 0  # Allow scaling to zero for cost optimization
+  concurrency: 100
 
 env:
-  # Public Firebase Configuration (Build Variables)
+  # Firebase Configuration (Build Variables)
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyDKtxqu6YRoZQCeD9EoFmxAvc9JLi_d5R8
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -21,9 +23,15 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: 1:476068628948:web:55c0eaf993de1cc553ee41
 
-  # Public QNAS Configuration (Build Variables)
-  - variable: NEXT_PUBLIC_QNAS_API_BASE_URL
-    value: https://qnas.qa
+  # Runtime Environment Variables
+  - variable: NODE_ENV
+    value: production
+  - variable: NEXT_RUNTIME
+    value: nodejs
+  - variable: FIREBASE_PROJECT_ID
+    value: zoliapp-lite
+
+  # API Keys (Secrets)
   - variable: QNAS_API_TOKEN
     secret: qnas-api-token
   - variable: QNAS_API_DOMAIN
@@ -34,3 +42,12 @@ env:
     secret: gemini-api-key
   - variable: GOOGLE_API_KEY
     secret: google-api-key
+
+# Build configuration
+build:
+  # Ensure Node.js version compatibility
+  nodeVersion: 18
+  # Build command
+  commands:
+    - npm ci --only=production
+    - npm run build

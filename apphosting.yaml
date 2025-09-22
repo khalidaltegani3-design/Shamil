@@ -1,9 +1,9 @@
-# Simplified Firebase App Hosting Configuration
-# Optimized for build success
+# Firebase App Hosting Configuration
+# Optimized for build success with Node.js compatibility
 
 runConfig:
   cpu: 1
-  memoryMiB: 512
+  memoryMiB: 1024
   maxInstances: 100
 
 env:
@@ -24,3 +24,12 @@ env:
   # Runtime Environment Variables
   - variable: NODE_ENV
     value: production
+  - variable: NODE_OPTIONS
+    value: "--max-old-space-size=4096"
+
+# Build configuration
+build:
+  nodeVersion: 20
+  commands:
+    - npm ci
+    - npm run build

@@ -5,6 +5,8 @@ runConfig:
   cpu: 1
   memoryMiB: 1024
   maxInstances: 100
+  minInstances: 0
+  concurrency: 80
 
 env:
   # Firebase Configuration
@@ -27,9 +29,14 @@ env:
   - variable: NODE_OPTIONS
     value: "--max-old-space-size=4096"
 
-# Build configuration
+# Build configuration with enhanced compatibility
 build:
   nodeVersion: 20
+  environmentVariables:
+    NODE_ENV: production
+    NODE_OPTIONS: "--max-old-space-size=4096"
+    NPM_CONFIG_FUND: "false"
+    NPM_CONFIG_AUDIT: "false"
   commands:
-    - npm ci
+    - npm ci --prefer-offline --no-audit --no-fund
     - npm run build

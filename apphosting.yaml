@@ -1,12 +1,10 @@
-# Enhanced Firebase App Hosting Configuration
-# Based on successful build e5eaa19 with auth improvements
+# Minimal Firebase App Hosting Configuration
+# This is a stripped-down version to resolve build issues
 
 runConfig:
   cpu: 1
-  memoryMiB: 1024
+  memoryMiB: 512
   maxInstances: 100
-  minInstances: 0
-  concurrency: 80
 
 env:
   # Public Firebase Configuration (Build Variables)
@@ -23,10 +21,6 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: 1:476068628948:web:55c0eaf993de1cc553ee41
 
-  # Environment Configuration
-  - variable: NODE_ENV
-    value: production
-
   # Public QNAS Configuration (Build Variables)
   - variable: NEXT_PUBLIC_QNAS_API_BASE_URL
     value: https://qnas.qa
@@ -40,15 +34,3 @@ env:
     secret: gemini-api-key
   - variable: GOOGLE_API_KEY
     secret: google-api-key
-
-# Build configuration with enhanced compatibility
-build:
-  nodeVersion: 20
-  environmentVariables:
-    NODE_ENV: production
-    NODE_OPTIONS: "--max-old-space-size=4096"
-    NPM_CONFIG_FUND: "false"
-    NPM_CONFIG_AUDIT: "false"
-  commands:
-    - npm ci --prefer-offline --no-audit --no-fund
-    - npm run build

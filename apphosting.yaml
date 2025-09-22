@@ -1,15 +1,15 @@
-# Enhanced Firebase App Hosting Configuration
-# Optimized for Next.js 15 with proper environment variables
+# Firebase App Hosting Configuration
+# Optimized for build success with Node.js compatibility
 
 runConfig:
   cpu: 1
-  memoryMiB: 1024  # Increased memory for better performance
+  memoryMiB: 1024
   maxInstances: 100
-  minInstances: 0  # Allow scaling to zero for cost optimization
-  concurrency: 100
+  minInstances: 0
+  concurrency: 80
 
 env:
-  # Firebase Configuration (Build Variables)
+  # Firebase Configuration
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyDKtxqu6YRoZQCeD9EoFmxAvc9JLi_d5R8
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -26,28 +26,17 @@ env:
   # Runtime Environment Variables
   - variable: NODE_ENV
     value: production
-  - variable: NEXT_RUNTIME
-    value: nodejs
-  - variable: FIREBASE_PROJECT_ID
-    value: zoliapp-lite
+  - variable: NODE_OPTIONS
+    value: "--max-old-space-size=4096"
 
-  # API Keys (Secrets)
-  - variable: QNAS_API_TOKEN
-    secret: qnas-api-token
-  - variable: QNAS_API_DOMAIN
-    secret: qnas-api-domain
-  - variable: GOOGLE_MAPS_API_KEY
-    secret: google-maps-api-key
-  - variable: GEMINI_API_KEY
-    secret: gemini-api-key
-  - variable: GOOGLE_API_KEY
-    secret: google-api-key
-
-# Build configuration
+# Build configuration with enhanced compatibility
 build:
-  # Ensure Node.js version compatibility
-  nodeVersion: 18
-  # Build command
+  nodeVersion: 20
+  environmentVariables:
+    NODE_ENV: production
+    NODE_OPTIONS: "--max-old-space-size=4096"
+    NPM_CONFIG_FUND: "false"
+    NPM_CONFIG_AUDIT: "false"
   commands:
-    - npm ci --only=production
+    - npm ci --prefer-offline --no-audit --no-fund
     - npm run build

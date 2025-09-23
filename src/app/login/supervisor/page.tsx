@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Shield, ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ensureSystemAdminExists } from '@/lib/ensure-system-admin';
@@ -167,22 +167,29 @@ export default function SupervisorLoginPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-4">
             <div className="flex items-center justify-between">
-              <Link href="/login">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => router.push('/')}
+                title="العودة لاختيار نوع الحساب"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </Button>
               <div className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">شامل</h1>
+                <Shield className="h-6 w-6" />
+                <div className="text-center">
+                  <CardTitle>تسجيل دخول المشرف</CardTitle>
+                </div>
               </div>
+              <div className="w-10"></div> {/* للمحاذاة */}
             </div>
             <div className="text-center">
-              <CardTitle className="text-2xl">تسجيل دخول المشرفين</CardTitle>
-              <CardDescription>
-                قم بتسجيل الدخول للوصول إلى لوحة الإشراف
-              </CardDescription>
+              <h1 className="text-4xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+              <p className="text-sm text-muted-foreground">منصة إدارة البلاغات</p>
             </div>
+            <CardDescription className="text-center">
+              لوحة تحكم المشرفين ومديري الأقسام
+            </CardDescription>
           </CardHeader>
           
           <CardContent>
@@ -246,12 +253,6 @@ export default function SupervisorLoginPage() {
                 <div className="text-center">
                   <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary">
                     نسيت كلمة المرور؟
-                  </Link>
-                </div>
-                
-                <div className="text-center">
-                  <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
-                    العودة لتسجيل دخول الموظفين
                   </Link>
                 </div>
               </div>

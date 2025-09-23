@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
       setIsEmailSent(true);
       toast({
         title: "تم الإرسال بنجاح",
-        description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني من نظام شامل"
+        description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني من نظام رياني"
       });
     } catch (error: any) {
       console.error("خطأ في إرسال البريد الإلكتروني:", error);
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
             </div>
             <CardTitle className="text-2xl">تم الإرسال بنجاح</CardTitle>
             <CardDescription>
-              تم إرسال رابط إعادة تعيين كلمة المرور من نظام شامل إلى بريدك الإلكتروني
+              تم إرسال رابط إعادة تعيين كلمة المرور من نظام رياني إلى بريدك الإلكتروني
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
                 <br />
                 <strong className="block mt-1">الإيميل: {email}</strong>
                 <span className="text-xs text-muted-foreground block mt-1">
-                  الرسالة مرسلة من نظام شامل للبلاغات
+                  الرسالة مرسلة من نظام رياني للبلاغات
                 </span>
               </AlertDescription>
             </Alert>

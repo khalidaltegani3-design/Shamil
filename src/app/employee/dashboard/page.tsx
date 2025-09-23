@@ -7,13 +7,14 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, FileText, LogOut } from "lucide-react";
+import { PlusCircle, FileText, LogOut, User, UserCircle } from "lucide-react";
 import { signOut } from "firebase/auth";
 
 export default function EmployeeDashboard() {
   const router = useRouter();
   const [user, loading] = useAuthState(auth);
   const [userName, setUserName] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -53,6 +54,7 @@ export default function EmployeeDashboard() {
 
         console.log('✅ تأكد دور الموظف، تحديث اسم المستخدم...');
         setUserName(userData.displayName || userData.name || user.displayName || user.email || "");
+        setEmployeeId(userData.employeeId || "");
         
       } catch (error) {
         console.error('❌ خطأ في فحص بيانات المستخدم:', error);
@@ -72,6 +74,11 @@ export default function EmployeeDashboard() {
     console.log('🔍 محاولة الانتقال إلى صفحة البلاغات...');
     console.log('📍 المسار المطلوب: /employee/reports');
     router.push("/employee/reports");
+  };
+
+  const handleViewProfile = () => {
+    console.log('🔍 الانتقال إلى صفحة الملف الشخصي...');
+    router.push("/employee/profile");
   };
 
   const handleSignOut = async () => {
@@ -94,18 +101,29 @@ export default function EmployeeDashboard() {
           <h1 className="text-lg font-semibold">لوحة تحكم الموظف</h1>
         </div>
         <div className="flex items-center justify-center">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleSignOut}>
-          <LogOut className="h-5 w-5" />
-          <span className="sr-only">تسجيل الخروج</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={handleViewProfile} title="الملف الشخصي">
+            <UserCircle className="h-5 w-5" />
+            <span className="sr-only">الملف الشخصي</span>
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">تسجيل الخروج</span>
+          </Button>
+        </div>
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>مرحباً، {userName}</CardTitle>
+            {employeeId && (
+              <div className="text-sm text-muted-foreground font-mono">
+                الرقم الوظيفي: {employeeId}
+              </div>
+            )}
             <CardDescription>يمكنك إنشاء وإدارة البلاغات من هنا</CardDescription>
           </CardHeader>
         </Card>

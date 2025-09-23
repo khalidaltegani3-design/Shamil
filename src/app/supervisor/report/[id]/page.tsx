@@ -33,6 +33,8 @@ type TimelineEvent = {
 
 type Report = {
   id: string;
+  surveyNumber?: string; // الرقم المساحي (اختياري)
+  subject: string; // الموضوع
   description: string;
   status: 'open' | 'closed';
   departmentId: string;
@@ -152,7 +154,8 @@ export default function ReportDetailsPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-2">
-      <h1 className="text-3xl font-semibold">تفاصيل البلاغ: ...{report.id?.slice(-6) || 'غير محدد'}</h1>
+      <h1 className="text-3xl font-semibold">{report.subject}</h1>
+      <p className="text-sm text-muted-foreground">بلاغ رقم: ...{report.id?.slice(-6) || 'غير محدد'}</p>
 
       <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-[1fr_300px] lg:gap-8">
         <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
@@ -173,6 +176,13 @@ export default function ReportDetailsPage({ params }: { params: Promise<{ id: st
             </CardHeader>
             <CardContent>
               <div className="grid gap-6">
+                {report.surveyNumber && (
+                  <div>
+                    <h3 className="font-semibold mb-2">الرقم المساحي</h3>
+                    <p className="text-muted-foreground font-mono">{report.surveyNumber}</p>
+                  </div>
+                )}
+                
                 <div>
                     <h3 className="font-semibold mb-2">الوصف التفصيلي</h3>
                     <p className="text-muted-foreground leading-relaxed">{report.description}</p>

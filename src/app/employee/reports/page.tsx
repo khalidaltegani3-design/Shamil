@@ -125,7 +125,7 @@ export default function EmployeeReports() {
           <h1 className="text-lg font-semibold">بلاغاتي</h1>
         </div>
         <div className="flex items-center justify-center">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
         </div>
       </header>
 

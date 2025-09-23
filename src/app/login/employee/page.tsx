@@ -11,6 +11,7 @@ import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Footer from "@/components/footer";
 
@@ -162,7 +163,7 @@ export default function EmployeeLoginPage() {
       
       toast({
         title: "تم تسجيل الدخول بنجاح ✅",
-        description: `مرحباً بك ${userData.displayName || 'في منصة شامل'}`,
+        description: `مرحباً بك ${userData.displayName || 'في منصة رياني'}`,
         duration: 2000,
       });
 
@@ -224,10 +225,23 @@ export default function EmployeeLoginPage() {
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
         <Card className="w-full max-w-sm">
           <CardHeader className="space-y-2 text-center">
-             <div className="flex flex-col items-center justify-center mb-4">
-                <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => router.push('/')}
+                className="self-start"
+                title="العودة لاختيار نوع الحساب"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <div className="flex flex-col items-center justify-center flex-1">
+                <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
                 <p className="text-muted-foreground font-semibold">بلدية الريان</p>
+              </div>
+              <div className="w-10"></div> {/* للمحاذاة */}
             </div>
+            <CardTitle>تسجيل دخول الموظف</CardTitle>
             <CardDescription>
               منصة البلاغات الداخلية
             </CardDescription>
@@ -257,10 +271,7 @@ export default function EmployeeLoginPage() {
               </div>
               
               <div className="flex justify-between w-full">
-                  <Button variant="link" size="sm" className="px-0" onClick={() => router.back()}>
-                      الرجوع
-                  </Button>
-                   <Link href="/signup" passHref>
+                  <Link href="/signup" passHref>
                       <Button variant="link" size="sm" className="px-0">
                           إنشاء حساب جديد
                       </Button>

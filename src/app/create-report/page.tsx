@@ -7,7 +7,7 @@ import { doc, setDoc, collection, serverTimestamp, getDoc } from "firebase/fires
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { generateReportNumber, formatReportNumber } from '@/lib/report-utils';
-import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ function AppHeader() {
         <h1 className="text-lg font-semibold">إنشاء بلاغ جديد</h1>
       </div>
        <div className="flex items-center justify-center rounded text-sm font-semibold">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
         </div>
     </header>
   );
@@ -46,6 +46,7 @@ export default function CreateReportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [userHomeDepartmentId, setUserHomeDepartmentId] = useState<string | null>(null);
+  const [userEmployeeId, setUserEmployeeId] = useState<string | null>(null);
 
   // التحقق من صلاحيات المستخدم عند تحميل الصفحة
   useEffect(() => {
@@ -70,6 +71,7 @@ export default function CreateReportPage() {
         // تحميل إدارة المستخدم
         const userData = userDoc.data();
         setUserHomeDepartmentId(userData.homeDepartmentId || null);
+        setUserEmployeeId(userData.employeeId || null);
       } catch (error) {
         console.error('Error checking user role:', error);
         toast({ 
@@ -99,9 +101,10 @@ export default function CreateReportPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
+  const [surveyNumber, setSurveyNumber] = useState<string>(''); // الرقم المساحي (اختياري)
+  const [subject, setSubject] = useState<string>(''); // الموضوع
   const [departmentId, setDepartmentId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [locationDescription, setLocationDescription] = useState<string>('');
 
   // إنشاء قائمة الإدارات المتاحة (استثناء إدارة المستخدم)
   const availableDepartments = allDepartments.filter(dept => 
@@ -235,8 +238,8 @@ export default function CreateReportPage() {
         return;
     }
 
-    if (!departmentId || !description) {
-         toast({ variant: "destructive", title: "خطأ", description: "يرجى ملء جميع الحقول المطلوبة (الإدارة والوصف)." });
+    if (!departmentId || !subject || !description) {
+         toast({ variant: "destructive", title: "خطأ", description: "يرجى ملء جميع الحقول المطلوبة (الإدارة والموضوع والوصف)." });
         return;
     }
 
@@ -265,10 +268,6 @@ export default function CreateReportPage() {
         source: locationSource,
       };
 
-      if (locationDescription) {
-        locationData.description = locationDescription;
-      }
-
       if (locationSource === 'q-address') {
           locationData.zone = zone;
           locationData.street = street;
@@ -279,6 +278,10 @@ export default function CreateReportPage() {
         reportNumber, // إضافة رقم البلاغ الرقمي
         createdBy: user.uid,
         submitterName: user.displayName || user.email,
+        submitterId: user.uid,
+        submitterEmployeeId: userEmployeeId,
+        surveyNumber: surveyNumber.trim() || null, // الرقم المساحي (اختياري)
+        subject: subject.trim(), // الموضوع
         description,
         departmentId,
         location: locationData,
@@ -287,18 +290,47 @@ export default function CreateReportPage() {
         createdAt: serverTimestamp(),
       });
       
+      // طباعة تأكيد في وحدة التحكم
+      console.log(`✅ تم إنشاء البلاغ بنجاح!`);
+      console.log(`📋 رقم البلاغ: ${formatReportNumber(reportNumber)}`);
+      console.log(`� الرقم المساحي: ${surveyNumber || 'غير محدد'}`);
+      console.log(`📝 الموضوع: ${subject}`);
+      console.log(`�👤 المستخدم: ${user.displayName || user.email}`);
+      console.log(`🏢 الإدارة المختصة: ${allDepartments.find(d => d.id === departmentId)?.name || departmentId}`);
+      console.log(`📍 الموقع: [${position[0].toFixed(6)}, ${position[1].toFixed(6)}]`);
+      console.log(`📄 المرفقات: ${attachmentUrls.length} ملف`);
+      
+      const selectedDepartment = allDepartments.find(d => d.id === departmentId);
+      
+      // إظهار رسالة نجاح مفصلة
       toast({
-        title: "تم إرسال البلاغ بنجاح.",
-        description: `رقم البلاغ: ${formatReportNumber(reportNumber)}`,
+        title: "✅ تم إنشاء البلاغ بنجاح!",
+        description: `${subject} | رقم البلاغ: ${formatReportNumber(reportNumber)} | الإدارة: ${selectedDepartment?.name || departmentId}`,
+        duration: 4000,
       });
-      router.push('/');
+
+      // التوجه إلى لوحة تحكم الموظف بعد تأخير قصير
+      setTimeout(() => {
+        // إشعار إضافي قبل التوجه
+        toast({
+          title: "🏠 جارٍ التوجه إلى لوحة التحكم...",
+          description: "يمكنك متابعة حالة بلاغك من قسم 'بلاغاتي'",
+          duration: 2000,
+        });
+        
+        // التوجه بعد ثانية إضافية
+        setTimeout(() => {
+          router.push('/employee/dashboard');
+        }, 1000);
+      }, 3000);
 
     } catch (error) {
-      console.error("Error creating report:", error);
+      console.error("❌ خطأ في إنشاء البلاغ:", error);
        toast({
         variant: "destructive",
-        title: "خطأ",
-        description: "حدث خطأ أثناء إرسال البلاغ. يرجى المحاولة مرة أخرى.",
+        title: "❌ فشل في إنشاء البلاغ",
+        description: "حدث خطأ أثناء إرسال البلاغ. يرجى التحقق من الاتصال والمحاولة مرة أخرى.",
+        duration: 5000,
       });
     } finally {
         setIsSubmitting(false);
@@ -334,8 +366,106 @@ export default function CreateReportPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* 1. الرقم المساحي (اختياري) */}
+              <div className="space-y-2">
+                <Label htmlFor="survey-number">الرقم المساحي (اختياري)</Label>
+                <Input 
+                  id="survey-number"
+                  placeholder="أدخل الرقم المساحي إن وجد"
+                  value={surveyNumber}
+                  onChange={(e) => setSurveyNumber(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">يمكن ترك هذا الحقل فارغاً إذا لم يكن متوفراً</p>
+              </div>
+
+              {/* 2. الموضوع */}
+              <div className="space-y-2">
+                <Label htmlFor="subject">الموضوع *</Label>
+                <Input 
+                  id="subject"
+                  placeholder="عنوان مختصر للبلاغ"
+                  required 
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                />
+              </div>
+
+              {/* 3. الوصف */}
+              <div className="space-y-2">
+                <Label htmlFor="report-description">الوصف *</Label>
+                <Textarea 
+                  id="report-description"
+                  placeholder="قدّم وصفاً تفصيليًا للمشكلة"
+                  className="min-h-[120px]"
+                  required 
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+
+              {/* 4. المرفقات */}
+               <div className="space-y-2">
+                <Label htmlFor="attachments">
+                  المرفقات {files.length > 0 && `(${files.length})`}
+                </Label>
+                <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleFileChange} ref={fileInputRef} />
+                {files.length === 0 ? (
+                  <div className="flex items-center justify-center w-full">
+                    <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <Paperclip className="w-8 h-8 mb-3 text-muted-foreground" />
+                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للإرفاق</span> أو قم بالسحب والإفلات</p>
+                            <p className="text-xs text-muted-foreground">صور أو مستندات (بحد أقصى 5 ميجابايت)</p>
+                        </div>
+                    </Label>
+                  </div> 
+                ) : (
+                  <div className="space-y-2">
+                    {files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between rounded-md border p-2.5">
+                        <div className="flex items-center gap-3">
+                          <FileIcon className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm font-medium truncate">{file.name}</span>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-8 w-8">
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove file</span>
+                        </Button>
+                      </div>
+                    ))}
+                     <Button type="button" variant="outline" className="w-full" onClick={triggerFileSelect}>
+                        إضافة المزيد من المرفقات
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* الإدارة المعنية */}
+              <div className="space-y-2">
+                <Label htmlFor="report-department">الإدارة المعنية *</Label>
+                 <Select dir="rtl" onValueChange={setDepartmentId} value={departmentId} required>
+                  <SelectTrigger id="report-department">
+                    <SelectValue placeholder="اختر الإدارة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDepartments.length > 0 ? (
+                      availableDepartments.map(dept => (
+                         <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>لا توجد إدارات متاحة</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {userHomeDepartmentId && (
+                  <p className="text-sm text-muted-foreground">
+                    ملاحظة: لا يمكنك تقديم بلاغ لإدارتك الخاصة.
+                  </p>
+                )}
+              </div>
+
                 <div className="space-y-4">
-                  <Label>تحديد موقع البلاغ</Label>
+                  <Label>تحديد موقع البلاغ *</Label>
                    <Tabs defaultValue="manual" className="w-full" onValueChange={(value: string) => setLocationSource(value as "manual" | "q-address")}>
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="manual">تحديد يدوي على الخريطة</TabsTrigger>
@@ -401,92 +531,11 @@ export default function CreateReportPage() {
                     </Tabs>
                 </div>
 
-              <div className="space-y-2">
-                  <Label htmlFor="location-description">وصف إضافي للموقع (اختياري)</Label>
-                  <Input 
-                    id="location-description"
-                    placeholder="مثال: مبنى 5، بالقرب من المدخل الرئيسي"
-                    value={locationDescription}
-                    onChange={(e) => setLocationDescription(e.target.value)}
-                  />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="report-department">الإدارة المعنية</Label>
-                 <Select dir="rtl" onValueChange={setDepartmentId} value={departmentId} required>
-                  <SelectTrigger id="report-department">
-                    <SelectValue placeholder="اختر الإدارة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableDepartments.length > 0 ? (
-                      availableDepartments.map(dept => (
-                         <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>لا توجد إدارات متاحة</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                {userHomeDepartmentId && (
-                  <p className="text-sm text-muted-foreground">
-                    ملاحظة: لا يمكنك تقديم بلاغ لإدارتك الخاصة.
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="report-description">وصف البلاغ</Label>
-                <Textarea 
-                  id="report-description"
-                  placeholder="قدّم وصفًا تفصيليًا للمشكلة"
-                  className="min-h-[120px]"
-                  required 
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-               <div className="space-y-2">
-                <Label htmlFor="attachments">
-                  المرفقات {files.length > 0 && `(${files.length})`}
-                </Label>
-                <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleFileChange} ref={fileInputRef} />
-                {files.length === 0 ? (
-                  <div className="flex items-center justify-center w-full">
-                    <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Paperclip className="w-8 h-8 mb-3 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للإرفاق</span> أو قم بالسحب والإفلات</p>
-                            <p className="text-xs text-muted-foreground">صور أو مستندات (بحد أقصى 5 ميجابايت)</p>
-                        </div>
-                    </Label>
-                  </div> 
-                ) : (
-                  <div className="space-y-2">
-                    {files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between rounded-md border p-2.5">
-                        <div className="flex items-center gap-3">
-                          <FileIcon className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm font-medium truncate">{file.name}</span>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-8 w-8">
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove file</span>
-                        </Button>
-                      </div>
-                    ))}
-                     <Button type="button" variant="outline" className="w-full" onClick={triggerFileSelect}>
-                        إضافة المزيد من المرفقات
-                    </Button>
-                  </div>
-                )}
-              </div>
-
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               <Button variant="outline" type="button" onClick={() => router.back()}>إلغاء</Button>
               <Button type="submit" disabled={isSubmitting || loading}>
-                {isSubmitting ? 'جارٍ الإرسال...' : 'إرسال البلاغ'}
+                {isSubmitting ? 'جارٍ إنشاء البلاغ...' : 'إنشاء البلاغ'}
               </Button>
             </CardFooter>
           </Card>

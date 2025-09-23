@@ -18,7 +18,7 @@ function AdminDashboard() {
             <h1 className="text-2xl font-bold">لوحة تحكم مدير النظام</h1>
           </div>
           <div className="flex items-center justify-center rounded text-sm font-semibold">
-            <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+            <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
           </div>
         </div>
       </header>

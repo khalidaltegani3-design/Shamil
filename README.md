@@ -1,5 +1,5 @@
-# Shamil
+# رياني
 
-This is a Next.js starter project for Shamil.
+هذا مشروع نظام البلاغات لبلدية الريان مبني بـ Next.js.
 
-To get started, take a look at `src/app/page.tsx`.
+للبدء، راجع ملف `src/app/page.tsx`.

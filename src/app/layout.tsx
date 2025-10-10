@@ -15,8 +15,8 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: 'منصة البلاغات الداخلية - وزارة البلدية',
-  description: 'نظام داخلي لإدارة ومتابعة البلاغات بين موظفي الوزارة.',
+  title: 'رياني - نظام البلاغات الداخلية',
+  description: 'نظام رياني لإدارة ومتابعة البلاغات في بلدية الريان.',
   metadataBase: new URL('http://localhost:3000'),
   other: {
     'Content-Type': 'text/html; charset=utf-8',

@@ -16,9 +16,21 @@ export function generateEmployeeId(): string {
  * @returns boolean
  */
 export function validateEmployeeId(employeeId: string): boolean {
-  // يجب أن يبدأ بـ EMP ويتبعه 9 أرقام
-  const pattern = /^EMP\d{9}$/;
-  return pattern.test(employeeId);
+  if (!employeeId || typeof employeeId !== 'string') {
+    return false;
+  }
+  
+  // إزالة المسافات
+  const trimmed = employeeId.trim();
+  
+  // يجب أن يحتوي على 3 أحرف على الأقل
+  if (trimmed.length < 3) {
+    return false;
+  }
+  
+  // يجب أن يحتوي على أحرف وأرقام فقط (لا يوجد رموز خاصة عدا الشرطة)
+  const pattern = /^[A-Za-z0-9\-]+$/;
+  return pattern.test(trimmed);
 }
 
 /**
@@ -84,15 +96,22 @@ export function hashEmployeeId(employeeId: string): string {
 }
 
 /**
- * إنشاء رقم وظيفي مخصص بناء على معايير معينة
- * @param department - معرف القسم
- * @param rolePrefix - بادئة الدور (EMP, SUP, ADM)
- * @returns string
+ * التحقق من تفرد الرقم الوظيفي في قاعدة البيانات
+ * @param employeeId - الرقم الوظيفي المراد التحقق منه
+ * @returns Promise<boolean>
  */
-export function generateCustomEmployeeId(department?: string, rolePrefix: string = 'EMP'): string {
-  const timestamp = Date.now().toString().slice(-4);
-  const randomNum = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-  const deptCode = department ? department.slice(0, 3).toUpperCase() : 'GEN';
-  
-  return `${rolePrefix}${deptCode}${timestamp}${randomNum}`;
+export async function checkEmployeeIdUniqueness(employeeId: string): Promise<boolean> {
+  try {
+    const { collection, query, where, getDocs } = await import('firebase/firestore');
+    const { db } = await import('./firebase');
+    
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('employeeId', '==', employeeId.trim()));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.empty; // true إذا كان فريد، false إذا كان موجود
+  } catch (error) {
+    console.error('خطأ في التحقق من تفرد الرقم الوظيفي:', error);
+    return false; // في حالة الخطأ، نعتبر أن الرقم غير فريد للأمان
+  }
 }

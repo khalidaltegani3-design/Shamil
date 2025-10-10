@@ -14,7 +14,7 @@ import Link from "next/link";
 import { doc, setDoc } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { allDepartments } from '@/lib/departments';
-import { generateEmployeeId } from '@/lib/employee-utils';
+import { validateEmployeeId, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
 
 import { checkAuthState } from '@/lib/auth-check';
 import Footer from '@/components/footer';
@@ -30,6 +30,7 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [homeDepartmentId, setHomeDepartmentId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,6 +58,38 @@ export default function SignupPage() {
         return;
     }
 
+    if (!employeeId.trim()) {
+        toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "يرجى إدخال الرقم الوظيفي.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    if (!validateEmployeeId(employeeId.trim())) {
+        toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "الرقم الوظيفي غير صحيح. يجب أن يحتوي على أرقام وحروف فقط.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    // التحقق من تفرد الرقم الوظيفي
+    const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
+    if (!isUnique) {
+        toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -65,21 +98,21 @@ export default function SignupPage() {
       await updateProfile(user, { displayName: name });
 
       try {
-        // إنشاء وثيقة المستخدم في Firestore مع الرقم الوظيفي
-        const employeeId = generateEmployeeId();
+        // إنشاء وثيقة المستخدم في Firestore مع الرقم الوظيفي المدخل
+        const trimmedEmployeeId = employeeId.trim();
         
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
           displayName: name,
           email: user.email,
-          employeeId: employeeId,
+          employeeId: trimmedEmployeeId,
           role: "employee",
           homeDepartmentId: homeDepartmentId,
           createdAt: new Date(),
           status: "active",
         });
         
-        console.log(`تم إنشاء المستخدم بالرقم الوظيفي: ${employeeId}`);
+        console.log(`تم إنشاء المستخدم بالرقم الوظيفي: ${trimmedEmployeeId}`);
       } catch (firestoreError) {
         // حذف المستخدم من Authentication إذا فشل إنشاء الوثيقة في Firestore
         await user.delete();
@@ -132,7 +165,7 @@ export default function SignupPage() {
         <Card className="w-full max-w-sm">
           <CardHeader className="space-y-2 text-center">
             <div className="flex flex-col items-center justify-center mb-4">
-              <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">شامل</h1>
+              <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
             </div>
             <CardTitle className="text-2xl">إنشاء حساب موظف جديد</CardTitle>
             <CardDescription>
@@ -152,6 +185,19 @@ export default function SignupPage() {
               <div className="space-y-2">
                 <Label htmlFor="password">كلمة المرور</Label>
                 <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="employeeId">الرقم الوظيفي</Label>
+                <Input 
+                  id="employeeId" 
+                  type="text" 
+                  placeholder="أدخل رقمك الوظيفي" 
+                  required 
+                  value={employeeId} 
+                  onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">أدخل رقمك الوظيفي الخاص كما يظهر في كشوف المرتبات</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="department">الإدارة التي تعمل بها</Label>

@@ -1,11 +1,11 @@
 {
-  "name": "Zoliapp Lite",
-  "short_name": "Zoliapp",
+  "name": "رياني - نظام البلاغات",
+  "short_name": "رياني",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#222222",
-  "description": "An intuitive chat interface for seamless messaging.",
+  "description": "نظام إدارة البلاغات لبلدية الريان",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

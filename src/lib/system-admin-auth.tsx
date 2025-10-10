@@ -17,54 +17,99 @@ export function useSystemAdminCheck() {
       if (loading) return;
 
       if (!user) {
+        console.log('🚫 No authenticated user found, redirecting to login');
+        setIsSystemAdmin(false);
         setAuthLoading(false);
         router.push('/login/employee');
         return;
       }
 
       try {
-        // تحقق من البريد الإلكتروني مع تنظيف النص
+        console.log('🔍 Checking system admin status for user:', {
+          uid: user.uid,
+          email: user.email,
+          emailVerified: user.emailVerified
+        });
+
+        // التحقق الأولي من البريد الإلكتروني
         const cleanEmail = (user.email || '').toLowerCase().trim();
-        console.log('Checking system admin status for:', cleanEmail);
-        console.log('Expected email:', SYSTEM_ADMIN_EMAIL);
-        
-        if (cleanEmail === SYSTEM_ADMIN_EMAIL) {
-          console.log('Email match found - user is system admin');
+        const isValidEmail = cleanEmail === SYSTEM_ADMIN_EMAIL;
+        console.log('📧 Email validation result:', isValidEmail);
+
+        if (isValidEmail) {
+          console.log('✅ Email match found - user is system admin');
           setIsSystemAdmin(true);
           setAuthLoading(false);
           return;
         }
 
-        // تحقق إضافي من قاعدة البيانات
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          console.log('User data from database:', userData);
-          
-          if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
-            console.log('System admin confirmed from database');
-            setIsSystemAdmin(true);
-            setAuthLoading(false);
-            return;
+        // التحقق من قاعدة البيانات
+        console.log('🔍 Checking database for additional permissions...');
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+          if (userDoc && userDoc.exists()) {
+            const userData = userDoc.data();
+            console.log('📊 User data from database:', {
+              role: userData.role,
+              isSystemAdmin: userData.isSystemAdmin,
+              email: userData.email
+            });
+            
+            // التحقق من الدور أو العلامة في قاعدة البيانات
+            if (userData.role === 'system_admin' || userData.isSystemAdmin === true) {
+              console.log('✅ System admin confirmed from database');
+              setIsSystemAdmin(true);
+              setAuthLoading(false);
+              return;
+            }
+
+            // التحقق الإضافي من البريد الإلكتروني في قاعدة البيانات
+            const dbEmailClean = (userData.email || '').toLowerCase().trim();
+            if (dbEmailClean === SYSTEM_ADMIN_EMAIL) {
+              console.log('✅ System admin confirmed via database email');
+              setIsSystemAdmin(true);
+              setAuthLoading(false);
+              return;
+            }
+          } else {
+            console.log('⚠️ No user document found in database');
           }
+        } catch (dbError) {
+          console.error('💥 Database error:', dbError);
         }
 
         // إذا لم يكن مدير نظام، توجيه للصفحة الرئيسية
-        console.log('User is not system admin, redirecting...');
+        console.log('❌ User is not system admin, redirecting to home...');
         setIsSystemAdmin(false);
         setAuthLoading(false);
         router.push('/');
         
       } catch (error) {
-        console.error('Error checking system admin status:', error);
+        console.error('💥 Error checking system admin status:', error);
         setIsSystemAdmin(false);
         setAuthLoading(false);
         router.push('/');
       }
     };
 
-    checkSystemAdminStatus();
-  }, [user, loading, router]);
+    // استخدام timeout للتحقق الكامل
+    const timeoutId = setTimeout(() => {
+      if (authLoading) {
+        console.warn('⏰ Auth check timeout, falling back to non-admin');
+        setIsSystemAdmin(false);
+        setAuthLoading(false);
+      }
+    }, 15000); // 15 ثانية
+
+    checkSystemAdminStatus().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [user, loading, router, authLoading]);
 
   return {
     user,

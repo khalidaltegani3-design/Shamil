@@ -2,12 +2,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, orderBy, getDoc, where } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { checkUserSupervisorPermissions } from "@/lib/supervisor-auth";
+import { signOut } from "firebase/auth";
 import {
   ListFilter,
   MoreHorizontal,
@@ -15,6 +16,9 @@ import {
   Users,
   Settings,
   AlertTriangle,
+  BarChart3,
+  Download,
+  LogOut,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -49,6 +53,11 @@ import { Button } from "@/components/ui/button";
 import { allDepartments } from "@/lib/departments";
 import { formatReportNumber } from '@/lib/report-utils';
 import { ExpandableCell } from '@/components/ui/expandable-cell';
+import { AdvancedFilters, type ReportFilters } from '@/components/supervisor/advanced-filters';
+import { ExportReports } from '@/components/supervisor/export-reports';
+import { ReportsStatistics } from '@/components/supervisor/reports-statistics';
+import { usePagination } from '@/hooks/use-pagination';
+import { Pagination } from '@/components/ui/pagination';
 
 type ReportLocation = {
   latitude: number;
@@ -63,12 +72,18 @@ type ReportLocation = {
 type Report = {
     id: string;
     reportNumber?: number; // رقم البلاغ الرقمي
+    surveyNumber?: string; // الرقم المساحي (اختياري)
+    subject: string; // الموضوع
     description: string;
     status: "open" | "closed";
     submitterId: string;
+    submitterName?: string; // اسم المُبلغ للفلترة والتصدير
+    submitterEmployeeId?: string; // الرقم الوظيفي للموظف
     createdAt: any; // Firestore timestamp
     departmentId: string;
     location: ReportLocation;
+    closedAt?: any; // تاريخ الإغلاق
+    closedBy?: string; // من قام بالإغلاق
 };
 
 
@@ -177,6 +192,25 @@ function ReportActions({ report, onUpdate }: { report: Report, onUpdate: (report
 
 
 function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (reportId: string, newStatus: "closed") => void }) {
+    const itemsPerPage = 20;
+    const shouldPaginate = reports.length > itemsPerPage;
+    
+    const {
+      currentPage,
+      totalPages,
+      paginatedData,
+      hasNextPage,
+      hasPreviousPage,
+      goToPage,
+      totalItems,
+      startIndex,
+      endIndex
+    } = usePagination({
+      data: reports,
+      itemsPerPage,
+      enabled: shouldPaginate
+    });
+    
     if (reports.length === 0) {
         return (
              <div className="flex h-48 items-center justify-center rounded-md border border-dashed mt-4">
@@ -192,7 +226,7 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                 <TableHeader>
                   <TableRow>
                     <TableHead>رقم البلاغ</TableHead>
-                    <TableHead>الوصف</TableHead>
+                    <TableHead>الموضوع</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead>الإدارة المعنية</TableHead>
                     <TableHead>الموقع</TableHead>
@@ -203,18 +237,15 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reports.map((report) => (
+                  {paginatedData.map((report) => (
                     <TableRow key={report.id}>
                       <TableCell className="font-medium font-mono" style={{direction: 'ltr'}}>
                         {report.reportNumber ? formatReportNumber(report.reportNumber) : `...${report.id.slice(-6)}`}
                       </TableCell>
                       <TableCell className="max-w-[300px]">
-                        <ExpandableCell 
-                          content={report.description}
-                          maxWidth="280px"
-                          label="وصف البلاغ"
-                          showCopyButton={true}
-                        />
+                        <Link href={`/supervisor/report/${report.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
+                          {report.subject || 'بلاغ عام'}
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(report.status)}>{getStatusText(report.status)}</Badge>
@@ -230,10 +261,20 @@ function ReportTable({ reports, onUpdate }: { reports: Report[], onUpdate: (repo
                 </TableBody>
               </Table>
             </CardContent>
-            <CardFooter>
-              <div className="text-xs text-muted-foreground">
-                عرض <strong>{reports.length}</strong> من <strong>{reports.length}</strong> بلاغ
+            <CardFooter className="flex flex-col space-y-4">
+              <div className="text-xs text-muted-foreground text-center">
+                عرض <strong>{shouldPaginate ? startIndex : 1}</strong> إلى <strong>{shouldPaginate ? endIndex : reports.length}</strong> من <strong>{totalItems}</strong> بلاغ
               </div>
+              {shouldPaginate && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={goToPage}
+                  totalItems={totalItems}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                />
+              )}
             </CardFooter>
           </Card>
     )
@@ -251,6 +292,10 @@ export default function SupervisorDashboard() {
     supervisedDepartments: string[];
   } | null>(null); // تغيير لـ null ليدل على عدم تحميل البيانات بعد
   const [loadingPermissions, setLoadingPermissions] = useState(true);
+  const [currentTab, setCurrentTab] = useState("dashboard");
+  const [filters, setFilters] = useState<ReportFilters>({});
+  const [userName, setUserName] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -287,6 +332,14 @@ export default function SupervisorDashboard() {
           supervisedDepartments: permissions.supervisedDepartments || []
         });
         setIsSystemAdmin(permissions.isSystemAdmin);
+        
+        // جلب بيانات المستخدم للاسم والرقم الوظيفي
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserName(userData.displayName || userData.name || user.displayName || user.email || "");
+          setEmployeeId(userData.employeeId || "");
+        }
       } catch (error) {
         console.error('Error checking user permissions:', error);
         // في حالة الخطأ، اعتبر المستخدم بدون صلاحيات
@@ -395,14 +448,76 @@ export default function SupervisorDashboard() {
     
   }, [user, userPermissions, loadingPermissions, toast]);
 
+  const handleSignOut = async () => {
+    await signOut(auth);
+    window.location.href = '/login';
+  };
+
+  // تطبيق الفلاتر على التقارير
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => {
+      // فلترة حسب الحالة
+      if (filters.status && report.status !== filters.status) return false;
+      
+      // فلترة حسب القسم
+      if (filters.departmentId && report.departmentId !== filters.departmentId) return false;
+      
+      // فلترة حسب رقم البلاغ
+      if (filters.reportNumber) {
+        const reportNumberStr = report.reportNumber ? formatReportNumber(report.reportNumber) : report.id;
+        if (!reportNumberStr.toLowerCase().includes(filters.reportNumber.toLowerCase())) return false;
+      }
+      
+      // فلترة حسب الموضوع
+      if (filters.subject && !report.subject.toLowerCase().includes(filters.subject.toLowerCase())) return false;
+      
+      // فلترة حسب اسم المُبلغ
+      if (filters.submitterName && report.submitterName && 
+          !report.submitterName.toLowerCase().includes(filters.submitterName.toLowerCase())) return false;
+      
+      // فلترة حسب التاريخ
+      if (filters.startDate || filters.endDate) {
+        const reportDate = report.createdAt?.toDate();
+        if (!reportDate) return false;
+        
+        if (filters.startDate) {
+          const startDate = new Date(filters.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          if (reportDate < startDate) return false;
+        }
+        
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          if (reportDate > endDate) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [reports, filters]);
+
   const handleUpdateReport = (reportId: string, newStatus: "closed") => {
     setReports(prevReports => 
         prevReports.map(r => r.id === reportId ? { ...r, status: newStatus } : r)
     );
   };
+
+  const handleFiltersChange = (newFilters: ReportFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({});
+  };
+
+  const activeFiltersCount = Object.keys(filters).filter(key => {
+    const value = filters[key as keyof ReportFilters];
+    return value !== undefined && value !== null && value !== '';
+  }).length;
   
-  const openReports = reports.filter(r => r.status === 'open');
-  const closedReports = reports.filter(r => r.status === 'closed');
+  const openReports = filteredReports.filter(r => r.status === 'open');
+  const closedReports = filteredReports.filter(r => r.status === 'closed');
 
   // عرض حالة التحميل
   if (loading || loadingPermissions) {
@@ -432,7 +547,30 @@ export default function SupervisorDashboard() {
   }
 
   return (
-    <div className="py-8">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-semibold">لوحة تحكم المشرف</h1>
+          {userName && (
+            <div className="text-sm text-muted-foreground">
+              {userName}
+              {employeeId && <span className="font-mono mr-2">({employeeId})</span>}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-center">
+          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">تسجيل الخروج</span>
+          </Button>
+        </div>
+      </header>
+      
+      <div className="py-8 px-4 md:px-8">
       {/* بطاقة خاصة لمدير النظام */}
       {isSystemAdmin && (
         <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
@@ -531,38 +669,41 @@ export default function SupervisorDashboard() {
         </Card>
       )}
       
-      <Tabs defaultValue="all">
-        <div className="flex items-center">
-          <TabsList>
-            <TabsTrigger value="all">الكل ({reports.length})</TabsTrigger>
+      <Tabs value={currentTab} onValueChange={setCurrentTab}>
+        <div className="flex items-center justify-between">
+          <TabsList className="grid w-fit grid-cols-4">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              لوحة التحكم
+            </TabsTrigger>
+            <TabsTrigger value="all">الكل ({filteredReports.length})</TabsTrigger>
             <TabsTrigger value="open">مفتوح ({openReports.length})</TabsTrigger>
             <TabsTrigger value="closed">مغلق ({closedReports.length})</TabsTrigger>
           </TabsList>
-          <div className="ml-auto flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 gap-1">
-                  <ListFilter className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    فلترة
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>فلترة حسب</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem checked>
-                  التاريخ
-                </DropdownMenuCheckboxItem>
-                 <DropdownMenuCheckboxItem>
-                  الإدارة
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <ExportReports 
+              reports={filteredReports} 
+              filteredCount={filteredReports.length}
+              totalCount={reports.length}
+            />
           </div>
         </div>
+
+        {/* فلترة متقدمة - تظهر في جميع التبويبات عدا لوحة التحكم */}
+        {currentTab !== "dashboard" && (
+          <AdvancedFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onResetFilters={handleResetFilters}
+            activeFiltersCount={activeFiltersCount}
+          />
+        )}
+
+        <TabsContent value="dashboard">
+          <ReportsStatistics reports={reports} />
+        </TabsContent>
         <TabsContent value="all">
-            <ReportTable reports={reports} onUpdate={handleUpdateReport} />
+            <ReportTable reports={filteredReports} onUpdate={handleUpdateReport} />
         </TabsContent>
         <TabsContent value="open">
             <ReportTable reports={openReports} onUpdate={handleUpdateReport} />
@@ -571,6 +712,7 @@ export default function SupervisorDashboard() {
              <ReportTable reports={closedReports} onUpdate={handleUpdateReport} />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

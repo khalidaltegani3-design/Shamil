@@ -19,22 +19,18 @@ import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { allDepartments } from '@/lib/departments';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
 
-function AppHeader() {
+function CreateReportHeader() {
   const router = useRouter();
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-          <span className="sr-only">رجوع</span>
-        </Button>
-        <h1 className="text-lg font-semibold">إنشاء بلاغ جديد</h1>
-      </div>
-       <div className="flex items-center justify-center rounded text-sm font-semibold">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-        </div>
-    </header>
+    <AppHeader title="إنشاء بلاغ جديد">
+      <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <ArrowLeft className="h-5 w-5" />
+        <span className="sr-only">رجوع</span>
+      </Button>
+    </AppHeader>
   );
 }
 
@@ -355,7 +351,7 @@ export default function CreateReportPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <AppHeader />
+      <CreateReportHeader />
       <main className="flex-1 p-4 md:p-8">
         <form onSubmit={handleSubmit}>
           <Card className="w-full mx-auto max-w-3xl">

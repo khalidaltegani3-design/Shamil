@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import HeaderWithImage from "@/components/HeaderWithImage";
+import { handleFirebaseError } from "@/lib/firebase-error-handler";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -44,31 +46,18 @@ export default function ForgotPasswordPage() {
       setIsEmailSent(true);
       toast({
         title: "تم الإرسال بنجاح",
-        description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني من نظام رياني"
+        description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني من نظام بلدية الريان"
       });
     } catch (error: any) {
       console.error("خطأ في إرسال البريد الإلكتروني:", error);
       
-      let errorMessage = "حدث خطأ في إرسال البريد الإلكتروني";
-      
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = "لا يوجد حساب مسجل بهذا البريد الإلكتروني";
-          break;
-        case 'auth/invalid-email':
-          errorMessage = "عنوان البريد الإلكتروني غير صحيح";
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = "تم إرسال العديد من الطلبات. يرجى المحاولة بعد قليل";
-          break;
-        default:
-          errorMessage = error.message || errorMessage;
-      }
+      // استخدام معالج الأخطاء الجديد
+      const errorInfo = handleFirebaseError(error);
 
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: errorMessage
+        description: errorInfo.userFriendlyMessage
       });
     } finally {
       setIsLoading(false);
@@ -85,7 +74,7 @@ export default function ForgotPasswordPage() {
             </div>
             <CardTitle className="text-2xl">تم الإرسال بنجاح</CardTitle>
             <CardDescription>
-              تم إرسال رابط إعادة تعيين كلمة المرور من نظام رياني إلى بريدك الإلكتروني
+              تم إرسال رابط إعادة تعيين كلمة المرور من نظام بلدية الريان إلى بريدك الإلكتروني
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -96,7 +85,7 @@ export default function ForgotPasswordPage() {
                 <br />
                 <strong className="block mt-1">الإيميل: {email}</strong>
                 <span className="text-xs text-muted-foreground block mt-1">
-                  الرسالة مرسلة من نظام رياني للبلاغات
+                  الرسالة مرسلة من نظام بلدية الريان للبلاغات
                 </span>
               </AlertDescription>
             </Alert>
@@ -127,7 +116,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+    <div className="min-h-screen flex flex-col" dir="rtl">
+      <HeaderWithImage />
+      <div className="flex-1 flex items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">نسيت كلمة المرور؟</CardTitle>

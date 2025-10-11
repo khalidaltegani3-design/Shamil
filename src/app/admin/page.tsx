@@ -6,22 +6,19 @@ import { Button } from '@/components/ui/button';
 import { withSystemAdminAuth } from '@/lib/system-admin-auth';
 import { Crown, Users, Settings, Shield } from 'lucide-react';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
 
 function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <header className="border-b bg-card px-4 md:px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Crown className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">لوحة تحكم مدير النظام</h1>
-          </div>
-          <div className="flex items-center justify-center rounded text-sm font-semibold">
-            <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-          </div>
-        </div>
-      </header>
+      <AppHeader 
+        title="لوحة تحكم مدير النظام"
+        className="border-b bg-card px-4 md:px-6 py-4"
+      >
+        <Crown className="h-6 w-6 text-primary" />
+      </AppHeader>
 
       {/* Main Content */}
       <main className="container mx-auto p-6">

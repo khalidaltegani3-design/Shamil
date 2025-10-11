@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Clock } from "lucide-react";
 import { formatReportNumber } from '@/lib/report-utils';
+import Logo from "@/components/Logo";
 
 interface Report {
   id: string;
@@ -125,7 +126,7 @@ export default function EmployeeReports() {
           <h1 className="text-lg font-semibold">بلاغاتي</h1>
         </div>
         <div className="flex items-center justify-center">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+          <Logo size="md" />
         </div>
       </header>
 

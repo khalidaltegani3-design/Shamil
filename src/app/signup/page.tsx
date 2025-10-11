@@ -17,7 +17,9 @@ import { allDepartments } from '@/lib/departments';
 import { validateEmployeeId, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
 
 import { checkAuthState } from '@/lib/auth-check';
-import Footer from '@/components/footer';
+import Logo from '@/components/Logo';
+import HeaderWithImage from '@/components/HeaderWithImage';
+import { handleFirebaseError } from '@/lib/firebase-error-handler';
 
 export default function SignupPage() {
   useEffect(() => {
@@ -135,24 +137,14 @@ export default function SignupPage() {
 
     } catch (error: any) {
       console.error("Signup error:", error);
-      let description = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
       
-      if (error.message === "فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.") {
-        description = error.message;
-      } else if (error.code === 'auth/email-already-in-use') {
-        description = "هذا البريد الإلكتروني مستخدم بالفعل.";
-      } else if (error.code === 'auth/invalid-email') {
-        description = "البريد الإلكتروني الذي أدخلته غير صالح.";
-      } else if (error.code === 'auth/weak-password') {
-        description = "كلمة المرور ضعيفة جداً. يرجى اختيار كلمة مرور أقوى.";
-      } else if (error.code === 'auth/network-request-failed') {
-        description = "فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.";
-      }
+      // استخدام معالج الأخطاء الجديد
+      const errorInfo = handleFirebaseError(error);
       
       toast({
         variant: "destructive",
         title: "فشل إنشاء الحساب",
-        description: description,
+        description: errorInfo.userFriendlyMessage,
       });
     } finally {
       setIsLoading(false);
@@ -161,11 +153,12 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
+      <HeaderWithImage />
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
         <Card className="w-full max-w-sm">
           <CardHeader className="space-y-2 text-center">
             <div className="flex flex-col items-center justify-center mb-4">
-              <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+              <Logo size="xl" showText={false} />
             </div>
             <CardTitle className="text-2xl">إنشاء حساب موظف جديد</CardTitle>
             <CardDescription>
@@ -226,7 +219,6 @@ export default function SignupPage() {
           </form>
         </Card>
       </main>
-      <Footer />
     </div>
   );
 }

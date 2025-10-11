@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { allDepartments } from '@/lib/departments';
 import { formatReportNumber } from '@/lib/report-utils';
 import AppFooter from "@/components/app-footer";
+import Logo from "@/components/Logo";
+import AppHeader from "@/components/AppHeader";
 
 type Report = {
   id: string;
@@ -48,11 +50,7 @@ function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-      </div>
-      <div className="flex items-center gap-4">
+    <AppHeader title="لوحة المعلومات">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -103,8 +101,7 @@ function AppHeader() {
             </Link>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    </header>
+    </AppHeader>
   );
 }
 

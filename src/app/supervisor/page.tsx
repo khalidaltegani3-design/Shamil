@@ -58,6 +58,8 @@ import { ExportReports } from '@/components/supervisor/export-reports';
 import { ReportsStatistics } from '@/components/supervisor/reports-statistics';
 import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
+import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
 
 type ReportLocation = {
   latitude: number;
@@ -549,26 +551,14 @@ export default function SupervisorDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold">لوحة تحكم المشرف</h1>
-          {userName && (
-            <div className="text-sm text-muted-foreground">
-              {userName}
-              {employeeId && <span className="font-mono mr-2">({employeeId})</span>}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-center">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="h-5 w-5" />
-            <span className="sr-only">تسجيل الخروج</span>
-          </Button>
-        </div>
-      </header>
+      <AppHeader 
+        title={`لوحة تحكم المشرف${userName ? ` - ${userName}${employeeId ? ` (${employeeId})` : ''}` : ''}`}
+      >
+        <Button variant="ghost" size="icon" onClick={handleSignOut}>
+          <LogOut className="h-5 w-5" />
+          <span className="sr-only">تسجيل الخروج</span>
+        </Button>
+      </AppHeader>
       
       <div className="py-8 px-4 md:px-8">
       {/* بطاقة خاصة لمدير النظام */}

@@ -13,7 +13,9 @@ import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Footer from "@/components/footer";
+import Logo from "@/components/Logo";
+import HeaderWithImage from "@/components/HeaderWithImage";
+import { handleFirebaseError } from "@/lib/firebase-error-handler";
 
 
 export default function EmployeeLoginPage() {
@@ -163,7 +165,7 @@ export default function EmployeeLoginPage() {
       
       toast({
         title: "تم تسجيل الدخول بنجاح ✅",
-        description: `مرحباً بك ${userData.displayName || 'في منصة رياني'}`,
+        description: `مرحباً بك ${userData.displayName || 'في منصة بلدية الريان'}`,
         duration: 2000,
       });
 
@@ -176,19 +178,17 @@ export default function EmployeeLoginPage() {
     } catch (error: any) {
       console.error("Login error:", error);
       
-      let errorMessage = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
+      // استخدام معالج الأخطاء الجديد
+      const errorInfo = handleFirebaseError(error);
+      let errorMessage = errorInfo.userFriendlyMessage;
       let isCredentialsError = false;
       
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "البريد الإلكتروني أو كلمة المرور غير صحيحة";
+      // تحديد ما إذا كان الخطأ متعلقاً بالبيانات
+      if (error.code === 'auth/user-not-found' || 
+          error.code === 'auth/wrong-password' || 
+          error.code === 'auth/invalid-email' ||
+          error.code === 'auth/invalid-credential') {
         isCredentialsError = true;
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "تم تجاوز عدد المحاولات المسموح بها. يرجى المحاولة لاحقاً";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "البريد الإلكتروني غير صالح";
-        isCredentialsError = true;
-      } else if (error.message) {
-        errorMessage = error.message;
       }
 
       // تحديث عدد المحاولات الفاشلة إذا كان الخطأ متعلقاً بالبيانات
@@ -222,6 +222,7 @@ export default function EmployeeLoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
+      <HeaderWithImage />
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
         <Card className="w-full max-w-sm">
           <CardHeader className="space-y-2 text-center">
@@ -236,8 +237,7 @@ export default function EmployeeLoginPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <div className="flex flex-col items-center justify-center flex-1">
-                <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-                <p className="text-muted-foreground font-semibold">بلدية الريان</p>
+                <Logo size="xl" showText={false} />
               </div>
               <div className="w-10"></div> {/* للمحاذاة */}
             </div>
@@ -281,7 +281,6 @@ export default function EmployeeLoginPage() {
           </form>
         </Card>
       </main>
-      <Footer />
     </div>
   );
 }

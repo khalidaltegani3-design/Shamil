@@ -14,7 +14,7 @@ export default function RoleSelectionPage() {
     <div className="min-h-screen flex flex-col" dir="rtl">
       <HeaderWithImage />
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
-      <div className="flex flex-col items-center gap-8 w-full max-w-sm">
+        <div className="flex flex-col items-center gap-8 w-full max-w-sm">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
             <Logo size="xl" showText={false} />
@@ -36,7 +36,8 @@ export default function RoleSelectionPage() {
                 </Button>
             </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

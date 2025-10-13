@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex flex-col" dir="rtl">
       <HeaderWithImage />
       <div className="flex-1 flex items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">نسيت كلمة المرور؟</CardTitle>
           <CardDescription>
@@ -188,6 +188,7 @@ export default function ForgotPasswordPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

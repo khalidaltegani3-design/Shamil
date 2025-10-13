@@ -15,8 +15,8 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: 'رياني - نظام البلاغات الداخلية',
-  description: 'نظام رياني لإدارة ومتابعة البلاغات في بلدية الريان.',
+  title: 'بلدية الريان - نظام البلاغات الداخلية',
+  description: 'نظام إدارة ومتابعة البلاغات في بلدية الريان.',
   metadataBase: new URL('http://localhost:3000'),
   other: {
     'Content-Type': 'text/html; charset=utf-8',

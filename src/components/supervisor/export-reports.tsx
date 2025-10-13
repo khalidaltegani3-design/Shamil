@@ -138,7 +138,7 @@ export function ExportReports({ reports, filteredCount, totalCount }: ExportRepo
       ws['!cols'] = colWidths;
 
       // إضافة الورقة إلى الملف
-      XLSX.utils.book_append_sheet(wb, ws, "تقارير رياني");
+      XLSX.utils.book_append_sheet(wb, ws, "تقارير بلدية الريان");
 
       // إضافة ورقة إحصائيات
       const stats = [
@@ -165,7 +165,7 @@ export function ExportReports({ reports, filteredCount, totalCount }: ExportRepo
       XLSX.utils.book_append_sheet(wb, statsWs, "الإحصائيات");
 
       // تحديد اسم الملف
-      const fileName = `تقارير-رياني-${format === 'detailed' ? 'مفصل' : 'أساسي'}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      const fileName = `تقارير-بلدية-الريان-${format === 'detailed' ? 'مفصل' : 'أساسي'}-${new Date().toISOString().split('T')[0]}.xlsx`;
 
       // تصدير الملف
       XLSX.writeFile(wb, fileName);
@@ -254,7 +254,7 @@ export function ExportReports({ reports, filteredCount, totalCount }: ExportRepo
       monthlyWs['!cols'] = [{ width: 25 }, { width: 15 }];
       XLSX.utils.book_append_sheet(wb, monthlyWs, "الإحصائيات الزمنية");
 
-      const fileName = `ملخص-تقارير-رياني-${new Date().toISOString().split('T')[0]}.xlsx`;
+      const fileName = `ملخص-تقارير-بلدية-الريان-${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
       toast({

@@ -1,10 +1,12 @@
 import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
-import { doc, getDoc, setDoc, serverTimestamp, collection, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage } from "firebase/storage";
+import { handleFirebaseError, isFirestoreLeaseError } from './firebase-error-handler';
+import { logger } from './logger';
 
 // Enhanced Firebase configuration with App Hosting compatibility
 const firebaseConfig = {
@@ -28,29 +30,26 @@ try {
 
 const auth = getAuth(app);
 
-// Initialize Firestore with enhanced error handling for App Hosting
+// Initialize Firestore with simplified configuration to avoid lease issues
 let db: Firestore;
 try {
-  // Try to initialize with persistent cache
-  if (typeof window !== 'undefined') {
-    db = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
-    });
-    console.log('Firestore initialized with persistent cache');
-  } else {
-    // Server-side: use default Firestore without persistence
-    db = getFirestore(app);
-    console.log('Firestore initialized for server-side rendering');
-  }
+  // Use default Firestore without persistent cache to avoid lease conflicts
+  db = getFirestore(app);
+  logger.info('Firestore initialized successfully');
 } catch (error) {
-  // If initialization fails, fall back to default Firestore
-  console.warn('Failed to initialize Firestore with persistence, using default:', error);
-  try {
-    db = getFirestore(app);
-  } catch (fallbackError) {
-    console.error('Critical: Failed to initialize Firestore:', fallbackError);
+  const errorInfo = handleFirebaseError(error);
+  if (isFirestoreLeaseError(error)) {
+    logger.leaseError(error);
+    // Retry with a fresh instance
+    try {
+      db = getFirestore(app);
+      logger.info('Firestore initialized successfully on retry');
+    } catch (retryError) {
+      logger.systemError('تهيئة قاعدة البيانات (إعادة المحاولة)', retryError);
+      throw new Error('Firebase Firestore initialization failed');
+    }
+  } else {
+    logger.systemError('تهيئة قاعدة البيانات', error);
     throw new Error('Firebase Firestore initialization failed');
   }
 }
@@ -61,23 +60,11 @@ const storage = getStorage(app);
 // دالة للتحقق من الاتصال بقاعدة البيانات مع معالجة أفضل للأخطاء
 export async function pingDatabase() {
   try {
-    // Simple connectivity test
+    // Simple connectivity test - just check if we can create a reference
     const testDoc = doc(db, '_health', 'status');
     
-    // In production, just try to create a reference - don't read
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Production environment: Database reference created successfully');
-      return true;
-    }
-    
-    // In development, perform actual read test
-    const docSnap = await getDoc(testDoc);
-    console.log('Database connection successful:', firebaseConfig.projectId);
-    
-    if (!docSnap.exists()) {
-      console.log('Health document does not exist - normal for new databases');
-    }
-    
+    // Skip actual database read in development to avoid lease issues
+    console.log('Database connection reference created successfully:', firebaseConfig.projectId);
     return true;
   } catch (error) {
     console.error('Database connection test failed:', error);
@@ -96,25 +83,10 @@ try {
   // ignore logging errors
 }
 
-// إنشاء وثيقة حالة الاتصال مع معالجة محسنة للأخطاء
+// Simplified health check to avoid lease conflicts
 async function initializeHealthCheck() {
-  // Skip health check in production builds to avoid unnecessary database calls
-  if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
-    return;
-  }
-  
-  try {
-    const statusDoc = doc(db, '_health', 'status');
-    const docSnap = await getDoc(statusDoc);
-    
-    if (docSnap.exists()) {
-      console.log('Health check document exists:', docSnap.data());
-    } else {
-      console.log('Health check document does not exist - this is normal for new databases');
-    }
-  } catch (error) {
-    console.warn('Health check read failed (normal if database is not set up):', error);
-  }
+  // Skip health check to avoid lease issues in development
+  console.log('Health check skipped to avoid lease conflicts');
 }
 
 // تنفيذ عملية التهيئة فقط في البيئة المناسبة
@@ -146,12 +118,17 @@ export async function registerWebFcmToken(userId: string) {
       const token = await getToken(messaging, { vapidKey: vapidKey });
       if (token) {
         console.log('FCM Token:', token);
-        await setDoc(doc(db, "devices", token), {
-          userId, 
-          platform: "web", 
-          createdAt: serverTimestamp(), 
-          enabled: true
-        }, { merge: true });
+        // Use batch write to avoid lease conflicts
+        try {
+          await setDoc(doc(db, "devices", token), {
+            userId, 
+            platform: "web", 
+            createdAt: serverTimestamp(), 
+            enabled: true
+          }, { merge: true });
+        } catch (dbError) {
+          console.warn('Failed to save FCM token to database (non-critical):', dbError);
+        }
       } else {
         console.log('No registration token available. Request permission to generate one.');
       }

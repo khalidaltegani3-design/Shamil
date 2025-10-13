@@ -14,7 +14,9 @@ import { Shield, ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { ensureSystemAdminExists } from '@/lib/ensure-system-admin';
-import Footer from '@/components/footer';
+import Logo from '@/components/Logo';
+import HeaderWithImage from '@/components/HeaderWithImage';
+import { handleFirebaseError } from '@/lib/firebase-error-handler';
 
 export default function SupervisorLoginPage() {
   const [email, setEmail] = useState('');
@@ -138,31 +140,16 @@ export default function SupervisorLoginPage() {
     } catch (error: any) {
       console.error('خطأ في تسجيل الدخول:', error);
       
-      switch (error.code) {
-        case 'auth/user-not-found':
-          setError('البريد الإلكتروني غير مسجل في النظام');
-          break;
-        case 'auth/wrong-password':
-          setError('كلمة المرور غير صحيحة');
-          break;
-        case 'auth/invalid-email':
-          setError('البريد الإلكتروني غير صالح');
-          break;
-        case 'auth/user-disabled':
-          setError('تم إيقاف هذا الحساب. تواصل مع مدير النظام');
-          break;
-        case 'auth/too-many-requests':
-          setError('تم تجاوز عدد المحاولات المسموحة. حاول مرة أخرى لاحقاً');
-          break;
-        default:
-          setError('حدث خطأ في تسجيل الدخول. تأكد من صحة البيانات');
-      }
+      // استخدام معالج الأخطاء الجديد
+      const errorInfo = handleFirebaseError(error);
+      setError(errorInfo.userFriendlyMessage);
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
+      <HeaderWithImage />
       <div className="flex-1 flex items-center justify-center bg-muted/50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-4">
@@ -184,7 +171,9 @@ export default function SupervisorLoginPage() {
               <div className="w-10"></div> {/* للمحاذاة */}
             </div>
             <div className="text-center">
-              <h1 className="text-4xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+              <div className="flex justify-center mb-2">
+                <Logo size="lg" showText={false} />
+              </div>
               <p className="text-sm text-muted-foreground">منصة إدارة البلاغات</p>
             </div>
             <CardDescription className="text-center">
@@ -269,7 +258,6 @@ export default function SupervisorLoginPage() {
           </CardContent>
         </Card>
       </div>
-      <Footer />
     </div>
   );
 }

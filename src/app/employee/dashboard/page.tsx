@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, FileText, LogOut, User, UserCircle } from "lucide-react";
 import { signOut } from "firebase/auth";
+import Logo from "@/components/Logo";
+import AppHeader from "@/components/AppHeader";
 
 export default function EmployeeDashboard() {
   const router = useRouter();
@@ -96,24 +98,16 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold">لوحة تحكم الموظف</h1>
-        </div>
-        <div className="flex items-center justify-center">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handleViewProfile} title="الملف الشخصي">
-            <UserCircle className="h-5 w-5" />
-            <span className="sr-only">الملف الشخصي</span>
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="h-5 w-5" />
-            <span className="sr-only">تسجيل الخروج</span>
-          </Button>
-        </div>
-      </header>
+      <AppHeader title="لوحة تحكم الموظف">
+        <Button variant="ghost" size="icon" onClick={handleViewProfile} title="الملف الشخصي">
+          <UserCircle className="h-5 w-5" />
+          <span className="sr-only">الملف الشخصي</span>
+        </Button>
+        <Button variant="ghost" size="icon" onClick={handleSignOut}>
+          <LogOut className="h-5 w-5" />
+          <span className="sr-only">تسجيل الخروج</span>
+        </Button>
+      </AppHeader>
 
       <main className="container mx-auto p-4 md:p-8">
         <Card className="mb-6">

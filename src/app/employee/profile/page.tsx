@@ -15,6 +15,7 @@ import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { allDepartments } from '@/lib/departments';
 import { validateEmployeeId, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
+import Logo from "@/components/Logo";
 
 interface UserData {
   uid: string;
@@ -215,7 +216,7 @@ export default function EmployeeProfile() {
           <h1 className="text-lg font-semibold">الملف الشخصي</h1>
         </div>
         <div className="flex items-center justify-center">
-          <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+          <Logo size="md" />
         </div>
         <Button variant="ghost" size="icon" onClick={handleSignOut}>
           <LogOut className="h-5 w-5" />

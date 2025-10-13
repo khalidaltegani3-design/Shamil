@@ -36,6 +36,7 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { SupervisorAuth, checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
 import AppFooter from "@/components/app-footer";
+import Logo from '@/components/Logo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +46,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator";
-import Footer from "@/components/footer";
 
 
 interface UserData {
@@ -113,7 +113,7 @@ export default function SupervisorLayout({
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/supervisor" className="flex items-center gap-2 font-semibold">
-              <h1 className="text-2xl md:text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+              <Logo size="md" />
             </Link>
              <div className="mr-auto flex items-center gap-2">
                 <DropdownMenu>
@@ -220,7 +220,7 @@ export default function SupervisorLayout({
                         href="#"
                         className="flex items-center gap-2 text-lg font-semibold mb-4"
                     >
-                      <h1 className="text-2xl md:text-3xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+                      <Logo size="md" />
                     </Link>
                     <Link
                         href="/supervisor"

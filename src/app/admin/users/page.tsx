@@ -24,6 +24,8 @@ import { generateEmployeeId, validateEmployeeId, isEmployeeIdUnique } from '@/li
 import { getSupervisorData, getAllActiveSupervisors } from '@/lib/supervisor-management';
 import { promoteToSupervisor, promoteToAdmin, demoteToEmployee, demoteToSupervisor, getUserCurrentRole, updateSupervisorDepartments } from '@/lib/role-management';
 import { ExpandableCell } from '@/components/ui/expandable-cell';
+import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
 
 interface UserData {
   uid: string;
@@ -718,21 +720,13 @@ function SystemAdminDashboard() {
   return (
     <div className={`min-h-screen bg-background ${language === 'ar' ? 'dir-rtl' : 'dir-ltr'}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only">{t('back')}</span>
-          </Button>
-          <h1 className="text-lg font-semibold">{t('user_management')}</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <LanguageSwitcher />
-          <div className="flex items-center justify-center rounded text-sm font-semibold">
-            <h1 className="text-2xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">{t('brand')}</h1>
-          </div>
-        </div>
-      </header>
+      <AppHeader title={t('user_management')}>
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-5 w-5" />
+          <span className="sr-only">{t('back')}</span>
+        </Button>
+        <LanguageSwitcher />
+      </AppHeader>
 
       {/* Main Content */}
       <main className="container mx-auto p-6 space-y-6">

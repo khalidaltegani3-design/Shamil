@@ -19,7 +19,7 @@ const translations = {
     'system_admin_panel': 'لوحة تحكم مدير النظام',
     'user_management': 'إدارة المستخدمين',
     'back': 'رجوع',
-    'brand': 'رياني',
+    'brand': 'شعار بلدية الريان',
     
     // User Management
     'manage_users_roles': 'إدارة أدوار وصلاحيات المستخدمين',

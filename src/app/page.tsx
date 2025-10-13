@@ -4,17 +4,19 @@
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Shield, User } from "lucide-react";
+import Logo from "@/components/Logo";
+import HeaderWithImage from "@/components/HeaderWithImage";
 
 export default function RoleSelectionPage() {
   const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
+      <HeaderWithImage />
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center gap-8 w-full max-w-sm">
-          <div className="text-center space-y-2">
-             <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-              <p className="text-xl font-semibold text-muted-foreground">بلدية الريان</p>
+          <div className="text-center space-y-4">
+            <Logo size="xl" showText={false} />
           </div>
           
           <div className="w-full space-y-4">

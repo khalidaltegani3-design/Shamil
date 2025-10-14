@@ -668,6 +668,56 @@ function SystemAdminDashboard() {
     }
   };
 
+  // حذف مستخدم نهائياً
+  const handleDeleteUser = async (user: UserData) => {
+    setUpdating(user.uid);
+    try {
+      console.log('🗑️ بدء حذف المستخدم:', user.displayName || user.email);
+      
+      // حذف من Firestore أولاً
+      const userRef = doc(db, 'users', user.uid);
+      await deleteDoc(userRef);
+      console.log('✅ تم حذف بيانات المستخدم من Firestore');
+      
+      // حذف من مجموعة supervisors إذا كان مشرفاً
+      if (user.role === 'supervisor') {
+        try {
+          const supervisorRef = doc(db, 'supervisors', user.uid);
+          await deleteDoc(supervisorRef);
+          console.log('✅ تم حذف بيانات المشرف');
+        } catch (error) {
+          console.log('⚠️ لم يتم العثور على بيانات مشرف');
+        }
+      }
+      
+      // ملاحظة: لا يمكن حذف المستخدم من Firebase Auth من جانب العميل
+      // يجب أن يتم ذلك من خلال Cloud Functions أو Admin SDK
+      
+      toast({
+        title: "تم الحذف بنجاح! ✅",
+        description: `تم حذف المستخدم ${user.displayName || user.email} من قاعدة البيانات`,
+      });
+      
+      console.log('✅ تم حذف المستخدم بنجاح');
+      
+    } catch (error) {
+      console.error('❌ خطأ في حذف المستخدم:', error);
+      
+      let errorMessage = "فشل في حذف المستخدم";
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: errorMessage
+      });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const getRoleDisplayName = (role: string) => {
     switch (role) {
       case 'admin': return 'مدير عام';
@@ -868,28 +918,6 @@ function SystemAdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* زر إضافة أرقام وظيفية لجميع المستخدمين */}
-            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-amber-800">إضافة أرقام وظيفية للمستخدمين الموجودين</h4>
-                  <p className="text-sm text-amber-700">
-                    سيتم إضافة أرقام وظيفية فريدة لجميع المستخدمين الذين لا يملكون أرقام وظيفية
-                  </p>
-                </div>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={addEmployeeIdsToAllUsers}
-                  disabled={loading}
-                  className="text-amber-700 border-amber-300 hover:bg-amber-100"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  إضافة أرقام وظيفية
-                </Button>
-              </div>
-            </div>
-
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -903,6 +931,7 @@ function SystemAdminDashboard() {
                     <TableHead className="min-w-[100px] hidden md:table-cell">تاريخ التسجيل</TableHead>
                     <TableHead className="min-w-[150px]">إجراءات سريعة</TableHead>
                     <TableHead className="min-w-[120px] hidden lg:table-cell">صلاحيات الإشراف</TableHead>
+                    <TableHead className="min-w-[80px]">حذف</TableHead>
                   </TableRow>
                 </TableHeader>
               <TableBody>
@@ -1100,6 +1129,52 @@ function SystemAdminDashboard() {
                           <span className="hidden xl:inline">إدارة الصلاحيات</span>
                           <span className="xl:hidden">صلاحيات</span>
                         </Button>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {((user.email?.toLowerCase().trim() === "sweetdream711711@gmail.com") || 
+                        user.role === 'system_admin' || 
+                        user.isSystemAdmin) ? (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={updating === user.uid}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>تأكيد حذف المستخدم</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من حذف المستخدم <strong>{user.displayName || user.email}</strong>؟
+                                <br /><br />
+                                <span className="text-red-600 font-semibold">⚠️ تحذير:</span> هذا الإجراء لا يمكن التراجع عنه!
+                                <br />
+                                سيتم حذف:
+                                <ul className="list-disc list-inside mt-2 text-sm">
+                                  <li>حساب المستخدم من نظام AWG</li>
+                                  <li>جميع بيانات المستخدم من قاعدة البيانات</li>
+                                  <li>جميع الصلاحيات والأدوار المرتبطة</li>
+                                </ul>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                حذف نهائياً
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </TableCell>
                   </TableRow>

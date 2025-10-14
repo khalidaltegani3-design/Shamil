@@ -166,23 +166,23 @@ function AdminDashboard() {
             </CardContent>
           </Card>
 
-                 {/* حذف أرقام وظيفية محددة - مخصص لمدير النظام الأساسي فقط */}
-                 {user?.email?.toLowerCase() === "sweetdream711711@gmail.com" && (
-            <Card className="hover:shadow-lg transition-shadow border-red-200">
+                 {/* حذف أرقام وظيفية محددة - متاح للمديرين ومديري النظام */}
+                 {(userRole === 'admin' || userRole === 'system_admin') && (
+            <Card className="hover:shadow-lg transition-shadow border-amber-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                  حذف أرقام وظيفية محددة
-                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">خاص بمدير النظام</span>
+                  <Trash2 className="h-5 w-5 text-amber-600" />
+                  إدارة الأرقام الوظيفية
+                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">للمديرين</span>
                 </CardTitle>
                 <CardDescription>
-                  حذف أرقام وظيفية مكررة أو ناقصة: 12012354, 12010906, 12001376
+                  بحث وحذف أرقام وظيفية محددة بشكل انتقائي
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/admin/delete-employee-ids">
-                  <Button className="w-full" variant="destructive">
-                    حذف الأرقام المحددة
+                  <Button className="w-full" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
+                    إدارة الأرقام الوظيفية
                   </Button>
                 </Link>
               </CardContent>

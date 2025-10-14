@@ -14,9 +14,11 @@ import { AdvancedSearchService } from '@/lib/advanced-search';
 import { ComprehensiveSearchService } from '@/lib/comprehensive-search';
 import { DeepSearchService } from '@/lib/deep-search';
 import { Trash2, Search, CheckCircle, XCircle, AlertTriangle, Database } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function DeleteEmployeeIdsPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -29,17 +31,14 @@ export default function DeleteEmployeeIdsPage() {
   const [isDeepSearching, setIsDeepSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState<string>('');
   const [deleteResults, setDeleteResults] = useState<DeleteResult | null>(null);
+  const [employeeIdsInput, setEmployeeIdsInput] = useState<string>('');
+  const [employeeIdsToSearch, setEmployeeIdsToSearch] = useState<string[]>([]);
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const router = useRouter();
   const { toast } = useToast();
 
-  const employeeIdsToDelete = [
-    '12012354',
-    '12010906', 
-    '12001376'
-  ];
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       setLoading(false);
       
@@ -48,31 +47,85 @@ export default function DeleteEmployeeIdsPage() {
         return;
       }
 
-      // Check if user is system admin (only sweetdream711711@gmail.com can access this page)
-      const systemAdminEmail = "sweetdream711711@gmail.com";
-      const userEmail = user.email?.toLowerCase();
-      
-      console.log('🔍 التحقق من الصلاحيات:');
-      console.log(`المستخدم: ${userEmail}`);
-      console.log(`مدير النظام: ${systemAdminEmail.toLowerCase()}`);
-      console.log(`مطابق: ${userEmail === systemAdminEmail.toLowerCase()}`);
-      
-      if (userEmail !== systemAdminEmail.toLowerCase()) {
-        console.log('❌ غير مصرح - توجيه إلى لوحة المعلومات');
+      // Check if user is admin or system admin
+      try {
+        const userDoc = await import('@/lib/firebase').then(m => m.db);
+        const { doc, getDoc } = await import('firebase/firestore');
+        const userDocRef = doc(userDoc, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          const role = userData.role;
+          
+          console.log('🔍 التحقق من الصلاحيات:');
+          console.log(`المستخدم: ${user.email}`);
+          console.log(`الدور: ${role}`);
+          
+          // السماح للمديرين (admin) ومديري النظام (system_admin) بالوصول
+          if (role !== 'admin' && role !== 'system_admin') {
+            console.log('❌ غير مصرح - توجيه إلى لوحة المعلومات');
+            toast({
+              variant: "destructive",
+              title: "غير مصرح",
+              description: "هذه الصفحة متاحة للمديرين فقط"
+            });
+            router.push('/dashboard');
+            return;
+          }
+          
+          // حفظ دور المستخدم للاستخدام في عمليات الحذف
+          setUserRole(role);
+          console.log('✅ مصرح - يمكن الوصول للصفحة');
+        } else {
+          router.push('/dashboard');
+        }
+      } catch (error) {
+        console.error('خطأ في التحقق من الصلاحيات:', error);
         router.push('/dashboard');
-        return;
       }
-      
-      console.log('✅ مصرح - يمكن الوصول للصفحة');
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]);
+
+  const handleParseEmployeeIds = () => {
+    // تحليل النص المدخل وتحويله إلى مصفوفة من الأرقام الوظيفية
+    const ids = employeeIdsInput
+      .split(/[\n,،;؛\s]+/) // فصل بواسطة فواصل، أسطر جديدة، أو مسافات
+      .map(id => id.trim())
+      .filter(id => id.length > 0);
+    
+    setEmployeeIdsToSearch(ids);
+    
+    if (ids.length > 0) {
+      toast({
+        title: "تم تحليل الأرقام الوظيفية",
+        description: `تم العثور على ${ids.length} رقم وظيفي للبحث`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى إدخال أرقام وظيفية صحيحة",
+      });
+    }
+  };
 
   const handleSearch = async () => {
+    if (employeeIdsToSearch.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى إدخال أرقام وظيفية للبحث",
+      });
+      return;
+    }
+    
     setIsSearching(true);
+    setSelectedDocuments(new Set()); // إعادة تعيين التحديدات
     try {
-      const results = await EmployeeIdDeletionService.searchEmployeeIds(employeeIdsToDelete);
+      const results = await EmployeeIdDeletionService.searchEmployeeIds(employeeIdsToSearch);
       setSearchResults(results);
       
       toast({
@@ -91,9 +144,19 @@ export default function DeleteEmployeeIdsPage() {
   };
 
   const handleAdvancedSearch = async () => {
+    if (employeeIdsToSearch.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى إدخال أرقام وظيفية للبحث",
+      });
+      return;
+    }
+    
     setIsAdvancedSearching(true);
+    setSelectedDocuments(new Set());
     try {
-      const results = await AdvancedSearchService.searchAllCollections(employeeIdsToDelete);
+      const results = await AdvancedSearchService.searchAllCollections(employeeIdsToSearch);
       setAdvancedSearchResults(results);
       
       toast({
@@ -112,9 +175,19 @@ export default function DeleteEmployeeIdsPage() {
   };
 
   const handleComprehensiveSearch = async () => {
+    if (employeeIdsToSearch.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى إدخال أرقام وظيفية للبحث",
+      });
+      return;
+    }
+    
     setIsComprehensiveSearching(true);
+    setSelectedDocuments(new Set());
     try {
-      const results = await ComprehensiveSearchService.searchEverywhere(employeeIdsToDelete);
+      const results = await ComprehensiveSearchService.searchEverywhere(employeeIdsToSearch);
       setComprehensiveSearchResults(results);
       
       toast({
@@ -133,8 +206,18 @@ export default function DeleteEmployeeIdsPage() {
   };
 
   const handleDeepSearch = async () => {
+    if (employeeIdsToSearch.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى إدخال أرقام وظيفية للبحث",
+      });
+      return;
+    }
+    
     setIsDeepSearching(true);
     setSearchProgress('بدء البحث العميق...');
+    setSelectedDocuments(new Set());
     
     try {
       // إضافة تأخير بين العمليات لتجنب الحمل الزائد
@@ -148,7 +231,7 @@ export default function DeleteEmployeeIdsPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setSearchProgress('البحث في مستندات التكوين...');
-      const results = await DeepSearchService.deepSearchEverywhere(employeeIdsToDelete);
+      const results = await DeepSearchService.deepSearchEverywhere(employeeIdsToSearch);
       setDeepSearchResults(results);
       
       setSearchProgress('انتهاء البحث...');
@@ -170,10 +253,68 @@ export default function DeleteEmployeeIdsPage() {
     }
   };
 
+  const handleToggleDocument = (docId: string) => {
+    const newSelected = new Set(selectedDocuments);
+    if (newSelected.has(docId)) {
+      newSelected.delete(docId);
+    } else {
+      newSelected.add(docId);
+    }
+    setSelectedDocuments(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    const allDocIds = new Set<string>();
+    
+    // جمع جميع معرفات المستندات من نتائج البحث
+    if (searchResults) {
+      Object.values(searchResults.found).forEach((docs: any) => {
+        docs.forEach((doc: any) => allDocIds.add(doc.id));
+      });
+    }
+    
+    if (advancedSearchResults) {
+      advancedSearchResults.results.forEach((result: any) => {
+        result.documents.forEach((doc: any) => allDocIds.add(doc.id));
+      });
+    }
+    
+    if (comprehensiveSearchResults) {
+      comprehensiveSearchResults.results.forEach((result: any) => {
+        allDocIds.add(result.documentId);
+      });
+    }
+    
+    if (deepSearchResults) {
+      deepSearchResults.results.forEach((result: any) => {
+        allDocIds.add(result.documentId);
+      });
+    }
+    
+    setSelectedDocuments(allDocIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedDocuments(new Set());
+  };
+
   const handleDelete = async () => {
+    if (selectedDocuments.size === 0) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يرجى اختيار مستند واحد على الأقل للحذف",
+      });
+      return;
+    }
+    
     setIsDeleting(true);
     try {
-      const result = await EmployeeIdDeletionService.deleteUserSpecifiedIds(user?.email);
+      const result = await EmployeeIdDeletionService.deleteSpecificDocuments(
+        Array.from(selectedDocuments),
+        user?.email,
+        userRole
+      );
       setDeleteResults(result);
       
       if (result.success) {
@@ -181,6 +322,12 @@ export default function DeleteEmployeeIdsPage() {
           title: "تم الحذف بنجاح! ✅",
           description: `تم حذف ${result.deletedCount} مستند بنجاح`,
         });
+        // إعادة تعيين التحديدات والنتائج
+        setSelectedDocuments(new Set());
+        setSearchResults(null);
+        setAdvancedSearchResults(null);
+        setComprehensiveSearchResults(null);
+        setDeepSearchResults(null);
       } else {
         toast({
           variant: "destructive",
@@ -244,25 +391,46 @@ export default function DeleteEmployeeIdsPage() {
       
       <main className="container mx-auto p-6 space-y-6">
         
-        {/* معلومات الأرقام المراد حذفها */}
+        {/* إدخال الأرقام الوظيفية */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-blue-600" />
-              الأرقام الوظيفية المراد حذفها
+              إدخال الأرقام الوظيفية
             </CardTitle>
             <CardDescription>
-              هذه الأرقام الوظيفية ستتم إزالتها من قاعدة البيانات
+              أدخل الأرقام الوظيفية التي تريد البحث عنها (سطر واحد لكل رقم، أو افصل بفواصل)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
-              {employeeIdsToDelete.map((id, index) => (
-                <div key={id} className="flex items-center gap-2 p-2 bg-muted rounded">
-                  <span className="font-mono text-sm">{index + 1}.</span>
-                  <span className="font-mono font-semibold">{id}</span>
+            <div className="space-y-4">
+              <div>
+                <textarea
+                  className="w-full min-h-32 p-3 border rounded-md font-mono text-sm resize-y"
+                  placeholder="مثال:&#10;12012354&#10;12010906&#10;12001376&#10;&#10;أو: 12012354, 12010906, 12001376"
+                  value={employeeIdsInput}
+                  onChange={(e) => setEmployeeIdsInput(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleParseEmployeeIds} className="w-full">
+                تحليل الأرقام الوظيفية
+              </Button>
+              
+              {/* عرض الأرقام المحللة */}
+              {employeeIdsToSearch.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                  <h4 className="font-semibold text-blue-800 mb-2">
+                    الأرقام الوظيفية للبحث ({employeeIdsToSearch.length}):
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {employeeIdsToSearch.map((id, index) => (
+                      <span key={index} className="bg-blue-100 border border-blue-300 rounded px-2 py-1 text-sm font-mono text-blue-800">
+                        {id}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -328,15 +496,46 @@ export default function DeleteEmployeeIdsPage() {
               </div>
             )}
             
+            {/* إحصائيات التحديد */}
+            {(searchResults || advancedSearchResults || comprehensiveSearchResults || deepSearchResults) && (
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-gray-800">
+                    المستندات المحددة للحذف: {selectedDocuments.size}
+                  </h4>
+                  <div className="flex gap-2">
+                    <Button onClick={handleSelectAll} size="sm" variant="outline">
+                      تحديد الكل
+                    </Button>
+                    <Button onClick={handleDeselectAll} size="sm" variant="outline">
+                      إلغاء التحديد
+                    </Button>
+                  </div>
+                </div>
+                {selectedDocuments.size > 0 && (
+                  <div className="text-sm text-gray-600">
+                    <strong>المستندات المحددة:</strong>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {Array.from(selectedDocuments).map(docId => (
+                        <span key={docId} className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-mono">
+                          {docId.substring(0, 8)}...
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="flex gap-4 flex-wrap mt-4">
               <Button 
                 onClick={handleDelete} 
-                disabled={isDeleting || (!searchResults && !advancedSearchResults && !comprehensiveSearchResults && !deepSearchResults)}
+                disabled={isDeleting || selectedDocuments.size === 0}
                 variant="destructive"
                 className="flex items-center gap-2"
               >
                 <Trash2 className="h-4 w-4" />
-                {isDeleting ? 'جاري الحذف...' : 'حذف الأرقام'}
+                {isDeleting ? 'جاري الحذف...' : `حذف ${selectedDocuments.size} مستند`}
               </Button>
             </div>
             
@@ -389,13 +588,29 @@ export default function DeleteEmployeeIdsPage() {
                     </h4>
                     {Object.entries(searchResults.found).map(([employeeId, docs]) => (
                       <div key={employeeId} className="bg-green-50 border border-green-200 rounded p-3 mb-2">
-                        <div className="font-mono font-semibold text-green-800">{employeeId}</div>
-                        <div className="text-sm text-green-600">
-                          {docs.length} مستند: {docs.map((doc: any) => doc.id).join(', ')}
-                        </div>
-                        <div className="text-xs text-green-500 mt-1">
-                          المستخدم: {docs[0]?.email || 'غير محدد'}
-                        </div>
+                        <div className="font-mono font-semibold text-green-800 mb-2">{employeeId}</div>
+                        {docs.map((doc: any) => (
+                          <div key={doc.id} className="flex items-start gap-2 p-2 bg-white rounded mb-1 hover:bg-gray-50">
+                            <Checkbox
+                              checked={selectedDocuments.has(doc.id)}
+                              onCheckedChange={() => handleToggleDocument(doc.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm text-green-700">
+                                <strong>ID:</strong> <span className="font-mono text-xs">{doc.id}</span>
+                              </div>
+                              <div className="text-xs text-green-600">
+                                <strong>البريد:</strong> {doc.email || 'غير محدد'}
+                              </div>
+                              {doc.name && (
+                                <div className="text-xs text-green-600">
+                                  <strong>الاسم:</strong> {doc.name}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>

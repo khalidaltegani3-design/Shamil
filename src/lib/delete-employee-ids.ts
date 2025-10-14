@@ -12,17 +12,35 @@ export interface DeleteResult {
 export class EmployeeIdDeletionService {
   
   /**
-   * التحقق من صلاحية مدير النظام الأساسي
+   * التحقق من صلاحية المدير أو مدير النظام
+   * @param userEmail - البريد الإلكتروني للمستخدم
+   * @param userRole - دور المستخدم (admin أو system_admin)
    */
-  static isSystemAdmin(userEmail: string | null | undefined): boolean {
+  static isAuthorized(userEmail: string | null | undefined, userRole?: string): boolean {
     const systemAdminEmail = "sweetdream711711@gmail.com";
     const normalizedUserEmail = userEmail?.toLowerCase();
     const normalizedAdminEmail = systemAdminEmail.toLowerCase();
     
     console.log('🔍 التحقق من الصلاحيات في الخدمة:');
     console.log(`المستخدم: ${normalizedUserEmail}`);
-    console.log(`مدير النظام: ${normalizedAdminEmail}`);
-    console.log(`مطابق: ${normalizedUserEmail === normalizedAdminEmail}`);
+    console.log(`الدور: ${userRole}`);
+    
+    // السماح لمديري النظام والمديرين العامين
+    const isSystemAdmin = normalizedUserEmail === normalizedAdminEmail;
+    const isAdmin = userRole === 'admin' || userRole === 'system_admin';
+    
+    console.log(`مدير النظام: ${isSystemAdmin}, مدير: ${isAdmin}`);
+    
+    return isSystemAdmin || isAdmin;
+  }
+  
+  /**
+   * التحقق من صلاحية مدير النظام الأساسي فقط (للعمليات الحساسة)
+   */
+  static isSystemAdmin(userEmail: string | null | undefined): boolean {
+    const systemAdminEmail = "sweetdream711711@gmail.com";
+    const normalizedUserEmail = userEmail?.toLowerCase();
+    const normalizedAdminEmail = systemAdminEmail.toLowerCase();
     
     return normalizedUserEmail === normalizedAdminEmail;
   }
@@ -148,6 +166,61 @@ export class EmployeeIdDeletionService {
     console.log(`👤 المستخدم: ${userEmail}`);
 
     return await this.deleteSpecificEmployeeIds(employeeIdsToDelete, userEmail);
+  }
+
+  /**
+   * حذف مستندات محددة بمعرفاتها (للحذف الانتقائي)
+   * يمكن للمديرين (admin) ومديري النظام (system_admin) استخدام هذه الوظيفة
+   */
+  static async deleteSpecificDocuments(documentIds: string[], userEmail?: string | null, userRole?: string): Promise<DeleteResult> {
+    // التحقق من الصلاحية - السماح للمديرين ومديري النظام
+    if (!this.isAuthorized(userEmail, userRole)) {
+      return {
+        success: false,
+        deletedCount: 0,
+        errors: ["غير مصرح لك بتنفيذ هذه العملية. هذه الميزة مخصصة للمديرين ومديري النظام فقط."],
+        deletedIds: []
+      };
+    }
+    
+    const result: DeleteResult = {
+      success: true,
+      deletedCount: 0,
+      errors: [],
+      deletedIds: []
+    };
+
+    try {
+      console.log(`🔍 بدء حذف ${documentIds.length} مستند محدد...`);
+
+      for (const docId of documentIds) {
+        try {
+          console.log(`🗑️ محاولة حذف المستند: ${docId}`);
+          await deleteDoc(doc(db, 'users', docId));
+          result.deletedCount++;
+          result.deletedIds.push(docId);
+          console.log(`✅ تم حذف المستند ${docId} بنجاح`);
+        } catch (deleteError: any) {
+          const errorMsg = `فشل في حذف المستند ${docId}: ${deleteError.message}`;
+          result.errors.push(errorMsg);
+          result.success = false;
+          console.error(`❌ ${errorMsg}`);
+        }
+      }
+
+      console.log(`📊 النتيجة النهائية: تم حذف ${result.deletedCount} من أصل ${documentIds.length} مستند`);
+      if (result.errors.length > 0) {
+        console.log(`⚠️ الأخطاء: ${result.errors.length}`);
+        result.errors.forEach(error => console.log(`   - ${error}`));
+      }
+
+    } catch (error: any) {
+      result.success = false;
+      result.errors.push(`خطأ عام: ${error.message}`);
+      console.error('❌ خطأ عام في عملية الحذف:', error);
+    }
+
+    return result;
   }
 
   /**

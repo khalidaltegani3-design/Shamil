@@ -61,36 +61,29 @@ export default function SignupPage() {
         return;
     }
 
-    if (!employeeId.trim()) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "يرجى إدخال الرقم الوظيفي.",
-        });
-        setIsLoading(false);
-        return;
-    }
+    // التحقق من الرقم الوظيفي فقط إذا تم إدخاله (اختياري)
+    if (employeeId.trim()) {
+        if (!validateEmployeeId(employeeId.trim())) {
+            toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: "الرقم الوظيفي غير صحيح. يجب أن يحتوي على أرقام وحروف فقط.",
+            });
+            setIsLoading(false);
+            return;
+        }
 
-    if (!validateEmployeeId(employeeId.trim())) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "الرقم الوظيفي غير صحيح. يجب أن يحتوي على أرقام وحروف فقط.",
-        });
-        setIsLoading(false);
-        return;
-    }
-
-    // التحقق من تفرد الرقم الوظيفي
-    const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
-    if (!isUnique) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.",
-        });
-        setIsLoading(false);
-        return;
+        // التحقق من تفرد الرقم الوظيفي
+        const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
+        if (!isUnique) {
+            toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: "هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.",
+            });
+            setIsLoading(false);
+            return;
+        }
     }
 
     // استخدام الخدمة الجديدة لإنشاء المستخدم
@@ -156,17 +149,21 @@ export default function SignupPage() {
                 <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employeeId">الرقم الوظيفي</Label>
+                <Label htmlFor="employeeId">
+                  الرقم الوظيفي 
+                  <span className="text-xs text-muted-foreground ml-2">(اختياري)</span>
+                </Label>
                 <Input 
                   id="employeeId" 
                   type="text" 
-                  placeholder="أدخل رقمك الوظيفي" 
-                  required 
+                  placeholder="أدخل رقمك الوظيفي (اختياري)" 
                   value={employeeId} 
-                  onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
+                  onChange={(e) => setEmployeeId(e.target.value)}
                   className="font-mono"
                 />
-                <p className="text-xs text-muted-foreground">أدخل رقمك الوظيفي الخاص كما يظهر في كشوف المرتبات</p>
+                <p className="text-xs text-muted-foreground">
+                  يمكنك إضافة رقمك الوظيفي الآن أو تركه للمدير لإضافته لاحقاً
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="department">الإدارة التي تعمل بها</Label>

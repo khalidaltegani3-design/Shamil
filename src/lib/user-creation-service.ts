@@ -11,7 +11,11 @@ import {
   runTransaction, 
   getDoc,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  collection,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { checkEmployeeIdUniqueness } from './employee-utils';
@@ -20,7 +24,7 @@ export interface UserCreationData {
   name: string;
   email: string;
   password: string;
-  employeeId: string;
+  employeeId?: string; // اختياري - يمكن للمدير إضافته لاحقاً
   homeDepartmentId: string;
 }
 
@@ -40,14 +44,16 @@ export class UserCreationService {
     const { name, email, password, employeeId, homeDepartmentId } = userData;
     
     try {
-      // التحقق من تفرد الرقم الوظيفي أولاً
-      const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
-      if (!isUnique) {
-        return {
-          success: false,
-          error: 'هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.',
-          cleanupNeeded: false
-        };
+      // التحقق من تفرد الرقم الوظيفي فقط إذا تم توفيره
+      if (employeeId && employeeId.trim()) {
+        const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
+        if (!isUnique) {
+          return {
+            success: false,
+            error: 'هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.',
+            cleanupNeeded: false
+          };
+        }
       }
 
       // إنشاء حساب Firebase Auth
@@ -75,27 +81,33 @@ export class UserCreationService {
         const result = await runTransaction(db, async (transaction) => {
           const userDocRef = doc(db, 'users', user.uid);
           
-          // التحقق مرة أخرى من تفرد الرقم الوظيفي داخل المعاملة
-          const employeeIdQuery = await getDocs(
-            query(collection(db, 'users'), where('employeeId', '==', employeeId.trim()))
-          );
-          
-          if (!employeeIdQuery.empty) {
-            throw new Error('الرقم الوظيفي مستخدم بالفعل');
+          // التحقق مرة أخرى من تفرد الرقم الوظيفي داخل المعاملة (فقط إذا تم توفيره)
+          if (employeeId && employeeId.trim()) {
+            const employeeIdQuery = await getDocs(
+              query(collection(db, 'users'), where('employeeId', '==', employeeId.trim()))
+            );
+            
+            if (!employeeIdQuery.empty) {
+              throw new Error('الرقم الوظيفي مستخدم بالفعل');
+            }
           }
 
           // إنشاء بيانات المستخدم
-          const userData = {
+          const userData: any = {
             uid: user.uid,
             name: name.trim(),
             email: email.trim().toLowerCase(),
-            employeeId: employeeId.trim(),
             homeDepartmentId,
             role: 'employee',
             createdAt: new Date(),
             isActive: true,
             emailVerified: false
           };
+          
+          // إضافة الرقم الوظيفي فقط إذا تم توفيره
+          if (employeeId && employeeId.trim()) {
+            userData.employeeId = employeeId.trim();
+          }
 
           // حفظ بيانات المستخدم
           transaction.set(userDocRef, userData);
@@ -146,14 +158,16 @@ export class UserCreationService {
     const { name, email, password, employeeId, homeDepartmentId } = userData;
     
     try {
-      // التحقق من تفرد الرقم الوظيفي
-      const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
-      if (!isUnique) {
-        return {
-          success: false,
-          error: 'هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.',
-          cleanupNeeded: false
-        };
+      // التحقق من تفرد الرقم الوظيفي فقط إذا تم توفيره
+      if (employeeId && employeeId.trim()) {
+        const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
+        if (!isUnique) {
+          return {
+            success: false,
+            error: 'هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.',
+            cleanupNeeded: false
+          };
+        }
       }
 
       // إنشاء حساب Firebase Auth
@@ -170,17 +184,21 @@ export class UserCreationService {
         const batch = writeBatch(db);
         
         const userDocRef = doc(db, 'users', user.uid);
-        const userDocData = {
+        const userDocData: any = {
           uid: user.uid,
           name: name.trim(),
           email: email.trim().toLowerCase(),
-          employeeId: employeeId.trim(),
           homeDepartmentId,
           role: 'employee',
           createdAt: new Date(),
           isActive: true,
           emailVerified: false
         };
+        
+        // إضافة الرقم الوظيفي فقط إذا تم توفيره
+        if (employeeId && employeeId.trim()) {
+          userDocData.employeeId = employeeId.trim();
+        }
 
         batch.set(userDocRef, userDocData);
         

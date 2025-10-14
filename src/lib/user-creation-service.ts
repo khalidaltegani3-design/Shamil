@@ -202,6 +202,16 @@ export class UserCreationService {
 
         batch.set(userDocRef, userDocData);
         
+        // حفظ الرقم الوظيفي في المجموعة الآمنة إذا تم توفيره
+        if (employeeId && employeeId.trim()) {
+          const employeeIdRef = doc(db, 'employeeIds', employeeId.trim());
+          batch.set(employeeIdRef, {
+            employeeId: employeeId.trim(),
+            userId: user.uid,
+            createdAt: new Date()
+          });
+        }
+        
         // تنفيذ Batch
         await batch.commit();
 

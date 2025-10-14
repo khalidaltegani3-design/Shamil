@@ -96,7 +96,7 @@ export function hashEmployeeId(employeeId: string): string {
 }
 
 /**
- * التحقق من تفرد الرقم الوظيفي في قاعدة البيانات
+ * التحقق من تفرد الرقم الوظيفي في قاعدة البيانات (باستخدام مجموعة آمنة)
  * @param employeeId - الرقم الوظيفي المراد التحقق منه
  * @returns Promise<boolean> - true إذا كان الرقم فريد (غير موجود)، false إذا كان موجود
  */
@@ -108,26 +108,22 @@ export async function checkEmployeeIdUniqueness(employeeId: string): Promise<boo
   }
   
   try {
-    const { collection, query, where, getDocs } = await import('firebase/firestore');
+    const { doc, getDoc } = await import('firebase/firestore');
     const { db } = await import('./firebase');
     
     const trimmedId = employeeId.trim();
     console.log(`🔍 التحقق من تفرد الرقم الوظيفي: ${trimmedId}`);
     
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('employeeId', '==', trimmedId));
-    const querySnapshot = await getDocs(q);
+    // استخدام مجموعة employeeIds الآمنة (لا تحتوي على بيانات حساسة)
+    const employeeIdRef = doc(db, 'employeeIds', trimmedId);
+    const employeeIdDoc = await getDoc(employeeIdRef);
     
-    const isUnique = querySnapshot.empty;
+    const isUnique = !employeeIdDoc.exists();
     
     if (isUnique) {
       console.log(`✅ الرقم الوظيفي ${trimmedId} فريد - متاح للاستخدام`);
     } else {
-      console.log(`❌ الرقم الوظيفي ${trimmedId} موجود بالفعل - عدد المستندات: ${querySnapshot.size}`);
-      querySnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        console.log(`   📄 موجود في: ${doc.id} (${data.email || data.name || 'غير محدد'})`);
-      });
+      console.log(`❌ الرقم الوظيفي ${trimmedId} موجود بالفعل`);
     }
     
     return isUnique;

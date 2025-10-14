@@ -162,11 +162,11 @@ export class AdvancedSearchService {
       console.log(`📊 وُجد ${querySnapshot.docs.length} مستخدم في قاعدة البيانات`);
 
       querySnapshot.docs.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() };
+        const userData: any = { id: doc.id, ...doc.data() };
         allUsers.push(userData);
         
         // فحص كل رقم وظيفي
-        const employeeId = userData.employeeId;
+        const employeeId = userData.employeeId as string | undefined;
         if (employeeId) {
           debugInfo.push(`مستخدم ${doc.id}: employeeId = "${employeeId}" (نوع: ${typeof employeeId})`);
           

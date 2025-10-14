@@ -334,7 +334,7 @@ export class UserCreationService {
       const usersRef = collection(db, 'users');
       const usersSnapshot = await getDocs(usersRef);
       
-      const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const users: any[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const issues: string[] = [];
       
       let incompleteUsers = 0;
@@ -342,9 +342,9 @@ export class UserCreationService {
       const employeeIdMap = new Map<string, number>();
 
       // فحص كل مستخدم
-      users.forEach(user => {
-        // فحص البيانات الناقصة
-        if (!user.uid || !user.email || !user.name || !user.role || !user.employeeId) {
+      users.forEach((user: any) => {
+        // فحص البيانات الناقصة (الرقم الوظيفي اختياري الآن)
+        if (!user.uid || !user.email || !user.name || !user.role) {
           incompleteUsers++;
           issues.push(`مستخدم ناقص البيانات: ${user.id} - ${user.email || 'لا يوجد بريد'}`);
         }

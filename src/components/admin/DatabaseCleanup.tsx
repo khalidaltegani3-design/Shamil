@@ -238,7 +238,7 @@ export default function DatabaseCleanup() {
               {integrityResult && integrityResult.issues.length > 0 ? (
                 <div className="space-y-2">
                   {integrityResult.issues.map((issue: string, index: number) => (
-                    <Alert key={index} variant="outline">
+                    <Alert key={index} variant="default">
                       <AlertTriangle className="h-4 w-4" />
                       <AlertDescription>{issue}</AlertDescription>
                     </Alert>

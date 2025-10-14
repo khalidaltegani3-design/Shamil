@@ -52,8 +52,8 @@ export class DeepSearchService {
 
     allResults.forEach(result => {
       combinedResults.push(...result.results);
-      result.summary.foundIds.forEach(id => foundIds.add(id));
-      result.summary.collectionsWithData.forEach(col => collectionsWithData.add(col));
+      result.summary.foundIds.forEach((id: string) => foundIds.add(id));
+      result.summary.collectionsWithData.forEach((col: string) => collectionsWithData.add(col));
     });
 
     notFoundIds.forEach(id => {

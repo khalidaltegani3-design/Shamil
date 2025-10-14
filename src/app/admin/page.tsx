@@ -13,11 +13,12 @@ import AppHeader from '@/components/AppHeader';
 
 function AdminDashboard() {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       setLoading(false);
       
@@ -35,6 +36,18 @@ function AdminDashboard() {
       if (!adminEmails.includes(user.email || "")) {
         router.push('/dashboard');
         return;
+      }
+      
+      // جلب دور المستخدم من Firestore
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('@/lib/firebase');
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role || 'employee');
+        }
+      } catch (error) {
+        console.error('خطأ في جلب دور المستخدم:', error);
       }
     });
 
@@ -178,7 +191,7 @@ function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <Link href="/admin/delete-employee-ids">
-                  <Button className="w-full" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
+                  <Button className="w-full border-amber-300 text-amber-700 hover:bg-amber-50" variant="outline">
                     إدارة الأرقام الوظيفية
                   </Button>
                 </Link>

@@ -245,20 +245,20 @@ export class EmployeeIdDeletionService {
       const allUsersSnapshot = await getDocs(allUsersQuery);
       
       allUsersSnapshot.docs.forEach(doc => {
-        const userData = { id: doc.id, ...doc.data() };
+        const userData: any = { id: doc.id, ...doc.data() };
         allUsers.push(userData);
         
         // فحص كل رقم وظيفي
-        const employeeId = userData.employeeId;
+        const employeeId = userData.employeeId as string | undefined;
         if (employeeId) {
           debugInfo.push(`مستخدم ${doc.id}: employeeId = "${employeeId}" (نوع: ${typeof employeeId})`);
           
           // البحث بطرق مختلفة
           employeeIds.forEach(targetId => {
             if (employeeId === targetId || 
-                employeeId === parseInt(targetId) ||
+                String(employeeId) === targetId ||
                 employeeId === targetId.toString() ||
-                employeeId.toString().trim() === targetId.trim()) {
+                String(employeeId).trim() === targetId.trim()) {
               if (!found[targetId]) found[targetId] = [];
               found[targetId].push(userData);
             }

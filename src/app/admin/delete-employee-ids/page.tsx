@@ -589,7 +589,7 @@ export default function DeleteEmployeeIdsPage() {
                     {Object.entries(searchResults.found).map(([employeeId, docs]) => (
                       <div key={employeeId} className="bg-green-50 border border-green-200 rounded p-3 mb-2">
                         <div className="font-mono font-semibold text-green-800 mb-2">{employeeId}</div>
-                        {docs.map((doc: any) => (
+                        {(docs as any[]).map((doc: any) => (
                           <div key={doc.id} className="flex items-start gap-2 p-2 bg-white rounded mb-1 hover:bg-gray-50">
                             <Checkbox
                               checked={selectedDocuments.has(doc.id)}
@@ -856,7 +856,7 @@ export default function DeleteEmployeeIdsPage() {
                         <div className="ml-4 mt-1">
                           {Object.entries(result.foundFields).map(([field, value]) => (
                             <div key={field} className="font-mono text-xs bg-yellow-50 p-1 rounded mb-1">
-                              {field}: "{value}"
+                              {field}: "{String(value)}"
                             </div>
                           ))}
                         </div>
@@ -953,7 +953,7 @@ export default function DeleteEmployeeIdsPage() {
                         <div className="ml-4 mt-1">
                           {Object.entries(result.foundFields).map(([field, value]) => (
                             <div key={field} className="font-mono text-xs bg-yellow-50 p-1 rounded mb-1">
-                              {field}: "{value}"
+                              {field}: "{String(value)}"
                             </div>
                           ))}
                         </div>

@@ -45,5 +45,7 @@ firebase-debug.log
 firestore-debug.log
 serviceAccountKey.json
 
-# scripts with sensitive data
+# scripts with sensitive data and admin tools (not needed for production)
 test-employee-ids.js
+scripts/
+SYNC-USERS-GUIDE.md

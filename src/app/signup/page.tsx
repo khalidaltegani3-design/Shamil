@@ -15,6 +15,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { allDepartments } from '@/lib/departments';
 import { validateEmployeeId, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
+import { UserCreationService } from '@/lib/user-creation-service';
 
 import { checkAuthState } from '@/lib/auth-check';
 import Logo from '@/components/Logo';
@@ -60,70 +61,41 @@ export default function SignupPage() {
         return;
     }
 
-    if (!employeeId.trim()) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "يرجى إدخال الرقم الوظيفي.",
-        });
-        setIsLoading(false);
-        return;
+    // التحقق من الرقم الوظيفي فقط إذا تم إدخاله (اختياري)
+    if (employeeId.trim()) {
+        if (!validateEmployeeId(employeeId.trim())) {
+            toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: "الرقم الوظيفي غير صحيح. يجب أن يحتوي على أرقام وحروف فقط.",
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        // التحقق من تفرد الرقم الوظيفي
+        const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
+        if (!isUnique) {
+            toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: "هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.",
+            });
+            setIsLoading(false);
+            return;
+        }
     }
 
-    if (!validateEmployeeId(employeeId.trim())) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "الرقم الوظيفي غير صحيح. يجب أن يحتوي على أرقام وحروف فقط.",
-        });
-        setIsLoading(false);
-        return;
-    }
+    // استخدام الخدمة الجديدة لإنشاء المستخدم
+    const result = await UserCreationService.createUserWithBatch({
+      name,
+      email,
+      password,
+      employeeId,
+      homeDepartmentId
+    });
 
-    // التحقق من تفرد الرقم الوظيفي
-    const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
-    if (!isUnique) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.",
-        });
-        setIsLoading(false);
-        return;
-    }
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Update user profile with display name
-      await updateProfile(user, { displayName: name });
-
-      try {
-        // إنشاء وثيقة المستخدم في Firestore مع الرقم الوظيفي المدخل
-        const trimmedEmployeeId = employeeId.trim();
-        
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          displayName: name,
-          email: user.email,
-          employeeId: trimmedEmployeeId,
-          role: "employee",
-          homeDepartmentId: homeDepartmentId,
-          createdAt: new Date(),
-          status: "active",
-        });
-        
-        console.log(`تم إنشاء المستخدم بالرقم الوظيفي: ${trimmedEmployeeId}`);
-      } catch (firestoreError) {
-        // حذف المستخدم من Authentication إذا فشل إنشاء الوثيقة في Firestore
-        await user.delete();
-        throw new Error("فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.");
-      }
-      
-      // تسجيل الخروج بعد إنشاء الحساب بنجاح
-      await signOut(auth);
-      
+    if (result.success) {
       toast({
         title: "تم إنشاء الحساب بنجاح! ✅",
         description: "سيتم توجيهك إلى صفحة تسجيل الدخول...",
@@ -134,21 +106,18 @@ export default function SignupPage() {
       setTimeout(() => {
         router.push('/login/employee');
       }, 2000);
-
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      
-      // استخدام معالج الأخطاء الجديد
-      const errorInfo = handleFirebaseError(error);
+    } else {
+      // معالجة الأخطاء
+      const errorInfo = handleFirebaseError(new Error(result.error));
       
       toast({
         variant: "destructive",
         title: "فشل إنشاء الحساب",
         description: errorInfo.userFriendlyMessage,
       });
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -180,17 +149,21 @@ export default function SignupPage() {
                 <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employeeId">الرقم الوظيفي</Label>
+                <Label htmlFor="employeeId">
+                  الرقم الوظيفي 
+                  <span className="text-xs text-muted-foreground ml-2">(اختياري)</span>
+                </Label>
                 <Input 
                   id="employeeId" 
                   type="text" 
-                  placeholder="أدخل رقمك الوظيفي" 
-                  required 
+                  placeholder="أدخل رقمك الوظيفي (اختياري)" 
                   value={employeeId} 
-                  onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
+                  onChange={(e) => setEmployeeId(e.target.value)}
                   className="font-mono"
                 />
-                <p className="text-xs text-muted-foreground">أدخل رقمك الوظيفي الخاص كما يظهر في كشوف المرتبات</p>
+                <p className="text-xs text-muted-foreground">
+                  يمكنك إضافة رقمك الوظيفي الآن أو تركه للمدير لإضافته لاحقاً
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="department">الإدارة التي تعمل بها</Label>

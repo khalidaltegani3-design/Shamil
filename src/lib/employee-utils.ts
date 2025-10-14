@@ -96,22 +96,41 @@ export function hashEmployeeId(employeeId: string): string {
 }
 
 /**
- * التحقق من تفرد الرقم الوظيفي في قاعدة البيانات
+ * التحقق من تفرد الرقم الوظيفي في قاعدة البيانات (باستخدام مجموعة آمنة)
  * @param employeeId - الرقم الوظيفي المراد التحقق منه
- * @returns Promise<boolean>
+ * @returns Promise<boolean> - true إذا كان الرقم فريد (غير موجود)، false إذا كان موجود
  */
 export async function checkEmployeeIdUniqueness(employeeId: string): Promise<boolean> {
+  // إذا لم يتم توفير رقم وظيفي، نعتبره فريد (لأنه اختياري)
+  if (!employeeId || !employeeId.trim()) {
+    console.log('⚪ لم يتم توفير رقم وظيفي - اعتباره فريد');
+    return true;
+  }
+  
   try {
-    const { collection, query, where, getDocs } = await import('firebase/firestore');
+    const { doc, getDoc } = await import('firebase/firestore');
     const { db } = await import('./firebase');
     
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('employeeId', '==', employeeId.trim()));
-    const querySnapshot = await getDocs(q);
+    const trimmedId = employeeId.trim();
+    console.log(`🔍 التحقق من تفرد الرقم الوظيفي: ${trimmedId}`);
     
-    return querySnapshot.empty; // true إذا كان فريد، false إذا كان موجود
-  } catch (error) {
-    console.error('خطأ في التحقق من تفرد الرقم الوظيفي:', error);
-    return false; // في حالة الخطأ، نعتبر أن الرقم غير فريد للأمان
+    // استخدام مجموعة employeeIds الآمنة (لا تحتوي على بيانات حساسة)
+    const employeeIdRef = doc(db, 'employeeIds', trimmedId);
+    const employeeIdDoc = await getDoc(employeeIdRef);
+    
+    const isUnique = !employeeIdDoc.exists();
+    
+    if (isUnique) {
+      console.log(`✅ الرقم الوظيفي ${trimmedId} فريد - متاح للاستخدام`);
+    } else {
+      console.log(`❌ الرقم الوظيفي ${trimmedId} موجود بالفعل`);
+    }
+    
+    return isUnique;
+  } catch (error: any) {
+    console.error('❌ خطأ في التحقق من تفرد الرقم الوظيفي:', error);
+    console.error('   التفاصيل:', error.message);
+    // في حالة الخطأ، نرمي خطأ بدلاً من إرجاع false
+    throw new Error(`فشل في التحقق من الرقم الوظيفي: ${error.message}`);
   }
 }

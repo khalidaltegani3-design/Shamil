@@ -1,13 +1,81 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { withSystemAdminAuth } from '@/lib/system-admin-auth';
-import { Crown, Users, Settings, Shield } from 'lucide-react';
+import { Crown, Users, Settings, Shield, Bell, Database, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 function AdminDashboard() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+      
+      if (!user) {
+        router.push('/login/employee');
+        return;
+      }
+
+      // Check if user is admin - إضافة إيميلك للمصادقة
+      const adminEmails = [
+        "sweetdream711711@gmail.com",
+        "khalidaltegani3@gmail.com"
+      ];
+      
+      if (!adminEmails.includes(user.email || "")) {
+        router.push('/dashboard');
+        return;
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">غير مصرح لك بالوصول لهذه الصفحة</p>
+        </div>
+      </div>
+    );
+  }
+
+  const adminEmails = [
+    "sweetdream711711@gmail.com",
+    "khalidaltegani3@gmail.com"
+  ];
+
+  if (!adminEmails.includes(user.email || "")) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">غير مصرح لك بالوصول لهذه الصفحة</p>
+          <p className="text-sm text-muted-foreground mt-2">يجب أن تكون مدير نظام للوصول لهذه الصفحة</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
@@ -32,6 +100,9 @@ function AdminDashboard() {
           <p className="text-muted-foreground">
             يمكنك من هنا إدارة المستخدمين وتحديد أدوارهم وصلاحياتهم في النظام
           </p>
+          <div className="mt-2 text-sm text-green-600">
+            ✅ تم تسجيل الدخول كمدير: {user.email}
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -54,6 +125,69 @@ function AdminDashboard() {
               </Link>
             </CardContent>
           </Card>
+
+          {/* إدارة الإشعارات */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-purple-600" />
+                إدارة الإشعارات
+              </CardTitle>
+              <CardDescription>
+                إرسال وإدارة رسائل الإشعارات للمستخدمين
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/admin/notifications">
+                <Button className="w-full">
+                  إدارة الإشعارات
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* تنظيف قاعدة البيانات */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-orange-600" />
+                تنظيف قاعدة البيانات
+              </CardTitle>
+              <CardDescription>
+                فحص وإصلاح مشاكل سلامة البيانات والأرقام الوظيفية المكررة
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/admin/database-cleanup">
+                <Button className="w-full" variant="outline">
+                  تنظيف قاعدة البيانات
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+                 {/* حذف أرقام وظيفية محددة - مخصص لمدير النظام الأساسي فقط */}
+                 {user?.email?.toLowerCase() === "sweetdream711711@gmail.com" && (
+            <Card className="hover:shadow-lg transition-shadow border-red-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                  حذف أرقام وظيفية محددة
+                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">خاص بمدير النظام</span>
+                </CardTitle>
+                <CardDescription>
+                  حذف أرقام وظيفية مكررة أو ناقصة: 12012354, 12010906, 12001376
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin/delete-employee-ids">
+                  <Button className="w-full" variant="destructive">
+                    حذف الأرقام المحددة
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
 
           {/* إحصائيات النظام */}
           <Card className="hover:shadow-lg transition-shadow">
@@ -78,7 +212,7 @@ function AdminDashboard() {
                 </div>
                 <div className="flex justify-between">
                   <span>مشرف:</span>
-                  <span className="font-semibold">مراجعة البلاغات</span>
+                  <span className="font-semibold">إدارة البلاغات</span>
                 </div>
                 <div className="flex justify-between">
                   <span>موظف:</span>
@@ -88,60 +222,38 @@ function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* إعدادات النظام */}
+          {/* معلومات النظام */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-purple-600" />
-                إعدادات النظام
+                <Settings className="h-5 w-5 text-gray-600" />
+                معلومات النظام
               </CardTitle>
               <CardDescription>
-                إعدادات عامة للنظام والصلاحيات
+                معلومات عامة حول النظام وإصداره
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full" disabled>
-                قريباً...
-              </Button>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>الإصدار:</span>
+                  <span className="font-semibold">v4.0</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>البيئة:</span>
+                  <span className="font-semibold">التطوير</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>قاعدة البيانات:</span>
+                  <span className="font-semibold">Firebase</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* معلومات مدير النظام */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-yellow-600" />
-              معلومات مدير النظام
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h3 className="font-semibold mb-2">الصلاحيات المتاحة:</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>عرض جميع المستخدمين في النظام</li>
-                  <li>تغيير أدوار المستخدمين (موظف، مشرف، مدير)</li>
-                  <li>تحديد إدارة كل مستخدم</li>
-                  <li>حذف المستخدمين من النظام</li>
-                  <li>الوصول إلى جميع أجزاء النظام</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">الأدوار المتاحة:</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li><strong>موظف:</strong> يمكنه إنشاء بلاغات للإدارات الأخرى</li>
-                  <li><strong>مشرف:</strong> يمكنه مراجعة وإغلاق البلاغات</li>
-                  <li><strong>مدير:</strong> يمكنه إدارة الإدارات والمشرفين</li>
-                  <li><strong>مدير النظام:</strong> صلاحيات كاملة على النظام</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
 }
 
-export default withSystemAdminAuth(AdminDashboard);
+export default AdminDashboard;

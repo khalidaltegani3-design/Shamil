@@ -16,11 +16,13 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import HeaderWithImage from "@/components/HeaderWithImage";
 import { handleFirebaseError } from "@/lib/firebase-error-handler";
+import { useLoginNotifications } from "@/hooks/useLoginNotifications";
 
 
 export default function EmployeeLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { trackLoginAttempt, sendCriticalLoginNotification } = useLoginNotifications();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -197,6 +199,9 @@ export default function EmployeeLoginPage() {
         setLoginAttempts(newAttempts);
         localStorage.setItem('loginAttempts', newAttempts.toString());
 
+        // تتبع محاولة تسجيل الدخول الفاشلة (معطل مؤقتاً)
+        // await trackLoginAttempt(email, false);
+
         // تفعيل القفل المؤقت بعد 3 محاولات فاشلة
         if (newAttempts >= 3) {
           const lockoutDuration = Math.min(Math.pow(2, newAttempts - 3) * 30, 1800); // تزايد تصاعدي مع حد أقصى 30 دقيقة
@@ -205,8 +210,17 @@ export default function EmployeeLoginPage() {
           localStorage.setItem('loginLockoutEnd', lockoutEnd.toString());
           
           errorMessage = `تم قفل تسجيل الدخول مؤقتاً لمدة ${Math.floor(lockoutDuration / 60)} دقيقة و ${lockoutDuration % 60} ثانية`;
+          
+          // إرسال إشعار عاجل للمستخدم (معطل مؤقتاً)
+          // await sendCriticalLoginNotification(email, 0);
         } else {
-          errorMessage += `. المحاولات المتبقية: ${3 - newAttempts}`;
+          const remainingAttempts = 3 - newAttempts;
+          errorMessage += `. المحاولات المتبقية: ${remainingAttempts}`;
+          
+          // إرسال إشعار إذا تبقى محاولة واحدة فقط (معطل مؤقتاً)
+          // if (remainingAttempts === 1) {
+          //   await sendCriticalLoginNotification(email, remainingAttempts);
+          // }
         }
       }
 

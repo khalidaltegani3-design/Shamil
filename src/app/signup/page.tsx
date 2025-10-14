@@ -15,6 +15,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { allDepartments } from '@/lib/departments';
 import { validateEmployeeId, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
+import { UserCreationService } from '@/lib/user-creation-service';
 
 import { checkAuthState } from '@/lib/auth-check';
 import Logo from '@/components/Logo';
@@ -92,38 +93,16 @@ export default function SignupPage() {
         return;
     }
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    // استخدام الخدمة الجديدة لإنشاء المستخدم
+    const result = await UserCreationService.createUserWithBatch({
+      name,
+      email,
+      password,
+      employeeId,
+      homeDepartmentId
+    });
 
-      // Update user profile with display name
-      await updateProfile(user, { displayName: name });
-
-      try {
-        // إنشاء وثيقة المستخدم في Firestore مع الرقم الوظيفي المدخل
-        const trimmedEmployeeId = employeeId.trim();
-        
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          displayName: name,
-          email: user.email,
-          employeeId: trimmedEmployeeId,
-          role: "employee",
-          homeDepartmentId: homeDepartmentId,
-          createdAt: new Date(),
-          status: "active",
-        });
-        
-        console.log(`تم إنشاء المستخدم بالرقم الوظيفي: ${trimmedEmployeeId}`);
-      } catch (firestoreError) {
-        // حذف المستخدم من Authentication إذا فشل إنشاء الوثيقة في Firestore
-        await user.delete();
-        throw new Error("فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.");
-      }
-      
-      // تسجيل الخروج بعد إنشاء الحساب بنجاح
-      await signOut(auth);
-      
+    if (result.success) {
       toast({
         title: "تم إنشاء الحساب بنجاح! ✅",
         description: "سيتم توجيهك إلى صفحة تسجيل الدخول...",
@@ -134,21 +113,18 @@ export default function SignupPage() {
       setTimeout(() => {
         router.push('/login/employee');
       }, 2000);
-
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      
-      // استخدام معالج الأخطاء الجديد
-      const errorInfo = handleFirebaseError(error);
+    } else {
+      // معالجة الأخطاء
+      const errorInfo = handleFirebaseError(new Error(result.error));
       
       toast({
         variant: "destructive",
         title: "فشل إنشاء الحساب",
         description: errorInfo.userFriendlyMessage,
       });
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   return (

@@ -1,26 +1,16 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { doc, setDoc } from "firebase/firestore";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { allDepartments } from '@/lib/departments';
-import { validateEmployeeId, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
-import { UserCreationService } from '@/lib/user-creation-service';
 
 import { checkAuthState } from '@/lib/auth-check';
 import Logo from '@/components/Logo';
 import HeaderWithImage from '@/components/HeaderWithImage';
-import { handleFirebaseError } from '@/lib/firebase-error-handler';
 
 export default function SignupPage() {
   useEffect(() => {
@@ -30,166 +20,72 @@ export default function SignupPage() {
   }, []);
   const router = useRouter();
   const { toast } = useToast();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [employeeId, setEmployeeId] = useState('');
-  const [homeDepartmentId, setHomeDepartmentId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    if (password.length < 6) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.",
-        });
-        setIsLoading(false);
-        return;
-    }
-
-    if (!homeDepartmentId) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "يرجى اختيار إدارتك.",
-        });
-        setIsLoading(false);
-        return;
-    }
-
-    // التحقق من الرقم الوظيفي فقط إذا تم إدخاله (اختياري)
-    if (employeeId.trim()) {
-        if (!validateEmployeeId(employeeId.trim())) {
-            toast({
-                variant: "destructive",
-                title: "خطأ",
-                description: "الرقم الوظيفي غير صحيح. يجب أن يحتوي على أرقام وحروف فقط.",
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        // التحقق من تفرد الرقم الوظيفي
-        const isUnique = await checkEmployeeIdUniqueness(employeeId.trim());
-        if (!isUnique) {
-            toast({
-                variant: "destructive",
-                title: "خطأ",
-                description: "هذا الرقم الوظيفي مستخدم بالفعل. يرجى إدخال رقم وظيفي آخر.",
-            });
-            setIsLoading(false);
-            return;
-        }
-    }
-
-    // استخدام الخدمة الجديدة لإنشاء المستخدم
-    const result = await UserCreationService.createUserWithBatch({
-      name,
-      email,
-      password,
-      employeeId,
-      homeDepartmentId
+  const handleContactAdmin = () => {
+    toast({
+      title: "معلومات التواصل",
+      description: "يرجى التواصل مع مدير النظام لإنشاء حسابك: sweetdream711711@gmail.com",
+      duration: 5000,
     });
-
-    if (result.success) {
-      toast({
-        title: "تم إنشاء الحساب بنجاح! ✅",
-        description: "سيتم توجيهك إلى صفحة تسجيل الدخول...",
-        duration: 3000,
-      });
-
-      // إضافة تأخير قبل التوجيه
-      setTimeout(() => {
-        router.push('/login/employee');
-      }, 2000);
-    } else {
-      // معالجة الأخطاء
-      const errorInfo = handleFirebaseError(new Error(result.error));
-      
-      toast({
-        variant: "destructive",
-        title: "فشل إنشاء الحساب",
-        description: errorInfo.userFriendlyMessage,
-      });
-    }
-    
-    setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
       <HeaderWithImage />
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-sm">
+        <Card className="w-full max-w-md">
           <CardHeader className="space-y-2 text-center">
             <div className="flex flex-col items-center justify-center mb-4">
               <Logo size="xl" showText={false} />
             </div>
             <CardTitle className="text-2xl">إنشاء حساب موظف جديد</CardTitle>
             <CardDescription>
-              أدخل بياناتك لإنشاء حساب في منصة البلاغات.
+              لإنشاء حساب جديد في منصة البلاغات، يرجى التواصل مع مدير النظام
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSignup}>
-            <CardContent className="space-y-4 pt-4">
-               <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل</Label>
-                <Input id="name" placeholder="أدخل اسمك" required value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input id="email" type="email" placeholder="user@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
-                <Input id="password" type="password" placeholder="6 أحرف على الأقل" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="employeeId">
-                  الرقم الوظيفي 
-                  <span className="text-xs text-muted-foreground ml-2">(اختياري)</span>
-                </Label>
-                <Input 
-                  id="employeeId" 
-                  type="text" 
-                  placeholder="أدخل رقمك الوظيفي (اختياري)" 
-                  value={employeeId} 
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  className="font-mono"
-                />
-                <p className="text-xs text-muted-foreground">
-                  يمكنك إضافة رقمك الوظيفي الآن أو تركه للمدير لإضافته لاحقاً
+          <CardContent className="space-y-6 pt-4">
+            <div className="text-center space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-semibold text-lg mb-2">📧 كيفية إنشاء حساب جديد</h3>
+                <p className="text-sm text-muted-foreground">
+                  لإنشاء حساب جديد في النظام، يرجى التواصل مع مدير النظام عبر البريد الإلكتروني
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">الإدارة التي تعمل بها</Label>
-                <Select dir="rtl" onValueChange={setHomeDepartmentId} value={homeDepartmentId} required>
-                  <SelectTrigger id="department">
-                    <SelectValue placeholder="اختر إدارتك" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allDepartments.map(dept => (
-                       <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              
+              <div className="p-4 border border-primary/20 rounded-lg bg-primary/5">
+                <h4 className="font-medium mb-2">👨‍💼 مدير النظام</h4>
+                <p className="text-sm font-mono bg-background p-2 rounded border">
+                  sweetdream711711@gmail.com
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  سيتم إنشاء حسابك وإرسال بيانات تسجيل الدخول إليك
+                </p>
               </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button className="w-full" type="submit" disabled={isLoading}>
-                {isLoading ? 'جارٍ الإنشاء...' : 'إنشاء الحساب'}
+
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium mb-2 text-blue-900">ℹ️ معلومات إضافية</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• تأكد من إرسال اسمك الكامل</li>
+                  <li>• تأكد من إرسال البريد الإلكتروني المطلوب</li>
+                  <li>• تأكد من إرسال القسم الذي تعمل به</li>
+                  <li>• الرقم الوظيفي اختياري ويمكن إضافته لاحقاً</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3">
+            <Button 
+              onClick={handleContactAdmin}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              📧 عرض معلومات التواصل
+            </Button>
+            <Link href="/login/employee" passHref>
+              <Button variant="link" size="sm" className="px-0">
+                لديك حساب بالفعل؟ تسجيل الدخول
               </Button>
-              <Link href="/login/employee" passHref>
-                  <Button variant="link" size="sm" className="px-0">
-                      لديك حساب بالفعل؟ تسجيل الدخول
-                  </Button>
-              </Link>
-            </CardFooter>
-          </form>
+            </Link>
+          </CardFooter>
         </Card>
       </main>
     </div>

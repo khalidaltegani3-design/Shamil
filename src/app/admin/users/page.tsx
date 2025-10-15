@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { withSystemAdminAuth } from '@/lib/system-admin-auth';
-import { collection, query, getDocs, doc, updateDoc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, onSnapshot, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { allDepartments } from '@/lib/departments';
 import { ArrowLeft, Crown, User, UserCog, Shield, ShieldCheck, UserPlus, TrendingUp, TrendingDown, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
@@ -26,6 +26,8 @@ import { promoteToSupervisor, promoteToAdmin, demoteToEmployee, demoteToSupervis
 import { ExpandableCell } from '@/components/ui/expandable-cell';
 import Logo from '@/components/Logo';
 import AppHeader from '@/components/AppHeader';
+import { createUserWithEmailAndPassword, updateProfile, deleteUser, fetchSignInMethodsForEmail, signOut } from 'firebase/auth';
+import { setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface UserData {
   uid: string;
@@ -69,9 +71,235 @@ function SystemAdminDashboard() {
     activeUsers: 0,
     inactiveUsers: 0
   });
+  
+  // متغيرات نموذج إضافة مستخدم جديد
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    displayName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'employee' as 'employee' | 'supervisor' | 'admin',
+    homeDepartmentId: '',
+    employeeId: ''
+  });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  
   const { toast } = useToast();
   const router = useRouter();
   const { t, language } = useLanguage();
+
+  // دالة للتحقق من وجود المستخدم في Firebase Auth
+  const checkUserExistsInAuth = async (email: string): Promise<boolean> => {
+    try {
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      return signInMethods.length > 0;
+    } catch (error) {
+      console.error('خطأ في التحقق من وجود المستخدم:', error);
+      return false;
+    }
+  };
+
+  // دالة إنشاء مستخدم جديد
+  const handleCreateUser = async () => {
+    // التحقق من صحة البيانات
+    if (!newUserData.displayName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يجب إدخال اسم المستخدم"
+      });
+      return;
+    }
+
+    if (!newUserData.email.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يجب إدخال البريد الإلكتروني"
+      });
+      return;
+    }
+
+    if (!newUserData.password.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "يجب إدخال كلمة المرور"
+      });
+      return;
+    }
+
+    if (newUserData.password !== newUserData.confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "كلمة المرور وتأكيد كلمة المرور غير متطابقين"
+      });
+      return;
+    }
+
+    if (newUserData.password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+      });
+      return;
+    }
+
+    // التحقق من الرقم الوظيفي إذا تم إدخاله
+    if (newUserData.employeeId.trim()) {
+      if (!validateEmployeeId(newUserData.employeeId)) {
+        toast({
+          variant: "destructive",
+          title: "خطأ",
+          description: "تنسيق الرقم الوظيفي غير صحيح (يجب أن يكون EMPxxxxxxxxx)"
+        });
+        return;
+      }
+
+      if (!isEmployeeIdUnique(users, newUserData.employeeId)) {
+        toast({
+          variant: "destructive",
+          title: "خطأ",
+          description: "هذا الرقم الوظيفي مستخدم بالفعل"
+        });
+        return;
+      }
+    }
+
+    // التحقق من وجود المستخدم في Firebase Auth
+    const userExistsInAuth = await checkUserExistsInAuth(newUserData.email.trim());
+    if (userExistsInAuth) {
+      toast({
+        variant: "destructive",
+        title: "البريد الإلكتروني مستخدم في Firebase Auth",
+        description: "هذا البريد الإلكتروني موجود بالفعل في Firebase Auth. إذا كان المستخدم محذوفاً من Firestore، يجب حذفه من Firebase Auth أولاً أو استخدام بريد إلكتروني آخر.",
+        duration: 10000
+      });
+      return;
+    }
+
+    setIsCreatingUser(true);
+    try {
+      console.log('🔄 إنشاء مستخدم جديد:', newUserData.email);
+      
+      // إنشاء المستخدم في Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        newUserData.email.trim(),
+        newUserData.password
+      );
+
+      const user = userCredential.user;
+      console.log('✅ تم إنشاء المستخدم في Auth:', user.uid);
+
+      // تحديث الملف الشخصي
+      await updateProfile(user, {
+        displayName: newUserData.displayName.trim()
+      });
+
+      // تسجيل خروج المستخدم الجديد فوراً لعدم تداخل الجلسات
+      await signOut(auth);
+      console.log('✅ تم تسجيل خروج المستخدم الجديد');
+
+      // إنشاء بيانات المستخدم في Firestore
+      const userData = {
+        uid: user.uid,
+        displayName: newUserData.displayName.trim(),
+        email: newUserData.email.trim().toLowerCase(),
+        role: newUserData.role,
+        homeDepartmentId: newUserData.homeDepartmentId === 'none' ? null : newUserData.homeDepartmentId || null,
+        status: 'active',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ...(newUserData.employeeId.trim() && { employeeId: newUserData.employeeId.trim() })
+      };
+
+      await setDoc(doc(db, 'users', user.uid), userData);
+      console.log('✅ تم إنشاء بيانات المستخدم في Firestore');
+
+      // إذا كان المشرف، إضافة إلى مجموعة supervisors
+      if (newUserData.role === 'supervisor') {
+        const supervisorData = {
+          userId: user.uid,
+          assignedDepartments: (newUserData.homeDepartmentId && newUserData.homeDepartmentId !== 'none') ? [newUserData.homeDepartmentId] : [],
+          isActive: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(db, 'supervisors', user.uid), supervisorData);
+        console.log('✅ تم إنشاء بيانات المشرف');
+      }
+
+      // إذا كان الرقم الوظيفي موجود، إضافته إلى مجموعة employeeIds
+      if (newUserData.employeeId.trim()) {
+        await setDoc(doc(db, 'employeeIds', newUserData.employeeId.trim()), {
+          userId: user.uid,
+          assignedAt: serverTimestamp()
+        });
+        console.log('✅ تم إنشاء الرقم الوظيفي في مجموعة employeeIds');
+      }
+
+      toast({
+        title: "تم إنشاء المستخدم بنجاح! ✅",
+        description: `تم إنشاء المستخدم ${newUserData.displayName} بنجاح. تم تسجيل خروج المستخدم الجديد تلقائياً.`,
+        duration: 5000
+      });
+
+      // إعادة تعيين النموذج وإغلاق الحوار
+      setNewUserData({
+        displayName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'employee',
+        homeDepartmentId: '',
+        employeeId: ''
+      });
+      setAddUserDialogOpen(false);
+
+    } catch (error: any) {
+      console.error('❌ خطأ في إنشاء المستخدم:', error);
+      
+      let errorMessage = "فشل في إنشاء المستخدم";
+      let errorTitle = "خطأ";
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorTitle = "البريد الإلكتروني مستخدم بالفعل";
+        errorMessage = "هذا البريد الإلكتروني مستخدم في Firebase Auth. إذا كان المستخدم محذوفاً من Firestore، فقد يحتاج البريد الإلكتروني إلى وقت لإعادة الاستخدام أو يجب حذف المستخدم من Firebase Auth أولاً.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "البريد الإلكتروني غير صحيح";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "كلمة المرور ضعيفة";
+      } else if (error.message) {
+        errorMessage += `: ${error.message}`;
+      }
+
+      toast({
+        variant: "destructive",
+        title: errorTitle,
+        description: errorMessage,
+        duration: 8000
+      });
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  // إعادة تعيين نموذج إضافة المستخدم
+  const resetAddUserForm = () => {
+    setNewUserData({
+      displayName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'employee',
+      homeDepartmentId: '',
+      employeeId: ''
+    });
+  };
 
   // دالة لإضافة أرقام وظيفية لجميع المستخدمين الموجودين
   const addEmployeeIdsToAllUsers = async () => {
@@ -692,12 +920,25 @@ function SystemAdminDashboard() {
         }
       }
       
+      // حذف الرقم الوظيفي من مجموعة employeeIds إذا كان موجوداً
+      if (user.employeeId) {
+        try {
+          const employeeIdRef = doc(db, 'employeeIds', user.employeeId);
+          await deleteDoc(employeeIdRef);
+          console.log('✅ تم حذف الرقم الوظيفي');
+        } catch (error) {
+          console.log('⚠️ لم يتم العثور على رقم وظيفي');
+        }
+      }
+      
       // ملاحظة: لا يمكن حذف المستخدم من Firebase Auth من جانب العميل
       // يجب أن يتم ذلك من خلال Cloud Functions أو Admin SDK
+      // لكن يمكننا إضافة تحقق في إنشاء المستخدم الجديد
       
       toast({
         title: "تم الحذف بنجاح! ✅",
-        description: `تم حذف المستخدم ${user.displayName || user.email} من قاعدة البيانات`,
+        description: `تم حذف المستخدم ${user.displayName || user.email} من قاعدة البيانات. ملاحظة: إذا واجهت مشكلة في إعادة استخدام البريد الإلكتروني، يجب حذف المستخدم من Firebase Auth أولاً من خلال Firebase Console.`,
+        duration: 8000
       });
       
       console.log('✅ تم حذف المستخدم بنجاح');
@@ -903,9 +1144,174 @@ function SystemAdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5" />
-              إدارة المستخدمين والأدوار
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5" />
+                إدارة المستخدمين والأدوار
+              </div>
+              {/* زر إضافة مستخدم جديد - فقط لمدير النظام */}
+              {auth.currentUser?.email?.toLowerCase().trim() === "sweetdream711711@gmail.com" && (
+                <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      onClick={() => resetAddUserForm()}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      إضافة مستخدم جديد
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <UserPlus className="h-5 w-5" />
+                        إضافة مستخدم جديد
+                      </DialogTitle>
+                      <DialogDescription>
+                        إنشاء حساب مستخدم جديد في النظام
+                      </DialogDescription>
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mt-2">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ <strong>تنبيه:</strong> بعد إنشاء المستخدم، سيتم تسجيل خروج المستخدم الجديد تلقائياً. قد تحتاج لإعادة تسجيل الدخول كمدير النظام.
+                        </p>
+                      </div>
+                    </DialogHeader>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                      <div className="md:col-span-2 space-y-2">
+                        <label htmlFor="displayName" className="text-sm font-medium">اسم المستخدم *</label>
+                        <Input
+                          id="displayName"
+                          placeholder="أدخل اسم المستخدم"
+                          value={newUserData.displayName}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, displayName: e.target.value }))}
+                          disabled={isCreatingUser}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني *</label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="example@domain.com"
+                          value={newUserData.email}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
+                          disabled={isCreatingUser}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="password" className="text-sm font-medium">كلمة المرور *</label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="أدخل كلمة المرور"
+                          value={newUserData.password}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
+                          disabled={isCreatingUser}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="confirmPassword" className="text-sm font-medium">تأكيد كلمة المرور *</label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="أعد إدخال كلمة المرور"
+                          value={newUserData.confirmPassword}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          disabled={isCreatingUser}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="role" className="text-sm font-medium">الدور</label>
+                        <Select
+                          value={newUserData.role}
+                          onValueChange={(value: 'employee' | 'supervisor' | 'admin') => 
+                            setNewUserData(prev => ({ ...prev, role: value }))
+                          }
+                          disabled={isCreatingUser}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر الدور" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="employee">موظف</SelectItem>
+                            <SelectItem value="supervisor">مشرف</SelectItem>
+                            <SelectItem value="admin">مدير عام</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="department" className="text-sm font-medium">القسم</label>
+                        <Select
+                          value={newUserData.homeDepartmentId}
+                          onValueChange={(value) => 
+                            setNewUserData(prev => ({ ...prev, homeDepartmentId: value }))
+                          }
+                          disabled={isCreatingUser}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر القسم" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">بدون قسم</SelectItem>
+                            {allDepartments.map(dept => (
+                              <SelectItem key={dept.id} value={dept.id}>
+                                {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label htmlFor="employeeId" className="text-sm font-medium">الرقم الوظيفي (اختياري)</label>
+                        <Input
+                          id="employeeId"
+                          placeholder="EMP123456789 (اختياري)"
+                          value={newUserData.employeeId}
+                          onChange={(e) => setNewUserData(prev => ({ ...prev, employeeId: e.target.value }))}
+                          disabled={isCreatingUser}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          تنسيق الرقم الوظيفي: EMP متبوع بـ 9 أرقام (مثل: EMP123456789)
+                        </p>
+                      </div>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setAddUserDialogOpen(false)}
+                        disabled={isCreatingUser}
+                      >
+                        إلغاء
+                      </Button>
+                      <Button 
+                        onClick={handleCreateUser}
+                        disabled={isCreatingUser}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {isCreatingUser ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            جاري الإنشاء...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            إنشاء المستخدم
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </CardTitle>
             <CardDescription>
               عدد النتائج: {filteredUsers.length} من أصل {users.length}

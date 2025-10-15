@@ -1,17 +1,12 @@
 
 import type {NextConfig} from 'next';
 
-// Simplified Next.js configuration for Firebase App Hosting
+// Next.js configuration for Firebase App Hosting
 const nextConfig: NextConfig = {
-  // TypeScript and ESLint configuration
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Output configuration for App Hosting
+  output: 'standalone',
   
-  // Build configuration for App Hosting
+  // Build configuration
   images: {
     unoptimized: true,
   },

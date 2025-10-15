@@ -1,18 +1,50 @@
-node_modules
-.next
-.git
-.env*
-*.log
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Development files
+.env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+serviceAccountKey.json
+
+# Scripts (for local use only)
+scripts/
+test-*.js
+*.md
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
-*.pem
-.genkit
-.vercel
-coverage
-build
-.vscode
-.idea
-*.tsbuildinfo
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.log
+*.lock

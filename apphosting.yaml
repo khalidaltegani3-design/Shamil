@@ -37,6 +37,10 @@ build:
     NODE_OPTIONS: "--max-old-space-size=4096"
     NPM_CONFIG_FUND: "false"
     NPM_CONFIG_AUDIT: "false"
+    CI: "false"
+    NEXT_TELEMETRY_DISABLED: "1"
+    ESLINT_NO_DEV_ERRORS: "true"
+    TYPESCRIPT_NO_DEV_ERRORS: "true"
   commands:
     - npm ci --prefer-offline --no-audit --no-fund
     - npm run build

@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { withSystemAdminAuth } from '@/lib/system-admin-auth';
-import { collection, query, getDocs, doc, updateDoc, onSnapshot, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc, onSnapshot, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { allDepartments } from '@/lib/departments';
-import { ArrowLeft, Crown, User, UserCog, Shield, ShieldCheck, UserPlus, TrendingUp, TrendingDown, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Crown, User, UserCog, Shield, ShieldCheck, UserPlus, TrendingUp, TrendingDown, Trash2, Search, Filter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -19,14 +19,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { checkUserSupervisorPermissions } from '@/lib/supervisor-auth';
 import { generateEmployeeId, validateEmployeeId, isEmployeeIdUnique } from '@/lib/employee-utils';
-import { getSupervisorData, getAllActiveSupervisors } from '@/lib/supervisor-management';
+import { getSupervisorData } from '@/lib/supervisor-management';
 import { promoteToSupervisor, promoteToAdmin, demoteToEmployee, demoteToSupervisor, getUserCurrentRole, updateSupervisorDepartments } from '@/lib/role-management';
 import { ExpandableCell } from '@/components/ui/expandable-cell';
-import Logo from '@/components/Logo';
 import AppHeader from '@/components/AppHeader';
-import { createUserWithEmailAndPassword, updateProfile, deleteUser, fetchSignInMethodsForEmail, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, fetchSignInMethodsForEmail, signOut } from 'firebase/auth';
 import { setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface UserData {
@@ -301,89 +299,6 @@ function SystemAdminDashboard() {
     });
   };
 
-  // دالة لإضافة أرقام وظيفية لجميع المستخدمين الموجودين
-  const addEmployeeIdsToAllUsers = async () => {
-    try {
-      console.log('🔄 بدء عملية إضافة الأرقام الوظيفية لجميع المستخدمين...');
-      
-      // جمع الأرقام الوظيفية الموجودة
-      const existingIds = new Set<string>();
-      users.forEach(user => {
-        if (user.employeeId) {
-          existingIds.add(user.employeeId);
-        }
-      });
-      
-      // تحديد المستخدمين الذين يحتاجون أرقام وظيفية
-      const usersNeedingIds = users.filter(user => 
-        !user.employeeId && user.role !== 'system_admin'
-      );
-      
-      if (usersNeedingIds.length === 0) {
-        toast({
-          title: "لا توجد حاجة للتحديث",
-          description: "جميع المستخدمين لديهم أرقام وظيفية بالفعل"
-        });
-        return;
-      }
-      
-      console.log(`🎯 سيتم إضافة أرقام وظيفية لـ ${usersNeedingIds.length} مستخدم`);
-      
-      // استخدام batch للتحديث المجمع
-      const batch = writeBatch(db);
-      let addedCount = 0;
-      
-      for (const user of usersNeedingIds) {
-        try {
-          let newEmployeeId: string;
-          let attempts = 0;
-          
-          // إنشاء رقم فريد
-          do {
-            newEmployeeId = generateEmployeeId();
-            attempts++;
-          } while (existingIds.has(newEmployeeId) && attempts < 10);
-          
-          if (attempts >= 10) {
-            console.error(`❌ فشل في إنشاء رقم فريد للمستخدم ${user.displayName}`);
-            continue;
-          }
-          
-          existingIds.add(newEmployeeId);
-          
-          const userRef = doc(db, 'users', user.uid);
-          batch.update(userRef, {
-            employeeId: newEmployeeId,
-            updatedAt: new Date()
-          });
-          
-          addedCount++;
-          console.log(`➕ ${user.displayName || user.email}: ${newEmployeeId}`);
-          
-        } catch (error) {
-          console.error(`❌ خطأ في معالجة المستخدم ${user.displayName}:`, error);
-        }
-      }
-      
-      // تنفيذ التحديثات
-      await batch.commit();
-      
-      toast({
-        title: "✅ تم إضافة الأرقام الوظيفية",
-        description: `تم إضافة أرقام وظيفية لـ ${addedCount} مستخدم بنجاح`
-      });
-      
-      console.log(`✅ تم الانتهاء! أضيفت أرقام وظيفية لـ ${addedCount} مستخدم`);
-      
-    } catch (error) {
-      console.error('❌ خطأ في عملية إضافة الأرقام الوظيفية:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "فشل في إضافة الأرقام الوظيفية"
-      });
-    }
-  };
 
   // دالة لإضافة رقم وظيفي للمستخدمين الذين لا يملكون واحد
   const ensureEmployeeId = async (user: UserData) => {
@@ -420,59 +335,6 @@ function SystemAdminDashboard() {
     }
   };
 
-  // دالة لتحديث الرقم الوظيفي
-  const updateEmployeeId = async (uid: string, newEmployeeId: string) => {
-    if (!newEmployeeId.trim()) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "يجب إدخال رقم وظيفي صحيح"
-      });
-      return;
-    }
-
-    // التحقق من صحة تنسيق الرقم الوظيفي
-    if (!validateEmployeeId(newEmployeeId)) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "تنسيق الرقم الوظيفي غير صحيح (يجب أن يكون EMPxxxxxxxxx)"
-      });
-      return;
-    }
-
-    // التحقق من عدم وجود هذا الرقم مسبقاً
-    if (!isEmployeeIdUnique(users, newEmployeeId, uid)) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "هذا الرقم الوظيفي مستخدم بالفعل"
-      });
-      return;
-    }
-
-    setUpdating(uid);
-    try {
-      await updateDoc(doc(db, 'users', uid), {
-        employeeId: newEmployeeId,
-        updatedAt: new Date()
-      });
-
-      toast({
-        title: "تم التحديث",
-        description: "تم تحديث الرقم الوظيفي بنجاح"
-      });
-    } catch (error) {
-      console.error('خطأ في تحديث الرقم الوظيفي:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "فشل في تحديث الرقم الوظيفي"
-      });
-    } finally {
-      setUpdating(null);
-    }
-  };
 
   useEffect(() => {
     const unsubscribe = onSnapshot(

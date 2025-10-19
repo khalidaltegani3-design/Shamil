@@ -46,15 +46,11 @@ export default function Map({ position, setPosition }: MapProps) {
         map.on('click', (e: any) => {
           const { lat, lng } = e.latlng;
           
-          // Create detailed popup content
+          // Create simple popup content
           const popupContent = `
-            <div dir="rtl" style="text-align: right; font-family: Arial;">
-              <h4 style="margin: 0 0 10px 0; color: #2563eb;">📍 الموقع المحدد</h4>
-              <p style="margin: 5px 0;"><strong>خط العرض:</strong> ${lat.toFixed(6)}</p>
-              <p style="margin: 5px 0;"><strong>خط الطول:</strong> ${lng.toFixed(6)}</p>
-              <p style="margin: 10px 0 5px 0; font-size: 12px; color: #666;">
-                📌 اضغط على الموقع لتحديد الإحداثيات
-              </p>
+            <div dir="rtl" style="text-align: right; font-family: Arial; min-width: 120px;">
+              <h4 style="margin: 0 0 8px 0; color: #2563eb; font-size: 14px;">📍 الموقع المحدد</h4>
+              <p style="margin: 3px 0; font-size: 12px;">${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
             </div>
           `;
           
@@ -120,22 +116,11 @@ export default function Map({ position, setPosition }: MapProps) {
         console.warn('تحذير: الإحداثيات خارج حدود قطر المتوقعة:', { lat, lng });
       }
 
-      // Add new marker with enhanced popup
+      // Add new marker with simple popup
       const popupContent = `
-        <div dir="rtl" style="text-align: right; font-family: Arial; min-width: 200px;">
-          <h4 style="margin: 0 0 10px 0; color: #dc2626;">🎯 الموقع المحدد</h4>
-          <div style="background: #f8fafc; padding: 8px; border-radius: 6px; margin: 8px 0;">
-            <p style="margin: 3px 0; font-size: 13px;"><strong>خط العرض:</strong> ${lat.toFixed(6)}</p>
-            <p style="margin: 3px 0; font-size: 13px;"><strong>خط الطول:</strong> ${lng.toFixed(6)}</p>
-          </div>
-          <div style="font-size: 11px; color: #666; border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 8px;">
-            <p style="margin: 2px 0;">🗺️ نظام الإحداثيات: WGS84</p>
-            <p style="margin: 2px 0;">📍 دقة الموقع: محسنة باستخدام QNAS</p>
-            ${lat < 24.0 || lat > 27.0 || lng < 50.0 || lng > 52.0 ? 
-              '<p style="margin: 2px 0; color: #dc2626;">⚠️ تحذير: خارج حدود قطر المتوقعة</p>' : 
-              '<p style="margin: 2px 0; color: #16a34a;">✅ داخل حدود قطر</p>'
-            }
-          </div>
+        <div dir="rtl" style="text-align: right; font-family: Arial; min-width: 120px;">
+          <h4 style="margin: 0 0 8px 0; color: #dc2626; font-size: 14px;">🎯 الموقع المحدد</h4>
+          <p style="margin: 3px 0; font-size: 12px;">${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
         </div>
       `;
       
@@ -170,43 +155,28 @@ export default function Map({ position, setPosition }: MapProps) {
         style={{ minHeight: '400px' }}
       />
 
-      {/* Map info overlay */}
-      <div className="absolute top-4 left-4 bg-white/95 p-3 rounded-lg shadow-lg text-sm z-[1000]">
-        <div className="text-blue-700 font-bold flex items-center gap-2">
-          🗺️ خريطة قطر الحقيقية
-        </div>
-        <div className="text-gray-600 text-xs mt-1">انقر في أي مكان لتحديد الموقع</div>
-        <div className="text-green-600 text-xs">✅ خريطة OpenStreetMap الحقيقية</div>
+      {/* Map info overlay - مبسط */}
+      <div className="absolute top-2 left-2 bg-white/90 p-2 rounded text-xs z-[1000]">
+        <div className="text-blue-600 font-medium">انقر لتحديد الموقع</div>
       </div>
 
-      {/* Coordinates display */}
+      {/* Coordinates display - مبسط */}
       {position && (
-        <div className="absolute bottom-4 left-4 bg-black/90 text-white p-3 rounded-lg text-sm font-mono z-[1000]">
-          <div className="flex items-center gap-2">
+        <div className="absolute bottom-2 left-2 bg-black/80 text-white p-2 rounded text-xs font-mono z-[1000]">
+          <div className="flex items-center gap-1">
             <span className="text-red-400">📍</span>
             <div>
-              <div>خط العرض: {position[0].toFixed(6)}</div>
-              <div>خط الطول: {position[1].toFixed(6)}</div>
-              <div className="text-xs text-gray-300 mt-1">
-                {position[0] >= 24.0 && position[0] <= 27.0 && position[1] >= 50.0 && position[1] <= 52.0 
-                  ? '✅ داخل حدود قطر' 
-                  : '⚠️ خارج حدود قطر'}
-              </div>
+              <div>{position[0].toFixed(4)}, {position[1].toFixed(4)}</div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-white/95 p-2 rounded-lg shadow text-xs z-[1000]">
-        <div className="font-bold text-gray-700 mb-1">مصدر الخريطة:</div>
-        <div className="flex items-center gap-1 mb-1">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span>OpenStreetMap</span>
-        </div>
+      {/* Legend - مبسط */}
+      <div className="absolute bottom-2 right-2 bg-white/90 p-1 rounded text-xs z-[1000]">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span>الموقع المحدد</span>
+          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+          <span>الموقع</span>
         </div>
       </div>
     </div>

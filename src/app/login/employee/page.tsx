@@ -13,16 +13,12 @@ import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Logo from "@/components/Logo";
-import HeaderWithImage from "@/components/HeaderWithImage";
-import { handleFirebaseError } from "@/lib/firebase-error-handler";
-import { useLoginNotifications } from "@/hooks/useLoginNotifications";
+import Footer from "@/components/footer";
 
 
 export default function EmployeeLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { trackLoginAttempt, sendCriticalLoginNotification } = useLoginNotifications();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -167,7 +163,7 @@ export default function EmployeeLoginPage() {
       
       toast({
         title: "تم تسجيل الدخول بنجاح ✅",
-        description: `مرحباً بك ${userData.displayName || 'في منصة بلدية الريان'}`,
+        description: `مرحباً بك ${userData.displayName || 'في منصة رياني'}`,
         duration: 2000,
       });
 
@@ -180,17 +176,19 @@ export default function EmployeeLoginPage() {
     } catch (error: any) {
       console.error("Login error:", error);
       
-      // استخدام معالج الأخطاء الجديد
-      const errorInfo = handleFirebaseError(error);
-      let errorMessage = errorInfo.userFriendlyMessage;
+      let errorMessage = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
       let isCredentialsError = false;
       
-      // تحديد ما إذا كان الخطأ متعلقاً بالبيانات
-      if (error.code === 'auth/user-not-found' || 
-          error.code === 'auth/wrong-password' || 
-          error.code === 'auth/invalid-email' ||
-          error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "البريد الإلكتروني أو كلمة المرور غير صحيحة";
         isCredentialsError = true;
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "تم تجاوز عدد المحاولات المسموح بها. يرجى المحاولة لاحقاً";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "البريد الإلكتروني غير صالح";
+        isCredentialsError = true;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       // تحديث عدد المحاولات الفاشلة إذا كان الخطأ متعلقاً بالبيانات
@@ -198,9 +196,6 @@ export default function EmployeeLoginPage() {
         const newAttempts = loginAttempts + 1;
         setLoginAttempts(newAttempts);
         localStorage.setItem('loginAttempts', newAttempts.toString());
-
-        // تتبع محاولة تسجيل الدخول الفاشلة (معطل مؤقتاً)
-        // await trackLoginAttempt(email, false);
 
         // تفعيل القفل المؤقت بعد 3 محاولات فاشلة
         if (newAttempts >= 3) {
@@ -210,17 +205,8 @@ export default function EmployeeLoginPage() {
           localStorage.setItem('loginLockoutEnd', lockoutEnd.toString());
           
           errorMessage = `تم قفل تسجيل الدخول مؤقتاً لمدة ${Math.floor(lockoutDuration / 60)} دقيقة و ${lockoutDuration % 60} ثانية`;
-          
-          // إرسال إشعار عاجل للمستخدم (معطل مؤقتاً)
-          // await sendCriticalLoginNotification(email, 0);
         } else {
-          const remainingAttempts = 3 - newAttempts;
-          errorMessage += `. المحاولات المتبقية: ${remainingAttempts}`;
-          
-          // إرسال إشعار إذا تبقى محاولة واحدة فقط (معطل مؤقتاً)
-          // if (remainingAttempts === 1) {
-          //   await sendCriticalLoginNotification(email, remainingAttempts);
-          // }
+          errorMessage += `. المحاولات المتبقية: ${3 - newAttempts}`;
         }
       }
 
@@ -236,7 +222,6 @@ export default function EmployeeLoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
-      <HeaderWithImage />
       <main className="flex-1 flex flex-col items-center justify-center bg-background p-4">
         <Card className="w-full max-w-sm">
           <CardHeader className="space-y-2 text-center">
@@ -251,13 +236,14 @@ export default function EmployeeLoginPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <div className="flex flex-col items-center justify-center flex-1">
-                <Logo size="xl" showText={false} />
+                <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
+                <p className="text-muted-foreground font-semibold">بلدية الريان</p>
               </div>
               <div className="w-10"></div> {/* للمحاذاة */}
             </div>
             <CardTitle>تسجيل دخول الموظف</CardTitle>
             <CardDescription>
-              منصة البلاغات الداخلية
+              منصة التفتيش الموحد
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
@@ -295,6 +281,7 @@ export default function EmployeeLoginPage() {
           </form>
         </Card>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 
 interface LogoProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   className?: string;
   showText?: boolean;
   inline?: boolean; // للاستخدام في نفس سطر النص
@@ -20,14 +20,18 @@ const Logo: React.FC<LogoProps> = ({
     sm: 'h-6 w-16',
     md: 'h-8 w-20',
     lg: 'h-12 w-28',
-    xl: 'h-16 w-36'
+    xl: 'h-16 w-36',
+    '2xl': 'h-24 w-48',
+    '3xl': 'h-32 w-64'
   };
 
   const textSizeClasses = {
     sm: 'text-sm',
     md: 'text-base',
     lg: 'text-lg',
-    xl: 'text-xl'
+    xl: 'text-xl',
+    '2xl': 'text-2xl',
+    '3xl': 'text-3xl'
   };
 
   if (inline) {

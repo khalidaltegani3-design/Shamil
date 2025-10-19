@@ -157,7 +157,7 @@ export class NotificationService {
         title: 'تحديث النظام - بلدية الريان',
         message: `مرحباً،
 
-نود إعلامكم بأنه تم تحديث نظام البلاغات الداخلية بنجاح.
+نود إعلامكم بأنه تم تحديث نظام التفتيش الموحد بنجاح.
 
 التحديثات الجديدة تشمل:
 - تحسينات في واجهة المستخدم
@@ -249,5 +249,6 @@ export class NotificationService {
     return await this.sendBulkNotifications(notifications);
   }
 }
+
 
 

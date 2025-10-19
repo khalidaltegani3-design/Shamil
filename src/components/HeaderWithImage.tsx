@@ -25,7 +25,7 @@ const HeaderWithImage: React.FC<HeaderWithImageProps> = ({
         <div className="w-full bg-background/95 backdrop-blur-sm border-b">
           <div className="container mx-auto px-4 py-2">
             <p className="text-center text-sm md:text-base text-muted-foreground font-medium">
-              بلدية الريان - نظام البلاغات الداخلية
+              بلدية الريان - نظام التفتيش الموحد
             </p>
           </div>
         </div>

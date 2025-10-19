@@ -68,15 +68,94 @@ const QATAR_ZONES: { [key: string]: { lat: number; lng: number; name: string } }
   '95': { lat: 25.3200, lng: 51.5300, name: 'الدوحة - منطقة التعليم' },
 };
 
-export async function queryQNAS(zone: string, street: string, building: string): Promise<QNASResponse> {
-  const token = process.env.QNAS_API_TOKEN;
-  const domain = process.env.QNAS_API_DOMAIN;
+// دالة للحصول على الإحداثيات المحلية بدون الحاجة لـ API
+function getLocalCoordinates(zone: string, street: string, building: string): QNASResponse {
+  // تنظيف وتحويل الأرقام العربية إلى إنجليزية
+  const normalizeNumerals = (str: string) => {
+    return str
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
+      .trim();
+  };
 
-  if (!token || !domain) {
+  const normZone = normalizeNumerals(zone);
+  const normStreet = normalizeNumerals(street);
+  const normBuilding = normalizeNumerals(building);
+
+  // التحقق من صحة الأرقام
+  if (!/^\d+$/.test(normZone) || !/^\d+$/.test(normStreet) || !/^\d+$/.test(normBuilding)) {
     throw new QNASError(
-      'خدمة عنواني غير مهيأة بشكل صحيح',
-      'CONFIG_ERROR'
+      'أرقام المنطقة والشارع والمبنى يجب أن تكون أرقاماً صحيحة',
+      'INVALID_INPUT'
     );
+  }
+
+  // استخدام خريطة المناطق المحلية
+  const zoneData = QATAR_ZONES[normZone] || QATAR_ZONES['1']; // افتراضي: وسط الدوحة
+  
+  // حساب إزاحة أكثر دقة للشارع والمبنى
+  const streetNum = parseInt(normStreet);
+  const buildingNum = parseInt(normBuilding);
+  
+  // إزاحة الشارع (أصغر وأكثر واقعية)
+  const streetBaseLat = (streetNum % 50) * 0.0002; // حوالي 22 متر لكل وحدة
+  const streetBaseLng = (streetNum % 40) * 0.0002; // حوالي 22 متر لكل وحدة
+  
+  // إزاحة المبنى (دقيقة جداً)
+  const buildingOffsetLat = ((buildingNum % 20) - 10) * 0.0001; // ±11 متر
+  const buildingOffsetLng = ((buildingNum % 15) - 7) * 0.0001; // ±7-8 متر
+  
+  // تطبيق نمط الشبكة العمرانية (أصغر بكثير)
+  const gridPatternLat = (streetNum % 2 === 0 ? 1 : -1) * 0.0001;
+  const gridPatternLng = (buildingNum % 2 === 0 ? 1 : -1) * 0.0001;
+  
+  // حساب الإحداثيات النهائية
+  const finalLat = zoneData.lat + streetBaseLat + buildingOffsetLat + gridPatternLat;
+  const finalLng = zoneData.lng + streetBaseLng + buildingOffsetLng + gridPatternLng;
+  
+  // التحقق من أن الإحداثيات ضمن حدود قطر
+  const isValidQatarCoordinate = (lat: number, lng: number) => {
+    return lat >= 24.4 && lat <= 26.2 && lng >= 50.7 && lng <= 51.7;
+  };
+  
+  if (!isValidQatarCoordinate(finalLat, finalLng)) {
+    console.warn(`[QNAS] تحذير: الإحداثيات خارج حدود قطر: ${finalLat}, ${finalLng}`);
+    // استخدام وسط الدوحة كإحداثيات افتراضية
+    const fallbackLat = 25.2854;
+    const fallbackLng = 51.5310;
+    console.log(`[QNAS] استخدام الإحداثيات الافتراضية: ${fallbackLat}, ${fallbackLng}`);
+    
+    return {
+      lat: fallbackLat.toString(),
+      lng: fallbackLng.toString(),
+      zone: normZone,
+      street: normStreet,
+      building: normBuilding,
+      status: 'fallback_coordinates'
+    };
+  }
+  
+  console.log(`[QNAS] استخدام إحداثيات محلية للمنطقة ${normZone}: ${zoneData.name}`);
+  console.log(`[QNAS] الإحداثيات النهائية: ${finalLat}, ${finalLng}`);
+  
+  return {
+    lat: finalLat.toString(),
+    lng: finalLng.toString(),
+    zone: normZone,
+    street: normStreet,
+    building: normBuilding,
+    status: 'local_mapping'
+  };
+}
+
+export async function queryQNAS(zone: string, street: string, building: string): Promise<QNASResponse> {
+  const token = process.env.QNAS_API_TOKEN || 'demo_token';
+  const domain = process.env.QNAS_API_DOMAIN || 'demo.qnas.qa';
+
+  // إذا لم تكن المتغيرات موجودة، استخدم الخريطة المحلية مباشرة
+  if (!process.env.QNAS_API_TOKEN || !process.env.QNAS_API_DOMAIN) {
+    console.warn('[QNAS] متغيرات البيئة غير موجودة، استخدام الخريطة المحلية');
+    return getLocalCoordinates(zone, street, building);
   }
 
   // تنظيف وتحويل الأرقام العربية إلى إنجليزية
@@ -188,65 +267,7 @@ export async function queryQNAS(zone: string, street: string, building: string):
     
     // إذا فشلت جميع المحاولات، استخدم خريطة المناطق المحلية
     console.warn('[QNAS] فشلت جميع محاولات الحصول على الإحداثيات، استخدام خريطة المناطق المحلية');
-    
-    const zoneData = QATAR_ZONES[normZone] || QATAR_ZONES['1']; // افتراضي: وسط الدوحة
-    
-    // حساب إزاحة أكثر دقة للشارع والمبنى
-    const streetNum = parseInt(normStreet);
-    const buildingNum = parseInt(normBuilding);
-    
-    // خوارزمية محسنة للإزاحة بناءً على أنماط التطوير العمراني في قطر
-    // تقليل المسافات لتكون أكثر دقة
-    
-    // إزاحة الشارع (أصغر وأكثر واقعية)
-    const streetBaseLat = (streetNum % 50) * 0.0002; // حوالي 22 متر لكل وحدة
-    const streetBaseLng = (streetNum % 40) * 0.0002; // حوالي 22 متر لكل وحدة
-    
-    // إزاحة المبنى (دقيقة جداً)
-    const buildingOffsetLat = ((buildingNum % 20) - 10) * 0.0001; // ±11 متر
-    const buildingOffsetLng = ((buildingNum % 15) - 7) * 0.0001; // ±7-8 متر
-    
-    // تطبيق نمط الشبكة العمرانية (أصغر بكثير)
-    const gridPatternLat = (streetNum % 2 === 0 ? 1 : -1) * 0.0001;
-    const gridPatternLng = (buildingNum % 2 === 0 ? 1 : -1) * 0.0001;
-    
-    // حساب الإحداثيات النهائية
-    const finalLat = zoneData.lat + streetBaseLat + buildingOffsetLat + gridPatternLat;
-    const finalLng = zoneData.lng + streetBaseLng + buildingOffsetLng + gridPatternLng;
-    
-    // التحقق من أن الإحداثيات ضمن حدود قطر
-    const isValidQatarCoordinate = (lat: number, lng: number) => {
-      return lat >= 24.4 && lat <= 26.2 && lng >= 50.7 && lng <= 51.7;
-    };
-    
-    if (!isValidQatarCoordinate(finalLat, finalLng)) {
-      console.warn(`[QNAS] تحذير: الإحداثيات خارج حدود قطر: ${finalLat}, ${finalLng}`);
-      // استخدام وسط الدوحة كإحداثيات افتراضية
-      const fallbackLat = 25.2854;
-      const fallbackLng = 51.5310;
-      console.log(`[QNAS] استخدام الإحداثيات الافتراضية: ${fallbackLat}, ${fallbackLng}`);
-      
-      return {
-        lat: fallbackLat.toString(),
-        lng: fallbackLng.toString(),
-        zone: normZone,
-        street: normStreet,
-        building: normBuilding,
-        status: 'fallback_coordinates'
-      };
-    }
-    
-    console.log(`[QNAS] استخدام إحداثيات محلية للمنطقة ${normZone}: ${zoneData.name}`);
-    console.log(`[QNAS] الإحداثيات النهائية: ${finalLat}, ${finalLng}`);
-    
-    return {
-      lat: finalLat.toString(),
-      lng: finalLng.toString(),
-      zone: normZone,
-      street: normStreet,
-      building: normBuilding,
-      status: 'local_mapping'
-    };
+    return getLocalCoordinates(normZone, normStreet, normBuilding);
 
   } catch (error) {
     if (error instanceof QNASError) {

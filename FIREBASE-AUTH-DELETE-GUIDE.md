@@ -71,3 +71,4 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
 - حذف المستخدم من Firestore فقط لا يكفي
 - البريد الإلكتروني يبقى محجوزاً في Firebase Auth
 - يجب حذف المستخدم من كلا النظامين لإعادة استخدام البريد الإلكتروني
+

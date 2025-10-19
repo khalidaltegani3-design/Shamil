@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Footer from "@/components/footer";
+import Logo from "@/components/Logo";
 
 
 export default function EmployeeLoginPage() {
@@ -236,8 +237,7 @@ export default function EmployeeLoginPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <div className="flex flex-col items-center justify-center flex-1">
-                <h1 className="text-6xl font-amiri font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-normal">رياني</h1>
-                <p className="text-muted-foreground font-semibold">بلدية الريان</p>
+                <Logo size="3xl" showText={true} className="mb-2" />
               </div>
               <div className="w-10"></div> {/* للمحاذاة */}
             </div>

@@ -237,7 +237,7 @@ export default function EmployeeLoginPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <div className="flex flex-col items-center justify-center flex-1">
-                <Logo size="3xl" showText={true} className="mb-2" />
+                <Logo size="3xl" showText={false} className="mb-2" />
               </div>
               <div className="w-10"></div> {/* للمحاذاة */}
             </div>

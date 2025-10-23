@@ -19,6 +19,14 @@ interface Report {
   status: string;
   createdAt: any;
   departmentId: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    source: string;
+    zone?: string;
+    street?: string;
+    building?: string;
+  };
 }
 
 export default function EmployeeReports() {
@@ -153,6 +161,7 @@ export default function EmployeeReports() {
                     <TableRow>
                       <TableHead>رقم البلاغ</TableHead>
                       <TableHead>الوصف</TableHead>
+                      <TableHead>العنوان</TableHead>
                       <TableHead>الحالة</TableHead>
                       <TableHead>تاريخ الإنشاء</TableHead>
                     </TableRow>
@@ -179,6 +188,42 @@ export default function EmployeeReports() {
                             <div className="description-text line-clamp-2 text-sm leading-relaxed">
                               {report.description}
                             </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px]">
+                          <div className="text-sm">
+                            {report.location ? (
+                              report.location.source === 'q-address' && report.location.zone && report.location.street && report.location.building ? (
+                                <div className="space-y-1">
+                                  <div className="font-medium text-blue-600">
+                                    العنوان القطري
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    المنطقة: {report.location.zone}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    الشارع: {report.location.street}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    المبنى: {report.location.building}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  <div className="font-medium text-green-600">
+                                    الموقع اليدوي
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Lat: {report.location.latitude.toFixed(6)}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Lng: {report.location.longitude.toFixed(6)}
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <span className="text-muted-foreground text-xs">غير محدد</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>

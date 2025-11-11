@@ -1,14 +1,14 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, RefreshCw } from "lucide-react";
 import { formatReportNumber } from '@/lib/report-utils';
 import Logo from "@/components/Logo";
 
@@ -34,9 +34,114 @@ export default function EmployeeReports() {
   const [user, loading] = useAuthState(auth);
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const reportsCacheRef = useRef<Report[]>([]);
+  const storageKey = useMemo(() => (user ? `employee-reports-${user.uid}` : null), [user]);
 
   useEffect(() => {
-    const fetchReports = async () => {
+    const pathsToPrefetch = ["/create-report", "/employee/dashboard"];
+    pathsToPrefetch.forEach((path) => {
+      try {
+        router.prefetch(path);
+      } catch (error) {
+        console.warn(`تعذر تنفيذ prefetch للمسار ${path}:`, error);
+      }
+    });
+  }, [router]);
+
+  useEffect(() => {
+    if (!storageKey || typeof window === "undefined") {
+      reportsCacheRef.current = [];
+      setReports([]);
+      setIsLoading(true);
+      return;
+    }
+
+    try {
+      const cachedData = sessionStorage.getItem(storageKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData) as Report[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          reportsCacheRef.current = parsed;
+          setReports(parsed);
+          setIsLoading(false);
+        }
+      }
+    } catch (error) {
+      console.warn("⚠️ تعذّر قراءة بيانات البلاغات المخزنة مؤقتاً:", error);
+    }
+  }, [storageKey]);
+
+  const navigateWithLoader = useCallback(
+    (action: () => Promise<void> | void) => {
+      if (isNavigating) return;
+      setIsNavigating(true);
+      try {
+        const result = action();
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error("Navigation error:", error);
+            setIsNavigating(false);
+          });
+        }
+      } catch (error) {
+        console.error("Navigation error:", error);
+        setIsNavigating(false);
+      }
+    },
+    [isNavigating]
+  );
+
+  const loadReports = useCallback(
+    async ({ forceSkeleton = false }: { forceSkeleton?: boolean } = {}) => {
+      if (!user || !storageKey) return;
+
+      const shouldShowSkeleton = forceSkeleton || reportsCacheRef.current.length === 0;
+
+      if (shouldShowSkeleton) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+
+      try {
+        const reportsQuery = query(
+          collection(db, "reports"),
+          where("createdBy", "==", user.uid),
+          orderBy("createdAt", "desc"),
+          limit(50)
+        );
+
+        const querySnapshot = await getDocs(reportsQuery);
+        const reportsData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Report[];
+
+        reportsCacheRef.current = reportsData;
+
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(storageKey, JSON.stringify(reportsData));
+        }
+
+        startTransition(() => {
+          setReports(reportsData);
+        });
+      } catch (error) {
+        console.error("❌ خطأ في جلب التقارير:", error);
+      } finally {
+        if (shouldShowSkeleton) {
+          setIsLoading(false);
+        }
+        setIsRefreshing(false);
+      }
+    },
+    [storageKey, user]
+  );
+
+  useEffect(() => {
+    const ensureReports = async () => {
       console.log('🔍 بداية فحص تقارير الموظف...');
       console.log('📊 حالة التحميل:', loading);
       console.log('👤 المستخدم:', user?.email);
@@ -48,34 +153,17 @@ export default function EmployeeReports() {
       
       if (!user) {
         console.log('❌ لا يوجد مستخدم مسجل دخول، توجيه إلى صفحة تسجيل الدخول...');
-        router.push("/login/employee");
+        navigateWithLoader(() => {
+          router.push("/login/employee");
+        });
         return;
       }
 
-      try {
-        console.log('🔄 جاري جلب التقارير للمستخدم:', user.uid);
-        const q = query(
-          collection(db, "reports"),
-          where("createdBy", "==", user.uid)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const reportsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Report[];
-
-        console.log('✅ تم جلب التقارير بنجاح:', reportsData.length);
-        setReports(reportsData);
-      } catch (error) {
-        console.error("❌ خطأ في جلب التقارير:", error);
-      } finally {
-        setIsLoading(false);
-      }
+      loadReports({ forceSkeleton: reportsCacheRef.current.length === 0 });
     };
 
-    fetchReports();
-  }, [user, loading, router]);
+    ensureReports();
+  }, [user, loading, router, navigateWithLoader, loadReports]);
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -127,7 +215,15 @@ export default function EmployeeReports() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/employee/dashboard")}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() =>
+              navigateWithLoader(() => {
+                router.push("/employee/dashboard");
+              })
+            }
+          >
             <ArrowLeft className="h-5 w-5" />
             <span className="sr-only">رجوع</span>
           </Button>
@@ -140,9 +236,32 @@ export default function EmployeeReports() {
 
       <main className="container mx-auto p-4 md:p-8">
         <Card>
-          <CardHeader>
-            <CardTitle>قائمة البلاغات</CardTitle>
-            <CardDescription>جميع البلاغات التي قمت بإنشائها</CardDescription>
+          <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>قائمة البلاغات</CardTitle>
+              <CardDescription>جميع البلاغات التي قمت بإنشائها</CardDescription>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              {isRefreshing && (
+                <span className="text-center text-xs text-muted-foreground sm:text-right">
+                  جارٍ تحديث البيانات...
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => loadReports({ forceSkeleton: reportsCacheRef.current.length === 0 })}
+                disabled={isRefreshing || isLoading}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span>تحديث القائمة</span>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {reports.length === 0 ? (
@@ -150,7 +269,14 @@ export default function EmployeeReports() {
                 <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
                 <p className="text-lg font-medium">لا توجد بلاغات</p>
                 <p className="text-sm text-muted-foreground">لم تقم بإنشاء أي بلاغات حتى الآن</p>
-                <Button className="mt-4" onClick={() => router.push("/create-report")}>
+                <Button
+                  className="mt-4"
+                  onClick={() =>
+                    navigateWithLoader(() => {
+                      router.push("/create-report");
+                    })
+                  }
+                >
                   إنشاء بلاغ جديد
                 </Button>
               </div>
@@ -168,7 +294,15 @@ export default function EmployeeReports() {
                   </TableHeader>
                   <TableBody>
                     {reports.map((report) => (
-                      <TableRow key={report.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/reports/${report.id}`)}>
+                      <TableRow
+                        key={report.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() =>
+                          navigateWithLoader(() => {
+                            router.push(`/reports/${report.id}`);
+                          })
+                        }
+                      >
                         <TableCell className="font-medium font-mono" style={{direction: 'ltr'}}>
                           {report.reportNumber ? formatReportNumber(report.reportNumber) : report.id.slice(0, 8)}
                         </TableCell>
@@ -241,6 +375,12 @@ export default function EmployeeReports() {
           </CardContent>
         </Card>
       </main>
+      {isNavigating && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/40 backdrop-blur-sm">
+          <Loader2 className="h-10 w-10 animate-spin text-white" />
+          <p className="text-white text-sm md:text-base">جارٍ تحميل البيانات...</p>
+        </div>
+      )}
     </div>
   );
 }

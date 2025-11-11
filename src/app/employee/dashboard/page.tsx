@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, FileText, LogOut, User, UserCircle } from "lucide-react";
+import { PlusCircle, FileText, LogOut, UserCircle, Loader2 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import Logo from "@/components/Logo";
 import AppHeader from "@/components/AppHeader";
 
 export default function EmployeeDashboard() {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
   const [user, loading] = useAuthState(auth);
   const [userName, setUserName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
@@ -68,25 +69,60 @@ export default function EmployeeDashboard() {
     checkUserRole();
   }, [user, loading, router]);
 
-  const handleCreateReport = () => {
-    router.push("/create-report");
-  };
+  useEffect(() => {
+    const pathsToPrefetch = ["/create-report", "/employee/reports", "/employee/profile"];
+    pathsToPrefetch.forEach((path) => {
+      try {
+        router.prefetch(path);
+      } catch (error) {
+        console.warn(`تعذر تنفيذ prefetch للمسار ${path}:`, error);
+      }
+    });
+  }, [router]);
 
-  const handleViewReports = () => {
-    console.log('🔍 محاولة الانتقال إلى صفحة البلاغات...');
-    console.log('📍 المسار المطلوب: /employee/reports');
-    router.push("/employee/reports");
-  };
+  const navigateWithLoader = useCallback(
+    (action: () => Promise<void> | void) => {
+      if (isNavigating) return;
+      setIsNavigating(true);
+      try {
+        const result = action();
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error("Navigation error:", error);
+            setIsNavigating(false);
+          });
+        }
+      } catch (error) {
+        console.error("Navigation error:", error);
+        setIsNavigating(false);
+      }
+    },
+    [isNavigating]
+  );
 
-  const handleViewProfile = () => {
-    console.log('🔍 الانتقال إلى صفحة الملف الشخصي...');
-    router.push("/employee/profile");
-  };
+  const handleCreateReport = () =>
+    navigateWithLoader(() => {
+      router.push("/create-report");
+    });
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    router.push("/login/employee");
-  };
+  const handleViewReports = () =>
+    navigateWithLoader(() => {
+      console.log('🔍 محاولة الانتقال إلى صفحة البلاغات...');
+      console.log('📍 المسار المطلوب: /employee/reports');
+      router.push("/employee/reports");
+    });
+
+  const handleViewProfile = () =>
+    navigateWithLoader(() => {
+      console.log('🔍 الانتقال إلى صفحة الملف الشخصي...');
+      router.push("/employee/profile");
+    });
+
+  const handleSignOut = () =>
+    navigateWithLoader(async () => {
+      await signOut(auth);
+      router.push("/login/employee");
+    });
 
   if (loading) {
     return (
@@ -144,6 +180,12 @@ export default function EmployeeDashboard() {
           </Card>
         </div>
       </main>
+      {isNavigating && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/40 backdrop-blur-sm">
+          <Loader2 className="h-10 w-10 animate-spin text-white" />
+          <p className="text-white text-sm md:text-base">جارٍ فتح الصفحة المطلوبة...</p>
+        </div>
+      )}
     </div>
   );
 }

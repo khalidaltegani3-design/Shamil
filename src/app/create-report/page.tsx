@@ -1,13 +1,13 @@
 ﻿
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { generateReportNumber, formatReportNumber } from '@/lib/report-utils';
-import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Paperclip, X, File as FileIcon, Search, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -87,6 +87,11 @@ export default function CreateReportPage() {
   // Location state
   const [position, setPosition] = useState<[number, number] | null>([25.2854, 51.5310]); // Default to Doha
   const [locationSource, setLocationSource] = useState<"manual" | "q-address">("manual");
+  const [manualLatitude, setManualLatitude] = useState<string>('');
+  const [manualLongitude, setManualLongitude] = useState<string>('');
+  const [activeLocationTab, setActiveLocationTab] = useState<"manual" | "q-address">("manual");
+  const [isMapInteractive, setIsMapInteractive] = useState(false);
+  const [showManualCoordinateInputs, setShowManualCoordinateInputs] = useState(false);
   
   // Qatari Address state
   const [zone, setZone] = useState('');
@@ -107,11 +112,32 @@ export default function CreateReportPage() {
     userHomeDepartmentId ? dept.id !== userHomeDepartmentId : true
   );
 
+  const isBusy = isSubmitting || isGeocoding;
+  const busyMessage = isSubmitting ? 'جارٍ إنشاء البلاغ...' : 'جارٍ البحث عن الموقع...';
+
 
   const Map = useMemo(() => dynamic(() => import('@/components/map'), { 
     loading: () => <p className="text-center">جارٍ تحميل الخريطة...</p>,
     ssr: false 
   }), []);
+
+  useEffect(() => {
+    if (position) {
+      setManualLatitude(position[0].toFixed(6));
+      setManualLongitude(position[1].toFixed(6));
+    }
+  }, [position]);
+
+  useEffect(() => {
+    const pathsToPrefetch = ["/employee/dashboard", "/employee/reports"];
+    pathsToPrefetch.forEach((path) => {
+      try {
+        router.prefetch(path);
+      } catch (error) {
+        console.warn(`تعذر تنفيذ prefetch للمسار ${path}:`, error);
+      }
+    });
+  }, [router]);
 
   const uploadFile = async (file: File, reportId: string): Promise<string> => {
     const storageRef = ref(storage, `reports/${reportId}/${file.name}`);
@@ -183,6 +209,7 @@ export default function CreateReportPage() {
       if (result && typeof result.lat === 'number' && typeof result.lng === 'number') {
         console.log('[handleFindQAddress] Valid coordinates received:', result.lat, result.lng);
         setPosition([result.lat, result.lng]);
+        enableInteractiveMap();
         toast({ 
           title: "تم تحديد الموقع", 
           description: `تم تحديد موقع العنوان: منطقة ${zone}، شارع ${street}، مبنى ${building}` 
@@ -206,6 +233,42 @@ export default function CreateReportPage() {
   
   const handleOpenUnwani = () => {
       window.open('https://maps.moi.gov.qa/', '_blank', 'noopener,noreferrer');
+  };
+
+  const enableInteractiveMap = useCallback(() => {
+    if (!isMapInteractive) {
+      setIsMapInteractive(true);
+    }
+  }, [isMapInteractive]);
+
+  const handleApplyManualCoordinates = () => {
+    const lat = parseFloat(manualLatitude.replace(/,/g, '.'));
+    const lng = parseFloat(manualLongitude.replace(/,/g, '.'));
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      toast({
+        variant: "destructive",
+        title: "إحداثيات غير صالحة",
+        description: "يرجى إدخال أرقام صحيحة لخط العرض وخط الطول.",
+      });
+      return;
+    }
+
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast({
+        variant: "destructive",
+        title: "خارج النطاق",
+        description: "يرجى التأكد من أن خط العرض بين -90 و 90، وخط الطول بين -180 و 180.",
+      });
+      return;
+    }
+
+    setPosition([lat, lng]);
+    enableInteractiveMap();
+    toast({
+      title: "تم تحديث الموقع",
+      description: `تم تعيين الإحداثيات إلى Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
+    });
   };
 
 
@@ -462,23 +525,90 @@ export default function CreateReportPage() {
 
                 <div className="space-y-4">
                   <Label>تحديد موقع البلاغ *</Label>
-                   <Tabs defaultValue="manual" className="w-full" onValueChange={(value: string) => setLocationSource(value as "manual" | "q-address")}>
+                   <Tabs
+                      value={activeLocationTab}
+                      className="w-full"
+                      onValueChange={(value: string) => {
+                        const typedValue = value as "manual" | "q-address";
+                        setActiveLocationTab(typedValue);
+                        setLocationSource(typedValue);
+                      }}
+                    >
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="manual">تحديد يدوي على الخريطة</TabsTrigger>
                         <TabsTrigger value="q-address">العنوان القطري (عنواني)</TabsTrigger>
                       </TabsList>
                       <TabsContent value="manual" className="mt-4 space-y-4">
-                         <div className="relative w-full h-64 rounded-lg overflow-hidden border">
-                            <Map 
-                              position={position} 
-                              setPosition={setPosition}
-                            />
+                         <div className="relative w-full h-64 rounded-lg overflow-hidden border bg-muted">
+                           {isMapInteractive ? (
+                             <Map 
+                                position={position} 
+                                setPosition={setPosition}
+                              />
+                           ) : (
+                             <div className="flex h-full items-center justify-center p-4">
+                               <Button variant="outline" onClick={enableInteractiveMap} disabled={isSubmitting || isGeocoding}>
+                                 فتح الخريطة التفاعلية
+                               </Button>
+                             </div>
+                           )}
                          </div>
-                         {position && (
-                            <p className="text-sm text-muted-foreground pt-1 text-center dir-ltr">
+                         <div className="flex flex-col items-stretch gap-2 sm:flex-row">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                              onClick={() => setShowManualCoordinateInputs((prev) => !prev)}
+                              disabled={isSubmitting || isGeocoding}
+                            >
+                              {showManualCoordinateInputs ? 'إخفاء حقول الإحداثيات' : 'إدخال الإحداثيات يدوياً (اختياري)'}
+                            </Button>
+                            {position && (
+                              <p className="flex-1 text-sm text-muted-foreground sm:text-right dir-ltr">
                                 Lat: {position[0].toFixed(6)}, Lng: {position[1].toFixed(6)}
-                            </p>
-                        )}
+                              </p>
+                            )}
+                         </div>
+                         {showManualCoordinateInputs && (
+                           <>
+                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor="manual-lat">خط العرض (اختياري)</Label>
+                                  <Input
+                                    id="manual-lat"
+                                    dir="ltr"
+                                    inputMode="decimal"
+                                    placeholder="25.285400"
+                                    value={manualLatitude}
+                                    onChange={(e) => setManualLatitude(e.target.value)}
+                                    disabled={isSubmitting || isGeocoding}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="manual-lng">خط الطول (اختياري)</Label>
+                                  <Input
+                                    id="manual-lng"
+                                    dir="ltr"
+                                    inputMode="decimal"
+                                    placeholder="51.531000"
+                                    value={manualLongitude}
+                                    onChange={(e) => setManualLongitude(e.target.value)}
+                                    disabled={isSubmitting || isGeocoding}
+                                  />
+                                </div>
+                             </div>
+                             <div className="flex justify-start">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={handleApplyManualCoordinates}
+                                  disabled={isSubmitting || isGeocoding}
+                                >
+                                  تحديث الموقع من الإحداثيات
+                                </Button>
+                             </div>
+                           </>
+                         )}
                       </TabsContent>
                       <TabsContent value="q-address" className="mt-4 space-y-4">
                         {/* العنوان القطري (عنواني) */}
@@ -508,8 +638,12 @@ export default function CreateReportPage() {
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <Button type="button" className="flex-1" onClick={handleFindQAddress} disabled={isGeocoding}>
-                                <Search className="ml-2 h-4 w-4" />
+                            <Button type="button" className="flex-1" onClick={handleFindQAddress} disabled={isGeocoding || isSubmitting}>
+                                {isGeocoding ? (
+                                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Search className="ml-2 h-4 w-4" />
+                                )}
                                 {isGeocoding ? 'جارٍ البحث...' : 'اعثر على الموقع'}
                             </Button>
                             <Button type="button" variant="outline" className="flex-1" onClick={handleOpenUnwani}>
@@ -517,11 +651,19 @@ export default function CreateReportPage() {
                                 فتح "عنواني" للتحقق
                             </Button>
                         </div>
-                         <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                            <Map 
-                              position={position} 
-                              setPosition={setPosition}
-                            />
+                         <div className="relative w-full h-48 rounded-lg overflow-hidden border bg-muted">
+                            {isMapInteractive ? (
+                              <Map 
+                                position={position} 
+                                setPosition={setPosition}
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center p-4">
+                                <Button variant="outline" onClick={enableInteractiveMap} disabled={isSubmitting || isGeocoding}>
+                                  فتح الخريطة التفاعلية
+                                </Button>
+                              </div>
+                            )}
                          </div>
                       </TabsContent>
                     </Tabs>
@@ -530,13 +672,26 @@ export default function CreateReportPage() {
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               <Button variant="outline" type="button" onClick={() => router.back()}>إلغاء</Button>
-              <Button type="submit" disabled={isSubmitting || loading}>
-                {isSubmitting ? 'جارٍ إنشاء البلاغ...' : 'إنشاء البلاغ'}
+              <Button type="submit" disabled={isSubmitting || loading || isGeocoding}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    جارٍ إنشاء البلاغ...
+                  </>
+                ) : (
+                  'إنشاء البلاغ'
+                )}
               </Button>
             </CardFooter>
           </Card>
         </form>
       </main>
+      {isBusy && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/40 backdrop-blur-sm">
+          <Loader2 className="h-10 w-10 animate-spin text-white" />
+          <p className="text-white text-sm md:text-base">{busyMessage}</p>
+        </div>
+      )}
     </div>
   );
 }

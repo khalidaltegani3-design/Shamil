@@ -255,7 +255,7 @@ function AdminDashboard() {
                 </div>
                 <div className="flex justify-between">
                   <span>قاعدة البيانات:</span>
-                  <span className="font-semibold">Firebase</span>
+                  <span className="font-semibold">AWG</span>
                 </div>
               </div>
             </CardContent>

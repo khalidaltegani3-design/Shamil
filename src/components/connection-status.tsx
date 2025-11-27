@@ -24,20 +24,14 @@ export function ConnectionStatus() {
     setIsChecking(true);
     try {
       const isConnected = await pingDatabase();
-      if (isMounted) {
-        setIsDBConnected(Boolean(isConnected));
-        setLastChecked(new Date());
-      }
+      setIsDBConnected(Boolean(isConnected));
+      setLastChecked(new Date());
     } catch (error) {
-      if (isMounted) {
-        console.error('فشل التحقق من الاتصال:', error);
-        setIsDBConnected(false);
-        setLastChecked(new Date());
-      }
+      console.error('فشل التحقق من الاتصال:', error);
+      setIsDBConnected(false);
+      setLastChecked(new Date());
     } finally {
-      if (isMounted) {
-        setIsChecking(false);
-      }
+      setIsChecking(false);
     }
   };
 
@@ -48,10 +42,12 @@ export function ConnectionStatus() {
     setIsMounted(true);
     
     let connectionCheckInterval: NodeJS.Timeout;
+    let isCheckingRef = false; // استخدام ref لتجنب dependency issues
     
     const performDatabaseCheck = async () => {
-      if (isChecking) return;
+      if (isCheckingRef) return;
       
+      isCheckingRef = true;
       setIsChecking(true);
       try {
         const isConnected = await pingDatabase();
@@ -62,6 +58,7 @@ export function ConnectionStatus() {
         setIsDBConnected(false);
         setLastChecked(new Date());
       } finally {
+        isCheckingRef = false;
         setIsChecking(false);
       }
     };
@@ -72,7 +69,7 @@ export function ConnectionStatus() {
       
       // إعداد فحص دوري كل 30 ثانية
       connectionCheckInterval = setInterval(() => {
-        if (navigator.onLine) {
+        if (navigator.onLine && !isCheckingRef) {
           performDatabaseCheck();
         }
       }, 30000);
@@ -80,7 +77,9 @@ export function ConnectionStatus() {
 
     const handleOnline = () => {
       setIsOnline(true);
-      performDatabaseCheck();
+      if (!isCheckingRef) {
+        performDatabaseCheck();
+      }
     };
     
     const handleOffline = () => {
@@ -103,10 +102,12 @@ export function ConnectionStatus() {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(connectionCheckInterval);
+      if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+      }
       setIsMounted(false);
     };
-  }, [isChecking]);
+  }, []); // dependency array فارغ - يعمل مرة واحدة فقط
 
   // عدم عرض أي شيء حتى يتم تحميل المكون في المتصفح
   if (!isMounted) {

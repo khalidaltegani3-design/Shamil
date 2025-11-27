@@ -59,7 +59,7 @@ export default function TestPage() {
     <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>اختبار الاتصال بـ Firebase</CardTitle>
+          <CardTitle>اختبار الاتصال بقاعدة البيانات</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

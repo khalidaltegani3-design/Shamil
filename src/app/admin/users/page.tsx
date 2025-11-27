@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { withSystemAdminAuth } from '@/lib/system-admin-auth';
-import { collection, doc, updateDoc, onSnapshot, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc, onSnapshot, deleteDoc, writeBatch, getDocs, query, where } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { allDepartments } from '@/lib/departments';
 import { ArrowLeft, Crown, User, UserCog, Shield, ShieldCheck, UserPlus, TrendingUp, TrendingDown, Trash2, Search, Filter } from 'lucide-react';
@@ -19,12 +19,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { generateEmployeeId, validateEmployeeId, isEmployeeIdUnique } from '@/lib/employee-utils';
+import { generateEmployeeId, validateEmployeeId, isEmployeeIdUnique, checkEmployeeIdUniqueness } from '@/lib/employee-utils';
 import { getSupervisorData } from '@/lib/supervisor-management';
 import { promoteToSupervisor, promoteToAdmin, demoteToEmployee, demoteToSupervisor, getUserCurrentRole, updateSupervisorDepartments } from '@/lib/role-management';
 import { ExpandableCell } from '@/components/ui/expandable-cell';
 import AppHeader from '@/components/AppHeader';
-import { createUserWithEmailAndPassword, updateProfile, fetchSignInMethodsForEmail, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, fetchSignInMethodsForEmail, signOut, deleteUser } from 'firebase/auth';
 import { setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface UserData {
@@ -129,14 +129,14 @@ function SystemAdminDashboard() {
     }
 
     if (newUserData.password !== newUserData.confirmPassword) {
-      toast({
+        toast({
         variant: "destructive",
         title: "خطأ",
         description: "كلمة المرور وتأكيد كلمة المرور غير متطابقين"
-      });
-      return;
-    }
-
+        });
+        return;
+      }
+      
     if (newUserData.password.length < 6) {
       toast({
         variant: "destructive",
@@ -157,11 +157,33 @@ function SystemAdminDashboard() {
         return;
       }
 
+      // التحقق من القائمة المحلية
       if (!isEmployeeIdUnique(users, newUserData.employeeId)) {
         toast({
           variant: "destructive",
           title: "خطأ",
           description: "هذا الرقم الوظيفي مستخدم بالفعل"
+        });
+        return;
+      }
+
+      // التحقق من قاعدة البيانات للتأكد
+      try {
+        const isUnique = await checkEmployeeIdUniqueness(newUserData.employeeId.trim());
+        if (!isUnique) {
+          toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "هذا الرقم الوظيفي مستخدم بالفعل في قاعدة البيانات"
+          });
+          return;
+        }
+      } catch (error: any) {
+        console.error('خطأ في التحقق من الرقم الوظيفي:', error);
+        toast({
+          variant: "destructive",
+          title: "خطأ",
+          description: `فشل في التحقق من الرقم الوظيفي: ${error.message}`
         });
         return;
       }
@@ -172,14 +194,17 @@ function SystemAdminDashboard() {
     if (userExistsInAuth) {
       toast({
         variant: "destructive",
-        title: "البريد الإلكتروني مستخدم في Firebase Auth",
-        description: "هذا البريد الإلكتروني موجود بالفعل في Firebase Auth. إذا كان المستخدم محذوفاً من Firestore، يجب حذفه من Firebase Auth أولاً أو استخدام بريد إلكتروني آخر.",
+        title: "البريد الإلكتروني مستخدم بالفعل",
+        description: "هذا البريد الإلكتروني موجود بالفعل في النظام. إذا كان المستخدم محذوفاً من قاعدة البيانات، يجب حذفه من نظام المصادقة أولاً أو استخدام بريد إلكتروني آخر.",
         duration: 10000
       });
       return;
     }
 
     setIsCreatingUser(true);
+    let createdUser: any = null; // لتتبع المستخدم المُنشأ في Auth
+    const currentAdmin = auth.currentUser; // حفظ معلومات المدير الحالي
+    
     try {
       console.log('🔄 إنشاء مستخدم جديد:', newUserData.email);
       
@@ -191,16 +216,14 @@ function SystemAdminDashboard() {
       );
 
       const user = userCredential.user;
+      createdUser = user; // حفظ المرجع للتنظيف في حالة الفشل
       console.log('✅ تم إنشاء المستخدم في Auth:', user.uid);
 
       // تحديث الملف الشخصي
       await updateProfile(user, {
         displayName: newUserData.displayName.trim()
       });
-
-      // تسجيل خروج المستخدم الجديد فوراً لعدم تداخل الجلسات
-      await signOut(auth);
-      console.log('✅ تم تسجيل خروج المستخدم الجديد');
+      console.log('✅ تم تحديث الملف الشخصي');
 
       // إنشاء بيانات المستخدم في Firestore
       const userData = {
@@ -240,6 +263,11 @@ function SystemAdminDashboard() {
         console.log('✅ تم إنشاء الرقم الوظيفي في مجموعة employeeIds');
       }
 
+      // تسجيل خروج المستخدم الجديد بعد نجاح كل العمليات
+      await signOut(auth);
+      console.log('✅ تم تسجيل خروج المستخدم الجديد');
+      createdUser = null; // تم بنجاح، لا حاجة للتنظيف
+
       toast({
         title: "تم إنشاء المستخدم بنجاح! ✅",
         description: `تم إنشاء المستخدم ${newUserData.displayName} بنجاح. تم تسجيل خروج المستخدم الجديد تلقائياً.`,
@@ -261,12 +289,42 @@ function SystemAdminDashboard() {
     } catch (error: any) {
       console.error('❌ خطأ في إنشاء المستخدم:', error);
       
+      // تنظيف: حذف حساب Firebase Auth إذا تم إنشاؤه لكن العملية فشلت
+      if (createdUser) {
+        try {
+          console.log('🧹 محاولة حذف حساب Firebase Auth بعد الفشل...');
+          // المستخدم الجديد لا يزال مسجل الدخول (لم نسجل خروجه بعد)
+          // لذا يمكننا حذفه مباشرة
+          await deleteUser(createdUser);
+          console.log('✅ تم حذف حساب Firebase Auth بنجاح');
+          
+          // ملاحظة: بعد حذف المستخدم، سيتم تسجيل الخروج تلقائياً
+          // المدير الحالي سيحتاج لإعادة تسجيل الدخول يدوياً إذا لزم الأمر
+        } catch (cleanupError: any) {
+          console.error('❌ فشل في حذف حساب Firebase Auth:', cleanupError);
+          
+          // محاولة تسجيل الخروج على الأقل
+          try {
+            await signOut(auth);
+          } catch (signOutError) {
+            console.error('❌ فشل في تسجيل الخروج:', signOutError);
+          }
+          
+          toast({
+            variant: "destructive",
+            title: "تنبيه مهم",
+            description: "تم إنشاء الحساب في نظام المصادقة لكن العملية فشلت. يجب حذف المستخدم من لوحة التحكم يدوياً إذا أردت إعادة المحاولة بنفس البريد الإلكتروني. قد تحتاج لإعادة تسجيل الدخول كمدير النظام.",
+            duration: 12000
+          });
+        }
+      }
+      
       let errorMessage = "فشل في إنشاء المستخدم";
       let errorTitle = "خطأ";
       
       if (error.code === 'auth/email-already-in-use') {
         errorTitle = "البريد الإلكتروني مستخدم بالفعل";
-        errorMessage = "هذا البريد الإلكتروني مستخدم في Firebase Auth. إذا كان المستخدم محذوفاً من Firestore، فقد يحتاج البريد الإلكتروني إلى وقت لإعادة الاستخدام أو يجب حذف المستخدم من Firebase Auth أولاً.";
+        errorMessage = "هذا البريد الإلكتروني مستخدم في النظام. إذا كان المستخدم محذوفاً من قاعدة البيانات، يجب حذفه من نظام المصادقة أولاً من خلال لوحة التحكم أو استخدام بريد إلكتروني آخر.";
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = "البريد الإلكتروني غير صحيح";
       } else if (error.code === 'auth/weak-password') {
@@ -274,7 +332,7 @@ function SystemAdminDashboard() {
       } else if (error.message) {
         errorMessage += `: ${error.message}`;
       }
-
+      
       toast({
         variant: "destructive",
         title: errorTitle,
@@ -298,6 +356,7 @@ function SystemAdminDashboard() {
       employeeId: ''
     });
   };
+
 
 
   // دالة لإضافة رقم وظيفي للمستخدمين الذين لا يملكون واحد
@@ -799,7 +858,7 @@ function SystemAdminDashboard() {
       
       toast({
         title: "تم الحذف بنجاح! ✅",
-        description: `تم حذف المستخدم ${user.displayName || user.email} من قاعدة البيانات. ملاحظة: إذا واجهت مشكلة في إعادة استخدام البريد الإلكتروني، يجب حذف المستخدم من Firebase Auth أولاً من خلال Firebase Console.`,
+        description: `تم حذف المستخدم ${user.displayName || user.email} من قاعدة البيانات. ملاحظة: إذا واجهت مشكلة في إعادة استخدام البريد الإلكتروني، يجب حذف المستخدم من نظام المصادقة أولاً من خلال لوحة التحكم.`,
         duration: 8000
       });
       
@@ -874,11 +933,11 @@ function SystemAdminDashboard() {
     <div className={`min-h-screen bg-background ${language === 'ar' ? 'dir-rtl' : 'dir-ltr'}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header */}
       <AppHeader title={t('user_management')}>
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-          <span className="sr-only">{t('back')}</span>
-        </Button>
-        <LanguageSwitcher />
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
+            <span className="sr-only">{t('back')}</span>
+          </Button>
+          <LanguageSwitcher />
       </AppHeader>
 
       {/* Main Content */}
@@ -1008,9 +1067,9 @@ function SystemAdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Crown className="h-5 w-5" />
-                إدارة المستخدمين والأدوار
-              </div>
+              <Crown className="h-5 w-5" />
+              إدارة المستخدمين والأدوار
+                </div>
               {/* زر إضافة مستخدم جديد - فقط لمدير النظام */}
               {auth.currentUser?.email?.toLowerCase().trim() === "sweetdream711711@gmail.com" && (
                 <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
@@ -1036,7 +1095,7 @@ function SystemAdminDashboard() {
                         <p className="text-sm text-yellow-800">
                           ⚠️ <strong>تنبيه:</strong> بعد إنشاء المستخدم، سيتم تسجيل خروج المستخدم الجديد تلقائياً. قد تحتاج لإعادة تسجيل الدخول كمدير النظام.
                         </p>
-                      </div>
+              </div>
                     </DialogHeader>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
@@ -1049,7 +1108,7 @@ function SystemAdminDashboard() {
                           onChange={(e) => setNewUserData(prev => ({ ...prev, displayName: e.target.value }))}
                           disabled={isCreatingUser}
                         />
-                      </div>
+            </div>
 
                       <div className="md:col-span-2 space-y-2">
                         <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني *</label>
@@ -1417,14 +1476,15 @@ function SystemAdminDashboard() {
                                 هل أنت متأكد من حذف المستخدم <strong>{user.displayName || user.email}</strong>؟
                                 <br /><br />
                                 <span className="text-red-600 font-semibold">⚠️ تحذير:</span> هذا الإجراء لا يمكن التراجع عنه!
-                                <br />
-                                سيتم حذف:
-                                <ul className="list-disc list-inside mt-2 text-sm">
+                              </AlertDialogDescription>
+                              <div className="mt-2">
+                                <p className="text-sm text-muted-foreground mb-2">سيتم حذف:</p>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                                   <li>حساب المستخدم من نظام AWG</li>
                                   <li>جميع بيانات المستخدم من قاعدة البيانات</li>
                                   <li>جميع الصلاحيات والأدوار المرتبطة</li>
                                 </ul>
-                              </AlertDialogDescription>
+                              </div>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>إلغاء</AlertDialogCancel>
